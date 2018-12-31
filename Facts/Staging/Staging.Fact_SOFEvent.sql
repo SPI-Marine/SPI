@@ -16,10 +16,11 @@ create table Staging.Fact_SOFEvent
 	(
 		EventAlternateKey		int					not null,
 		ParcelAlternateKey		int					not null,
+		ParcelPortAlternateKey	int					not null,
 		PortKey					int					not null,
 		BerthKey				int					not null,
 		StartDateKey			int					not null,
-		EndDateKey				int					not null,
+		StopDateKey				int					not null,
 		ProductKey				int					not null,
 		PostFixtureKey			int					not null,
 		VesselKey				int					not null,
@@ -34,6 +35,8 @@ create table Staging.Fact_SOFEvent
 		LaytimeAllowed			decimal(18, 4)		null,
 		StartTime				time				null,		-- ETL fields
 		StopTime				time				null,
+		StartDate				datetime			null,
+		StopDate				datetime			null,
 		RecordStatus			int					not null,
 		constraint [PK_Staging_Fact_SOFEvent_QBRecId] primary key clustered 
 		(

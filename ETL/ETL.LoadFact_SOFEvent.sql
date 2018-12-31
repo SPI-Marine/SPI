@@ -35,13 +35,14 @@ begin
 		select
 				sof.QBRecId	EventAlternateKey,
 				parcel.ParcelId	ParcelAlternateKey,
+				isnull(parcel.ParcelPortAlternateKey, -1),
 				-1	PortKey,
 				-1	BerthKey,
 				isnull(startdate.DateKey, 18991230) StartDateKey,
-				isnull(stopdate.DateKey, 47001231) EndDateKey,
+				isnull(stopdate.DateKey, 47001231) StopDateKey,
 				-1	ProductKey,
-				-1	PostFixtureKey,
-				-1	VesselKey,
+				isnull(wpostfixture.PostFixtureKey, -1),
+				isnull(vessel.VesselKey, -1),
 				sof.ProationType,
 				eventtype.EventNameReports	EventType,
 				case sof.Laytime
@@ -56,15 +57,13 @@ begin
 				end	IsPumpingTime,
 				null	LoadDischarge,
 				sof.Comments,
-				datediff(minute, try_convert(time, sof.StartTime), try_convert(time, sof.StopTime)) / 60.0	Duration,
-				case sof.Laytime
-					when 1
-						then datediff(minute, try_convert(time, sof.StartTime), try_convert(time, sof.StopTime)) / 60.0
-					else null
-				end	LaytimeActual,
+				null	Duration,
+				null	LaytimeActual,
 				null	LaytimeAllowed,
 				try_convert(time, sof.StartTime),
 				try_convert(time, sof.StopTime),
+				try_convert(datetime, sof.StartDate),
+				try_convert(datetime, sof.StopDate),
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
 				SOFEvents sof
@@ -79,13 +78,20 @@ begin
 									distinct
 										pb.QBRecId ParcelBerthId,
 										p.QbRecId ParcelId,
-										pb.RelatedSpiFixtureId PostFixtureAlternateKey
+										pb.RelatedSpiFixtureId PostFixtureAlternateKey,
+										pb.RelatedLDPId ParcelPortAlternateKey
 									from
 										ParcelBerths pb
 											join Parcels p
 												on pb.RelatedSpiFixtureId = p.RelatedSpiFixtureId
 							) parcel
-					on sof.RelatedParcelBerthId = parcel.ParcelBerthId
+						on sof.RelatedParcelBerthId = parcel.ParcelBerthId
+					left join Warehouse.Dim_PostFixture wpostfixture
+						on wpostfixture.PostFixtureAlternateKey = parcel.PostFixtureAlternateKey
+					left join PostFixtures epostfixture
+						on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+					left join Warehouse.Dim_Vessel vessel
+						on vessel.VesselAlternateKey = epostfixture.RelatedVessel
 					left join	(
 									select
 											@ExistingRecord RecordStatus,
@@ -100,9 +106,43 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Insert new berths into Warehouse table
+	-- Update event duration
 	begin try
-		select 1;
+		-- Create full start and stop datetimes
+		update
+				Staging.Fact_SOFEvent
+			set
+				StartDate = datetimefromparts(year(StartDate), month(StartDate), day(StartDate), datepart(hour, StartTime), datepart(minute, StartTime), 0, 0),
+				StopDate = datetimefromparts(year(StopDate), month(StopDate), day(StopDate), datepart(hour, StopTime), datepart(minute, StopTime), 0, 0);
+	
+		-- Calculate Duration
+		update
+				Staging.Fact_SOFEvent
+			set
+				Duration =	case
+								when StartDateKey > 19000000 and StopDateKey < 47000000
+									then datediff(minute, StartDate, StopDate)/60.0
+								else null
+							end,
+				LaytimeActual =	case
+									when StartDateKey > 19000000 and StopDateKey < 47000000
+										then
+											case IsLaytime
+												when 'Y'
+													then datediff(minute, StartDate, StopDate)/60.0
+												else null
+											end
+									else null
+								end;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating SOFEvent duration - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Insert new events into Warehouse table
+	begin try
+		print 1;
 		--insert
 		--		Warehouse.Fact_SOFEvent
 		--	select
