@@ -19,7 +19,7 @@ create table Warehouse.Fact_SOFEvent
 		PortKey					int					not null,
 		BerthKey				int					not null,
 		StartDateKey			int					not null,
-		EndDateKey				int					not null,
+		StopDateKey				int					not null,
 		ProductKey				int					not null,
 		PostFixtureKey			int					not null,
 		VesselKey				int					not null,
@@ -29,10 +29,12 @@ create table Warehouse.Fact_SOFEvent
 		IsPumpingTime			char(1)				null,
 		LoadDischarge			nvarchar(100)		null,
 		Comments				nvarchar(1000)		null,
+		ParcelNumber			smallint			null,
 		Duration				decimal(18, 4)		null,		-- Metrics
 		LaytimeActual			decimal(18, 4)		null,
 		LaytimeAllowed			decimal(18, 4)		null,
-		RecordStatus			int					not null,
+		RowCreatedDate			datetime			not null,
+		RowUpdatedDate			datetime			not null,
 		constraint [PK_Warehouse_Fact_SOFEvent_QBRecId] primary key clustered 
 		(
 			EventKey asc

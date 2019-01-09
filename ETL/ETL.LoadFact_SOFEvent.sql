@@ -33,11 +33,12 @@ begin
 		insert
 				Staging.Fact_SOFEvent
 		select
+			distinct
 				sof.QBRecId	EventAlternateKey,
 				parcel.ParcelId	ParcelAlternateKey,
 				isnull(parcel.ParcelPortAlternateKey, -1),
-				-1	PortKey,
-				-1	BerthKey,
+				isnull([port].PortKey, -1)	PortKey,
+				isnull(berth.BerthKey, -1)	BerthKey,
 				isnull(startdate.DateKey, 18991230) StartDateKey,
 				isnull(stopdate.DateKey, 47001231) StopDateKey,
 				-1	ProductKey,
@@ -49,17 +50,21 @@ begin
 					when 1
 						then 'Y'
 					else 'N'
-				end	IsLaytime,
+				end		IsLaytime,
 				case sof.PumpingTime
 					when 1
 						then 'Y'
 					else 'N'
-				end	IsPumpingTime,
-				null	LoadDischarge,
+				end		IsPumpingTime,
+				null 	LoadDischarge,
 				sof.Comments,
+				null	ParcelNumber,
 				null	Duration,
 				null	LaytimeActual,
-				null	LaytimeAllowed,
+				parcel.LaytimeAllowed,
+				null	ProrationPercentage,
+				parcel.ParcelQuantity,
+				totqty.TotalQuantity,
 				try_convert(time, sof.StartTime),
 				try_convert(time, sof.StopTime),
 				try_convert(datetime, sof.StartDate),
@@ -79,7 +84,11 @@ begin
 										pb.QBRecId ParcelBerthId,
 										p.QbRecId ParcelId,
 										pb.RelatedSpiFixtureId PostFixtureAlternateKey,
-										pb.RelatedLDPId ParcelPortAlternateKey
+										pb.RelatedLDPId ParcelPortAlternateKey,
+										pb.RelatedPortId,
+										pb.RelatedBerthId,
+										pb.LaytimeAllowedBerthHrs_QBC LaytimeAllowed,
+										p.BLQty ParcelQuantity
 									from
 										ParcelBerths pb
 											join Parcels p
@@ -92,6 +101,20 @@ begin
 						on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
 					left join Warehouse.Dim_Vessel vessel
 						on vessel.VesselAlternateKey = epostfixture.RelatedVessel
+					left join Warehouse.Dim_Port [port]
+						on [port].PortAlternateKey = parcel.RelatedPortId
+					left join Warehouse.Dim_Berth berth
+						on berth.BerthAlternateKey = parcel.RelatedBerthId
+					left join	(
+									select
+											sum(qty.BLQty) TotalQuantity,
+											qty.RelatedSpiFixtureId PostFixtureAlternateKey
+										from
+											Parcels qty
+										group by
+											qty.RelatedSpiFixtureId
+								) totqty
+						on totqty.PostFixtureAlternateKey = parcel.PostFixtureAlternateKey
 					left join	(
 									select
 											@ExistingRecord RecordStatus,
@@ -103,6 +126,34 @@ begin
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging SOFEvent records - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update LoadDischarge
+	begin try
+		update
+				Staging.Fact_SOFEvent
+			set
+				LoadDischarge = pp.[Type]
+			from
+				ParcelPorts pp
+			where
+				pp.QBRecId = Staging.Fact_SOFEvent.ParcelPortAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating LoadDischarge - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update ProrationPercentage
+	begin try
+		update
+				Staging.Fact_SOFEvent
+			set
+				ProrationPercentage = ParcelQuantity/TotalQuantity;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating ProrationPercentage - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
@@ -123,45 +174,75 @@ begin
 								when StartDateKey > 19000000 and StopDateKey < 47000000
 									then datediff(minute, StartDate, StopDate)/60.0
 								else null
-							end,
-				LaytimeActual =	case
-									when StartDateKey > 19000000 and StopDateKey < 47000000
-										then
-											case IsLaytime
-												when 'Y'
-													then datediff(minute, StartDate, StopDate)/60.0
-												else null
-											end
+							end;
+
+		-- Calculate LaytimeActual
+		update
+				Staging.Fact_SOFEvent
+			set
+				LaytimeActual =	case IsLaytime
+									when 'Y'
+										then ProrationPercentage*Duration
 									else null
 								end;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating SOFEvent duration - ' + error_message();
+		select @ErrorMsg = 'Updating SOFEvent Duration/LaytimeActual - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update ParcelNumber
+	begin try
+		update
+				Staging.Fact_SOFEvent
+			set
+				ParcelNumber = parcelnumbers.ParcelNumber
+			from
+				(
+					select
+							row_number() over (partition by p.RelatedSpiFixtureId order by p.QbRecId)	ParcelNumber,
+							p.RelatedSpiFixtureId,
+							p.QbRecId ParcelId
+						from
+							Parcels p
+				) parcelnumbers
+			where
+				parcelnumbers.ParcelId = Staging.Fact_SOFEvent.ParcelAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating ParcelNumber - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
 	-- Insert new events into Warehouse table
 	begin try
-		print 1;
-		--insert
-		--		Warehouse.Fact_SOFEvent
-		--	select
-		--			berth.BerthAlternateKey,
-		--			berth.BerthName,
-		--			berth.DraftRestriction,
-		--			berth.LOARestriction,
-		--			berth.ProductRestriction,
-		--			berth.ExNames,
-		--			berth.UniqueId,
-		--			berth.UpRiverPorts,
-		--			berth.Type1HashValue,
-		--			getdate() RowStartDate,
-		--			getdate() RowUpdatedDate,
-		--			'Y' IsCurrentRow
-		--		from
-		--			Staging.Fact_SOFEvent berth
-		--		where
-		--			berth.RecordStatus & @NewRecord = @NewRecord;
+		insert
+				Warehouse.Fact_SOFEvent
+			select
+					evt.EventAlternateKey,
+					evt.PortKey,
+					evt.BerthKey,
+					evt.StartDateKey,
+					evt.StopDateKey,
+					evt.ProductKey,
+					evt.PostFixtureKey,
+					evt.VesselKey,
+					evt.ProrationType,
+					evt.EventType,
+					evt.IsLaytime,
+					evt.IsPumpingTime,
+					evt.LoadDischarge,
+					evt.Comments,
+					evt.ParcelNumber,
+					evt.Duration,
+					evt.LaytimeActual,
+					evt.LaytimeAllowed,
+					getdate() RowStartDate,
+					getdate() RowUpdatedDate
+				from
+					Staging.Fact_SOFEvent evt
+				where
+					evt.RecordStatus & @NewRecord = @NewRecord;
 	end try
 	begin catch
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();

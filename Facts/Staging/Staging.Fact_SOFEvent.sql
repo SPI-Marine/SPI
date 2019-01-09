@@ -30,17 +30,21 @@ create table Staging.Fact_SOFEvent
 		IsPumpingTime			char(1)				null,
 		LoadDischarge			nvarchar(100)		null,
 		Comments				nvarchar(1000)		null,
+		ParcelNumber			smallint			null,
 		Duration				decimal(18, 4)		null,		-- Metrics
 		LaytimeActual			decimal(18, 4)		null,
 		LaytimeAllowed			decimal(18, 4)		null,
-		StartTime				time				null,		-- ETL fields
+		ProrationPercentage		decimal(18, 4)		null,		-- ETL fields
+		ParcelQuantity			decimal(18, 4)		null,
+		TotalQuantity			decimal(18, 4)		null,
+		StartTime				time				null,
 		StopTime				time				null,
 		StartDate				datetime			null,
 		StopDate				datetime			null,
 		RecordStatus			int					not null,
 		constraint [PK_Staging_Fact_SOFEvent_QBRecId] primary key clustered 
 		(
-			EventAlternateKey, ParcelAlternateKey asc
+			EventAlternateKey, ParcelAlternateKey, ParcelPortAlternateKey asc
 		)
 			with 
 				(pad_index = off, statistics_norecompute = off, ignore_dup_key = off, allow_row_locks = on, allow_page_locks = on) 
