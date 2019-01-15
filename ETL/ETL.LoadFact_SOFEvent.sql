@@ -237,6 +237,7 @@ begin
 					evt.Duration,
 					evt.LaytimeActual,
 					evt.LaytimeAllowed,
+					evt.ParcelQuantity,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate
 				from

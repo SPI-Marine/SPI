@@ -33,6 +33,7 @@ create table Warehouse.Fact_SOFEvent
 		Duration				decimal(18, 4)		null,		-- Metrics
 		LaytimeActual			decimal(18, 4)		null,
 		LaytimeAllowed			decimal(18, 4)		null,
+		ParcelQuantity			decimal(18, 4)		null,
 		RowCreatedDate			datetime			not null,
 		RowUpdatedDate			datetime			not null,
 		constraint [PK_Warehouse_Fact_SOFEvent_QBRecId] primary key clustered 
