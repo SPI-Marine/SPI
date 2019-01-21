@@ -27,7 +27,7 @@ create table Warehouse.Dim_PostFixture
 		BrokerCommissionPercent			decimal(18, 2)		null,
 		LaytimeAllowedLoad				decimal(18, 2)		null,
 		LaytimeAllowedDisch				decimal(18, 2)		null,
-		ShincReversible					nvarchar(10)			null,
+		ShincReversible					nvarchar(10)		null,
 		VesselNameSnap					nvarchar(100)		null,
 		DemurrageAmountAgreed			decimal(18, 2)		null,
 		CharterInvoiced					char(1)				null,
