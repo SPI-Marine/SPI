@@ -59,6 +59,16 @@ begin
 				null 	LoadDischarge,
 				sof.Comments,
 				null	ParcelNumber,
+				concat	(
+							convert(varchar(50), try_convert(datetime, sof.StartDate), 103),
+							' ',
+							left(convert(varchar(50), try_convert(time, sof.StartTime), 108), 5)
+						)	StartDateTime,
+				concat	(
+							convert(varchar(50), try_convert(datetime, sof.StopDate), 103),
+							' ',
+							left(convert(varchar(50), try_convert(time, sof.StopTime), 108), 5)
+						)	StopDateTime,
 				null	Duration,
 				null	LaytimeActual,
 				parcel.LaytimeAllowed,
@@ -234,6 +244,8 @@ begin
 					evt.LoadDischarge,
 					evt.Comments,
 					evt.ParcelNumber,
+					evt.StartDateTime,
+					evt.StopDateTime,
 					evt.Duration,
 					evt.LaytimeActual,
 					evt.LaytimeAllowed,
