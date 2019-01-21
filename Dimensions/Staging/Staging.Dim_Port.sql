@@ -20,8 +20,8 @@ create table Staging.Dim_Port
 		StateRegion				nvarchar(250)		null,
 		Country					nvarchar(100)		null,
 		Comments				nvarchar(max)		null,
-		Latitude				nvarchar(100)		null,
-		Longitude				nvarchar(100)		null,
+		Latitude				numeric(10, 4)		null,
+		Longitude				numeric(10, 4)		null,
 		PortCosts				nvarchar(250)		null,
 		Type1HashValue			varbinary(16)		not null,
 		RecordStatus			int					not null

@@ -40,8 +40,20 @@ begin
 				[port].StateRegion,
 				[port].Country,
 				[port].Comments,
-				[port].Latitude,
-				[port].Longitude,
+				case 
+					when right([port].Latitude, 1) = 's'
+						then try_convert(numeric(10, 4), replace(replace([port].Latitude, ' ', '.'), 's', '')) * -1
+					when right([port].Latitude, 1) = 'n'
+						then try_convert(numeric(10, 4), replace(replace([port].Latitude, ' ', '.'), 'n', ''))
+					else null
+				end	Latitude,
+				case 
+					when right([port].Longitude, 1) = 'w'
+						then try_convert(numeric(10, 4), replace(replace([port].Longitude, ' ', '.'), 'w', '')) * -1
+					when right([port].Longitude, 1) = 'e'
+						then try_convert(numeric(10, 4), replace(replace([port].Longitude, ' ', '.'), 'e', ''))
+					else null
+				end	Longitude,
 				[port].PortCosts,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
@@ -182,8 +194,8 @@ begin
 							'Unknown',		-- StateRegion
 							'Unknown',		-- Country
 							'Unknown',		-- Comments
-							'Unknown',		-- Latitude
-							'Unknown',		-- Longitude
+							0,				-- Latitude
+							0,				-- Longitude
 							'Unknown',		-- PortCosts
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
