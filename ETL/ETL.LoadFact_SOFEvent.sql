@@ -224,6 +224,35 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+	--Calculate LaytimeAllowed by dividing ParcelBerth LaytimeAllowed/Number of Parcels
+	begin try
+		-- Find the number of parcels for each Post Fixture
+		with FixtureParcelQuantity(PostFixtureAltKey, ParcelQuantity)
+		as
+		(
+			select
+					evt.PostFixtureKey,
+					max(evt.ParcelNumber) ParcelQuantity
+				from
+					Staging.Fact_SOFEvent evt
+				group by
+					evt.PostFixtureKey
+		)
+
+		update
+				Staging.Fact_SOFEvent
+			set
+				LaytimeAllowed = evt.LaytimeAllowed/fpq.ParcelQuantity
+			from
+				Staging.Fact_SOFEvent evt
+					join FixtureParcelQuantity fpq
+						on fpq.PostFixtureAltKey = evt.PostFixtureKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating calculated LaytimeAllowed - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+	
 	-- Insert new events into Warehouse table
 	begin try
 		insert
