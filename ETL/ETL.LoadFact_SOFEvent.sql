@@ -30,13 +30,37 @@ begin
 		truncate table Staging.Fact_SOFEvent;
 
 	begin try
+		-- Get Unique ParcelBerth records
+		with UniqueParcelBerths(QbRecId, RelatedSpiFixtureId, RelatedLDPId, RelatedPortId, RelatedBerthId, LaytimeAllowedBerthHrs_QBC)
+		as
+		(
+			select
+					pb.QBRecId,
+					pb.RelatedSpiFixtureId,
+					pb.RelatedLDPId,
+					pb.RelatedPortId,
+					pb.RelatedBerthId,
+					pb.LaytimeAllowedBerthHrs_QBC
+				from
+					ParcelBerths pb
+				where
+					pb.Id in	(
+									select
+											max(Id)
+										from
+											ParcelBerths
+										where
+											QBRecId = pb.QBRecId
+								)
+		)
+
 		insert
 				Staging.Fact_SOFEvent
 		select
 			distinct
 				sof.QBRecId	EventAlternateKey,
 				parcel.ParcelId	ParcelAlternateKey,
-				isnull(parcel.ParcelPortAlternateKey, -1),
+				isnull(parcel.ParcelPortAlternateKey, -1) ParcelPortAlternateKey,
 				isnull([port].PortKey, -1)	PortKey,
 				isnull(berth.BerthKey, -1)	BerthKey,
 				isnull(startdate.DateKey, 18991230) StartDateKey,
@@ -100,7 +124,7 @@ begin
 										pb.LaytimeAllowedBerthHrs_QBC LaytimeAllowed,
 										p.BLQty ParcelQuantity
 									from
-										ParcelBerths pb
+										UniqueParcelBerths pb
 											join Parcels p
 												on pb.RelatedSpiFixtureId = p.RelatedSpiFixtureId
 							) parcel
@@ -224,35 +248,6 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	--Calculate LaytimeAllowed by dividing ParcelBerth LaytimeAllowed/Number of Parcels
-	begin try
-		-- Find the number of parcels for each Post Fixture
-		with FixtureParcelQuantity(PostFixtureAltKey, ParcelQuantity)
-		as
-		(
-			select
-					evt.PostFixtureKey,
-					max(evt.ParcelNumber) ParcelQuantity
-				from
-					Staging.Fact_SOFEvent evt
-				group by
-					evt.PostFixtureKey
-		)
-
-		update
-				Staging.Fact_SOFEvent
-			set
-				LaytimeAllowed = evt.LaytimeAllowed/fpq.ParcelQuantity
-			from
-				Staging.Fact_SOFEvent evt
-					join FixtureParcelQuantity fpq
-						on fpq.PostFixtureAltKey = evt.PostFixtureKey;
-	end try
-	begin catch
-		select @ErrorMsg = 'Updating calculated LaytimeAllowed - ' + error_message();
-		throw 51000, @ErrorMsg, 1;
-	end catch	
-	
 	-- Insert new events into Warehouse table
 	begin try
 		insert
