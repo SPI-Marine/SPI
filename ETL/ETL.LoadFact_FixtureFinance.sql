@@ -2,7 +2,7 @@
 ==========================================================================================================
 Author:			Brian Boswick
 Create date:	01/08/2019
-Description:	Creates the LoadFact_ParcelFinance stored procedure
+Description:	Creates the LoadFact_FixtureFinance stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
@@ -14,10 +14,10 @@ go
 set quoted_identifier on;
 go
 
-drop procedure if exists ETL.LoadFact_ParcelFinance;
+drop procedure if exists ETL.LoadFact_FixtureFinance;
 go
 
-create procedure ETL.LoadFact_ParcelFinance
+create procedure ETL.LoadFact_FixtureFinance
 as
 begin
 
@@ -26,19 +26,22 @@ begin
 			@ErrorMsg		varchar(1000);
 
 	-- Clear Staging table
-	if object_id(N'Staging.Fact_ParcelFinance', 'U') is not null
-		truncate table Staging.Fact_ParcelFinance;
+	if object_id(N'Staging.Fact_FixtureFinance', 'U') is not null
+		truncate table Staging.Fact_FixtureFinance;
 
 	begin try
+		-- Get Additional Charges
 		insert
-				Staging.Fact_ParcelFinance
+				Staging.Fact_FixtureFinance
 		select
 			distinct
 				charge.RelatedSPIFixtureId	PostFixtureAlternateKey,
-				-1	ParcelAlternateKey,
+				-1	RebillAlternateKey,
+				charge.QBRecId	ChargeAlternateKey,
 				-1	PortKey,
 				-1	BerthKey,
 				-1	ProductKey,
+				-2	ParcelKey,
 				isnull(wpostfixture.PostFixtureKey, -1),
 				isnull(vessel.VesselKey, -1),
 				charge.[Type]	ChargeType,
@@ -58,28 +61,39 @@ begin
 									select
 											@ExistingRecord RecordStatus,
 											PostFixtureAlternateKey,
-											ParcelAlternateKey
+											RebillAlternateKey,
+											ChargeAlternateKey
 										from
-											Warehouse.Fact_ParcelFinance
+											Warehouse.Fact_FixtureFinance
 								) rs
 						on rs.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
-							and rs.ParcelAlternateKey = -1;
+							and rs.RebillAlternateKey = -1
+							and rs.ChargeAlternateKey = charge.QBRecId
+			where
+				charge.RelatedSPIFixtureId is not null;
 	end try
 	begin catch
-		select @ErrorMsg = 'Staging ParcelFinance records - ' + error_message();
+		select @ErrorMsg = 'Staging AdditionalCharge records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+	begin try
+		select 1;
+	end try
+	begin catch
+		select @ErrorMsg = 'Staging ParcelRebill records - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
 	---- Update LoadDischarge
 	--begin try
 	--	update
-	--			Staging.Fact_ParcelFinance
+	--			Staging.Fact_FixtureFinance
 	--		set
 	--			LoadDischarge = pp.[Type]
 	--		from
 	--			ParcelPorts pp
 	--		where
-	--			pp.QBRecId = Staging.Fact_ParcelFinance.ParcelPortAlternateKey;
+	--			pp.QBRecId = Staging.Fact_FixtureFinance.ParcelPortAlternateKey;
 	--end try
 	--begin catch
 	--	select @ErrorMsg = 'Updating LoadDischarge - ' + error_message();
@@ -89,7 +103,7 @@ begin
 	---- Update ProrationPercentage
 	--begin try
 	--	update
-	--			Staging.Fact_ParcelFinance
+	--			Staging.Fact_FixtureFinance
 	--		set
 	--			ProrationPercentage = ParcelQuantity/TotalQuantity;
 	--end try
@@ -102,14 +116,14 @@ begin
 	--begin try
 	--	-- Create full start and stop datetimes
 	--	update
-	--			Staging.Fact_ParcelFinance
+	--			Staging.Fact_FixtureFinance
 	--		set
 	--			StartDate = datetimefromparts(year(StartDate), month(StartDate), day(StartDate), datepart(hour, StartTime), datepart(minute, StartTime), 0, 0),
 	--			StopDate = datetimefromparts(year(StopDate), month(StopDate), day(StopDate), datepart(hour, StopTime), datepart(minute, StopTime), 0, 0);
 	
 	--	-- Calculate Duration
 	--	update
-	--			Staging.Fact_ParcelFinance
+	--			Staging.Fact_FixtureFinance
 	--		set
 	--			Duration =	case
 	--							when StartDateKey > 19000000 and StopDateKey < 47000000
@@ -119,7 +133,7 @@ begin
 
 	--	-- Calculate LaytimeActual
 	--	update
-	--			Staging.Fact_ParcelFinance
+	--			Staging.Fact_FixtureFinance
 	--		set
 	--			LaytimeActual =	case IsLaytime
 	--								when 'Y'
@@ -128,14 +142,14 @@ begin
 	--							end;
 	--end try
 	--begin catch
-	--	select @ErrorMsg = 'Updating ParcelFinance Duration/LaytimeActual - ' + error_message();
+	--	select @ErrorMsg = 'Updating FixtureFinance Duration/LaytimeActual - ' + error_message();
 	--	throw 51000, @ErrorMsg, 1;
 	--end catch	
 
 	---- Update ParcelNumber
 	--begin try
 	--	update
-	--			Staging.Fact_ParcelFinance
+	--			Staging.Fact_FixtureFinance
 	--		set
 	--			ParcelNumber = parcelnumbers.ParcelNumber
 	--		from
@@ -148,45 +162,40 @@ begin
 	--						Parcels p
 	--			) parcelnumbers
 	--		where
-	--			parcelnumbers.ParcelId = Staging.Fact_ParcelFinance.ParcelAlternateKey;
+	--			parcelnumbers.ParcelId = Staging.Fact_FixtureFinance.ParcelAlternateKey;
 	--end try
 	--begin catch
 	--	select @ErrorMsg = 'Updating ParcelNumber - ' + error_message();
 	--	throw 51000, @ErrorMsg, 1;
 	--end catch	
 
-	---- Insert new events into Warehouse table
-	--begin try
-	--	insert
-	--			Warehouse.Fact_ParcelFinance
-	--		select
-	--				evt.EventAlternateKey,
-	--				evt.PortKey,
-	--				evt.BerthKey,
-	--				evt.StartDateKey,
-	--				evt.StopDateKey,
-	--				evt.ProductKey,
-	--				evt.PostFixtureKey,
-	--				evt.VesselKey,
-	--				evt.ProrationType,
-	--				evt.EventType,
-	--				evt.IsLaytime,
-	--				evt.IsPumpingTime,
-	--				evt.LoadDischarge,
-	--				evt.Comments,
-	--				evt.ParcelNumber,
-	--				evt.Duration,
-	--				evt.LaytimeActual,
-	--				evt.LaytimeAllowed,
-	--				getdate() RowStartDate,
-	--				getdate() RowUpdatedDate
-	--			from
-	--				Staging.Fact_ParcelFinance evt
-	--			where
-	--				evt.RecordStatus & @NewRecord = @NewRecord;
-	--end try
-	--begin catch
-	--	select @ErrorMsg = 'Loading Warehouse - ' + error_message();
-	--	throw 51000, @ErrorMsg, 1;
-	--end catch
+	-- Insert new charges into Warehouse table
+	begin try
+		insert
+				Warehouse.Fact_FixtureFinance
+			select
+					finance.PostFixtureAlternateKey,
+					finance.RebillAlternateKey,
+					finance.ChargeAlternateKey,
+					finance.PortKey,
+					finance.BerthKey,
+					finance.ProductKey,
+					finance.ParcelKey,
+					finance.PostFixtureKey,
+					finance.VesselKey,
+					finance.ChargeType,
+					finance.ChargeDescription,
+					finance.ParcelNumber,
+					finance.Charge,
+					getdate() RowStartDate,
+					getdate() RowUpdatedDate
+				from
+					Staging.Fact_FixtureFinance finance
+				where
+					finance.RecordStatus & @NewRecord = @NewRecord;
+	end try
+	begin catch
+		select @ErrorMsg = 'Loading Warehouse - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
 end
