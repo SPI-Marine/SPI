@@ -29,61 +29,228 @@ begin
 	if object_id(N'Staging.Fact_FixtureFinance', 'U') is not null
 		truncate table Staging.Fact_FixtureFinance;
 
+	-- Get Additional Charges
 	begin try
-		-- Get Additional Charges
 		insert
 				Staging.Fact_FixtureFinance
-		select
-			distinct
-				charge.RelatedSPIFixtureId	PostFixtureAlternateKey,
-				-1	RebillAlternateKey,
-				charge.QBRecId	ChargeAlternateKey,
-				-1	PortKey,
-				-1	BerthKey,
-				-1	ProductKey,
-				-2	ParcelKey,
-				isnull(wpostfixture.PostFixtureKey, -1),
-				isnull(vessel.VesselKey, -1),
-				charge.[Type]	ChargeType,
-				charge.[Description] ChargeDescription,
-				null	ParcelNumber,
-				charge.Amount	Charge,
-				isnull(rs.RecordStatus, @NewRecord) RecordStatus
-			from
-				AdditionalCharges charge
-					left join Warehouse.Dim_PostFixture wpostfixture
-						on wpostfixture.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
-					left join PostFixtures epostfixture
-						on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
-					left join Warehouse.Dim_Vessel vessel
-						on vessel.VesselAlternateKey = epostfixture.RelatedVessel
-					left join	(
-									select
-											@ExistingRecord RecordStatus,
-											PostFixtureAlternateKey,
-											RebillAlternateKey,
-											ChargeAlternateKey
-										from
-											Warehouse.Fact_FixtureFinance
-								) rs
-						on rs.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
-							and rs.RebillAlternateKey = -1
-							and rs.ChargeAlternateKey = charge.QBRecId
-			where
-				charge.RelatedSPIFixtureId is not null;
+			select
+				distinct
+					charge.RelatedSPIFixtureId					PostFixtureAlternateKey,
+					-1											RebillAlternateKey,
+					charge.QBRecId								ChargeAlternateKey,
+					-1											ParcelProductAlternateKey,
+					-1											ProductAlternateKey,
+					-1											LoadPortKey,
+					-1											LoadBerthKey,
+					-1											DischargePortKey,
+					-1											DischargeBerthKey,
+					-1											ProductKey,
+					-2											ParcelKey,
+					isnull(wpostfixture.PostFixtureKey, -1)		PostFixtureKey,
+					isnull(vessel.VesselKey, -1)				VesselKey,
+					charge.[Type]								ChargeType,
+					charge.[Description]						ChargeDescription,
+					null										ParcelNumber,
+					charge.Amount								Charge,
+					null										ChargePerMetricTon,
+					isnull(rs.RecordStatus, @NewRecord)			RecordStatus
+				from
+					AdditionalCharges charge
+						left join Warehouse.Dim_PostFixture wpostfixture
+							on wpostfixture.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
+						left join PostFixtures epostfixture
+							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+						left join Warehouse.Dim_Vessel vessel
+							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
+						left join	(
+										select
+												@ExistingRecord RecordStatus,
+												PostFixtureAlternateKey,
+												RebillAlternateKey,
+												ChargeAlternateKey,
+												ParcelProductAlternateKey,
+												ProductAlternateKey
+											from
+												Warehouse.Fact_FixtureFinance
+									) rs
+							on rs.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
+								and rs.RebillAlternateKey = -1
+								and rs.ChargeAlternateKey = charge.QBRecId
+								and rs.ParcelProductAlternateKey = -1
+								and rs.ProductAlternateKey = -1
+				where
+					charge.RelatedSPIFixtureId is not null;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging AdditionalCharge records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+	-- Get Parcel Charges
 	begin try
-		select 1;
+		insert
+				Staging.Fact_FixtureFinance
+			select
+				distinct
+					parcel.RelatedSPIFixtureId					PostFixtureAlternateKey,
+					charge.RecordID								RebillAlternateKey,
+					-1											ChargeAlternateKey,
+					parcel.RelatedParcelProductId				ParcelProductAlternateKey,
+					isnull(parprod.RelatedProductId, -1)		ProductAlternateKey,
+					isnull(loadport.PortKey, -1)				LoadPortKey,
+					isnull(loadberth.BerthKey, -1)				LoadBerthKey,
+					isnull(dischargeport.PortKey, -1)			DischargePortKey,
+					isnull(dischargeberth.BerthKey, -1)			DischargeBerthKey,
+					isnull(wproduct.ProductKey, -1)				ProductKey,
+					isnull(wparcel.ParcelKey, -1)				ParcelKey,
+					isnull(wpostfixture.PostFixtureKey, -1)		PostFixtureKey,
+					isnull(vessel.VesselKey, -1)				VesselKey,
+					chargetype.[Type]							ChargeType,		
+					chargetype.[Description]					ChargeDescription,
+					null										ParcelNumber,
+					charge.ParcelAdditionalChargeAmountDue_QBC	Charge,
+					case
+						when isnull(parcel.BLQty, 0) > 0
+							then
+								charge.ParcelAdditionalChargeAmountDue_QBC/parcel.BLQty
+						else null
+					end											ChargePerMetricTon,
+					isnull(rs.RecordStatus, @NewRecord)			RecordStatus
+				from
+					ParcelAdditionalCharges charge
+						left join AdditionalCharges chargetype
+							on chargetype.QBRecId = charge.RelatedAdditionalChargeID
+						left join Parcels parcel
+							on parcel.QbRecId = charge.RelatedParcelID						
+						left join ParcelProducts parprod
+							on parprod.QBRecId = parcel.RelatedParcelProductId
+						left join Products product
+							on product.QBRecId = parprod.RelatedProductId
+						left join Warehouse.Dim_Product wproduct
+							on wproduct.ProductAlternateKey = product.QBRecId	
+						left join Warehouse.Dim_Parcel wparcel
+							on wparcel.ParcelAlternateKey = parcel.QbRecId
+						left join Warehouse.Dim_Port loadport
+							on loadport.PortAlternateKey = parcel.RelatedLoadPortID
+						left join Warehouse.Dim_Port dischargeport
+							on dischargeport.PortAlternateKey = parcel.RelatedDischPortId
+						left join Warehouse.Dim_Berth loadberth
+							on loadberth.BerthAlternateKey = parcel.RelatedLoadBerth
+						left join Warehouse.Dim_Berth dischargeberth
+							on dischargeberth.BerthAlternateKey = parcel.RelatedDischBerth
+						left join Warehouse.Dim_PostFixture wpostfixture
+							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
+						left join PostFixtures epostfixture
+							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+						left join Warehouse.Dim_Vessel vessel
+							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
+						left join	(
+										select
+												@ExistingRecord RecordStatus,
+												PostFixtureAlternateKey,
+												RebillAlternateKey,
+												ChargeAlternateKey,
+												ParcelProductAlternateKey,
+												ProductAlternateKey
+											from
+												Warehouse.Fact_FixtureFinance
+									) rs
+							on rs.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
+								and rs.RebillAlternateKey = charge.RecordID
+								and rs.ChargeAlternateKey = -1
+								and rs.ParcelProductAlternateKey = parcel.RelatedParcelProductId
+								and rs.ProductAlternateKey = parprod.RelatedProductId
+				where
+					parcel.RelatedSPIFixtureId is not null
+					and parcel.RelatedParcelProductId is not null;
 	end try
 	begin catch
-		select @ErrorMsg = 'Staging ParcelRebill records - ' + error_message();
+		select @ErrorMsg = 'Staging ParcelAdditionalCharges records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
+	
+
+	-- Get Freight Charges
+	-- Get Demurrage Charges
+	begin try
+		insert
+				Staging.Fact_FixtureFinance
+			select
+				distinct
+					parcel.RelatedSPIFixtureId					PostFixtureAlternateKey,
+					-1											RebillAlternateKey,
+					-1											ChargeAlternateKey,
+					parcel.QbRecId								ParcelProductAlternateKey,
+					isnull(parprod.RelatedProductId, -1)		ProductAlternateKey,
+					isnull(loadport.PortKey, -1)				LoadPortKey,
+					isnull(loadberth.BerthKey, -1)				LoadBerthKey,
+					isnull(dischargeport.PortKey, -1)			DischargePortKey,
+					isnull(dischargeberth.BerthKey, -1)			DischargeBerthKey,
+					isnull(wproduct.ProductKey, -1)				ProductKey,
+					isnull(wparcel.ParcelKey, -1)				ParcelKey,
+					isnull(wpostfixture.PostFixtureKey, -1)		PostFixtureKey,
+					isnull(vessel.VesselKey, -1)				VesselKey,
+					'Demurrage'									ChargeType,		
+					null										ChargeDescription,
+					null										ParcelNumber,
+					parcel.ParcelDemurrageAmount_QBC			Charge,
+					case
+						when isnull(parcel.BLQty, 0) > 0
+							then
+								parcel.ParcelDemurrageAmount_QBC/parcel.BLQty
+						else null
+					end											ChargePerMetricTon,
+					isnull(rs.RecordStatus, @NewRecord)			RecordStatus
+				from
+					Parcels parcel
+						left join ParcelProducts parprod
+							on parprod.QBRecId = parcel.RelatedParcelProductId
+						left join Products product
+							on product.QBRecId = parprod.RelatedProductId
+						left join Warehouse.Dim_Product wproduct
+							on wproduct.ProductAlternateKey = product.QBRecId	
+						left join Warehouse.Dim_Parcel wparcel
+							on wparcel.ParcelAlternateKey = parcel.QbRecId
+						left join Warehouse.Dim_Port loadport
+							on loadport.PortAlternateKey = parcel.RelatedLoadPortID
+						left join Warehouse.Dim_Port dischargeport
+							on dischargeport.PortAlternateKey = parcel.RelatedDischPortId
+						left join Warehouse.Dim_Berth loadberth
+							on loadberth.BerthAlternateKey = parcel.RelatedLoadBerth
+						left join Warehouse.Dim_Berth dischargeberth
+							on dischargeberth.BerthAlternateKey = parcel.RelatedDischBerth
+						left join Warehouse.Dim_PostFixture wpostfixture
+							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
+						left join PostFixtures epostfixture
+							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+						left join Warehouse.Dim_Vessel vessel
+							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
+						left join	(
+										select
+												@ExistingRecord RecordStatus,
+												PostFixtureAlternateKey,
+												RebillAlternateKey,
+												ChargeAlternateKey,
+												ParcelProductAlternateKey,
+												ProductAlternateKey
+											from
+												Warehouse.Fact_FixtureFinance
+									) rs
+							on rs.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
+								and rs.RebillAlternateKey = -1
+								and rs.ChargeAlternateKey = -1
+								and rs.ParcelProductAlternateKey = parcel.RelatedParcelProductId
+								and rs.ProductAlternateKey = parprod.RelatedProductId
+				where
+					parcel.RelatedSPIFixtureId is not null
+					and parcel.ParcelDemurrageAmount_QBC is not null;
+	end try
+	begin catch
+		select @ErrorMsg = 'Staging Demurrage records - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+
 	---- Update LoadDischarge
 	--begin try
 	--	update
@@ -177,8 +344,12 @@ begin
 					finance.PostFixtureAlternateKey,
 					finance.RebillAlternateKey,
 					finance.ChargeAlternateKey,
-					finance.PortKey,
-					finance.BerthKey,
+					finance.ParcelProductAlternateKey,
+					finance.ProductAlternateKey,
+					finance.LoadPortKey,
+					finance.LoadBerthKey,
+					finance.DischargePortKey,
+					finance.DischargeBerthKey,
 					finance.ProductKey,
 					finance.ParcelKey,
 					finance.PostFixtureKey,
@@ -187,6 +358,7 @@ begin
 					finance.ChargeDescription,
 					finance.ParcelNumber,
 					finance.Charge,
+					finance.ChargePerMetricTon,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate
 				from
