@@ -27,6 +27,7 @@ create table Staging.Dim_Parcel
 		AgreedDemurrage			decimal(18, 2)		null,
 		ClaimDemurrage			decimal(18, 2)		null,
 		VaultDemurrage			decimal(18, 2)		null,
+		IsAgreedProRated		varchar(15)			null,
 		Type1HashValue			varbinary(16)		not null,
 		RecordStatus			int					not null,
 		constraint [PK_Staging_Dim_Parcel_QBRecId] primary key clustered 

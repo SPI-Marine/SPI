@@ -35,21 +35,22 @@ begin
 				Staging.Dim_Parcel
 		select
 			distinct
-				parcel.QBRecId				ParcelAlternateKey,
-				parcel.BillLadingDate		BillLadingDate,
-				parcel.ParcelFrtRate		ParcelFrtRate,
-				parcel.OutTurnQty			OutTurnQty,
-				parcel.ShipLoadedQty		ShipLoadedQty,
-				parcel.ShipDischargeQty		ShipDischargeQty,
-				parcel.NominatedQty			NominatedQty,
-				parcel.BLQty				BLQty,
-				parcel.Comments				Comments,
-				parcel.Unit					Unit,
-				null						AgreedDemurrage,
-				null						ClaimDemurrage,
-				null						VaultDemurrage,
-				0 Type1HashValue,
-				isnull(rs.RecordStatus, @NewRecord) RecordStatus
+				parcel.QBRecId								ParcelAlternateKey,
+				parcel.BillLadingDate						BillLadingDate,
+				parcel.ParcelFrtRate						ParcelFrtRate,
+				parcel.OutTurnQty							OutTurnQty,
+				parcel.ShipLoadedQty						ShipLoadedQty,
+				parcel.ShipDischargeQty						ShipDischargeQty,
+				parcel.NominatedQty							NominatedQty,
+				parcel.BLQty								BLQty,
+				parcel.Comments								Comments,
+				parcel.Unit									Unit,
+				parcel.DemurrageAgreedAmount_QBC			AgreedDemurrage,
+				parcel.DemurrageClaimAmount_QBC				ClaimDemurrage,
+				parcel.DemurrageVaultEstimateAmount_QBC		VaultDemurrage,
+				parcel.[DemurrageAgreedPro-ration_QBC]		IsAgreedProRated,
+				0 											Type1HashValue,
+				isnull(rs.RecordStatus, @NewRecord)			RecordStatus
 			from
 				Parcels parcel
 					left join	(
@@ -86,7 +87,8 @@ begin
 																Unit,
 																AgreedDemurrage,
 																ClaimDemurrage,
-																VaultDemurrage
+																VaultDemurrage,
+																IsAgreedProRated
 															)
 												);
 		
@@ -123,6 +125,7 @@ begin
 					parcel.AgreedDemurrage,
 					parcel.ClaimDemurrage,
 					parcel.VaultDemurrage,
+					parcel.IsAgreedProRated,
 					parcel.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -154,6 +157,7 @@ begin
 				AgreedDemurrage = parcel.AgreedDemurrage,
 				ClaimDemurrage = parcel.ClaimDemurrage,
 				VaultDemurrage = parcel.VaultDemurrage,
+				IsAgreedProRated = parcel.IsAgreedProRated,
 				Type1HashValue = parcel.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -189,6 +193,7 @@ begin
 														AgreedDemurrage,
 														ClaimDemurrage,
 														VaultDemurrage,
+														IsAgreedProRated,
 														Type1HashValue,
 														RowCreatedDate,
 														RowUpdatedDate,
@@ -210,6 +215,7 @@ begin
 							0.0,						-- AgreedDemurrage
 							0.0,						-- ClaimDemurrage
 							0.0,						-- VaultDemurrage
+							'Unknown',					-- IsAgreedProRated
 							0,							-- Type1HashValue
 							getdate(),					-- RowCreatedDate
 							getdate(),					-- RowUpdatedDate
@@ -230,6 +236,7 @@ begin
 							0.0,						-- AgreedDemurrage
 							0.0,						-- ClaimDemurrage
 							0.0,						-- VaultDemurrage
+							'Unknown',					-- IsAgreedProRated
 							0,							-- Type1HashValue
 							getdate(),					-- RowCreatedDate
 							getdate(),					-- RowUpdatedDate
