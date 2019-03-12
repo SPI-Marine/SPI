@@ -32,6 +32,9 @@ create table Staging.Fact_FixtureFinance
 		ParcelNumber					smallint			null,
 		Charge							decimal(18, 2)		null,		-- Metrics
 		ChargePerMetricTon				decimal(18, 2)		null,
+		AddressCommissionRate			decimal(18, 2)		null,
+		AddressCommissionAmount			decimal(18, 2)		null,
+		AddressCommissionApplied		decimal(18, 2)		null,
 		RecordStatus					int					not null,
 		constraint [PK_Staging_Fact_FixtureFinance_QBRecId] primary key clustered 
 		(
