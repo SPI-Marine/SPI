@@ -68,7 +68,7 @@ begin
 				-1	ProductKey,
 				isnull(wpostfixture.PostFixtureKey, -1),
 				isnull(vessel.VesselKey, -1),
-				sof.ProationType,
+				sof.LaytimeProationType						ProrationType,
 				eventtype.EventNameReports	EventType,
 				case sof.Laytime
 					when 1
