@@ -240,21 +240,6 @@ begin
 				ParcelPorts pp
 			where
 				PP.QBRecId = Staging.Fact_SOFEvent.ParcelPortAlternateKey;
-		--update
-		--		Staging.Fact_SOFEvent
-		--	set
-		--		ParcelNumber = parcelnumbers.ParcelNumber
-		--	from
-		--		(
-		--			select
-		--					row_number() over (partition by p.RelatedSpiFixtureId order by p.QbRecId)	ParcelNumber,
-		--					p.RelatedSpiFixtureId,
-		--					p.QbRecId ParcelId
-		--				from
-		--					Parcels p
-		--		) parcelnumbers
-		--	where
-		--		parcelnumbers.ParcelId = Staging.Fact_SOFEvent.ParcelAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating ParcelNumber - ' + error_message();
