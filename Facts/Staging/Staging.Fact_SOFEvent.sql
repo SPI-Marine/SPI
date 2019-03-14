@@ -24,6 +24,7 @@ create table Staging.Fact_SOFEvent
 		ProductKey				int					not null,
 		PostFixtureKey			int					not null,
 		VesselKey				int					not null,
+		ParcelKey				int					not null,
 		ProrationType			nvarchar(100)		null,		-- Degenerate Dimension Attributes
 		EventType				nvarchar(250)		null,
 		IsLaytime				char(1)				null,

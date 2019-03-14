@@ -20,6 +20,7 @@ go
 create procedure ETL.LoadFact_SOFEvent
 as
 begin
+	set nocount on;
 
 	declare	@NewRecord		smallint = 1,
 			@ExistingRecord smallint = 2,
@@ -58,52 +59,53 @@ begin
 				Staging.Fact_SOFEvent
 		select
 			distinct
-				sof.QBRecId	EventAlternateKey,
-				parcel.ParcelId	ParcelAlternateKey,
-				isnull(parcel.ParcelPortAlternateKey, -1) ParcelPortAlternateKey,
-				isnull([port].PortKey, -1)	PortKey,
-				isnull(berth.BerthKey, -1)	BerthKey,
-				isnull(startdate.DateKey, 18991230) StartDateKey,
-				isnull(stopdate.DateKey, 47001231) StopDateKey,
-				-1	ProductKey,
-				isnull(wpostfixture.PostFixtureKey, -1),
-				isnull(vessel.VesselKey, -1),
+				sof.QBRecId									EventAlternateKey,
+				parcel.ParcelId								ParcelAlternateKey,
+				isnull(parcel.ParcelPortAlternateKey, -1)	ParcelPortAlternateKey,
+				isnull([port].PortKey, -1)					PortKey,
+				isnull(berth.BerthKey, -1)					BerthKey,
+				isnull(startdate.DateKey, 18991230)			StartDateKey,
+				isnull(stopdate.DateKey, 47001231)			StopDateKey,
+				-1											ProductKey,
+				isnull(wpostfixture.PostFixtureKey, -1)		PostFixtureKey,
+				isnull(vessel.VesselKey, -1)				VesselKey,
+				isnull(wparcel.ParcelKey, -1)				ParcelKey,
 				sof.LaytimeProationType						ProrationType,
-				eventtype.EventNameReports	EventType,
+				eventtype.EventNameReports					EventType,
 				case sof.Laytime
 					when 1
 						then 'Y'
 					else 'N'
-				end		IsLaytime,
+				end											IsLaytime,
 				case sof.PumpingTime
 					when 1
 						then 'Y'
 					else 'N'
-				end		IsPumpingTime,
-				null 	LoadDischarge,
-				sof.Comments,
-				null	ParcelNumber,
+				end											IsPumpingTime,
+				null 										LoadDischarge,
+				sof.Comments								Comments,
+				null										ParcelNumber,
 				concat	(
 							convert(varchar(50), try_convert(datetime, sof.StartDate), 103),
 							' ',
 							left(convert(varchar(50), try_convert(time, sof.StartTime), 108), 5)
-						)	StartDateTime,
+						)									StartDateTime,
 				concat	(
 							convert(varchar(50), try_convert(datetime, sof.StopDate), 103),
 							' ',
 							left(convert(varchar(50), try_convert(time, sof.StopTime), 108), 5)
-						)	StopDateTime,
-				null	Duration,
-				null	LaytimeActual,
-				parcel.LaytimeAllowed,
-				null	ProrationPercentage,
-				parcel.ParcelQuantity,
-				totqty.TotalQuantity,
-				try_convert(time, sof.StartTime),
-				try_convert(time, sof.StopTime),
-				try_convert(datetime, sof.StartDate),
-				try_convert(datetime, sof.StopDate),
-				isnull(rs.RecordStatus, @NewRecord) RecordStatus
+						)									StopDateTime,
+				null										Duration,
+				null										LaytimeActual,
+				parcel.LaytimeAllowed						LaytimeAllowed,
+				null										ProrationPercentage,
+				parcel.ParcelQuantity						ParcelQuantity,
+				totqty.TotalQuantity						TotalQuantity,
+				try_convert(time, sof.StartTime)			StartTime,
+				try_convert(time, sof.StopTime)				StopTime,
+				try_convert(datetime, sof.StartDate)		StartDate,
+				try_convert(datetime, sof.StopDate)			StopDate,
+				isnull(rs.RecordStatus, @NewRecord)			RecordStatus
 			from
 				SOFEvents sof
 					left join Warehouse.Dim_Calendar startdate
@@ -122,13 +124,16 @@ begin
 										pb.RelatedPortId,
 										pb.RelatedBerthId,
 										pb.LaytimeAllowedBerthHrs_QBC LaytimeAllowed,
-										p.BLQty ParcelQuantity
+										p.BLQty ParcelQuantity,
+										p.RelatedParcelProductId
 									from
 										UniqueParcelBerths pb
 											join Parcels p
 												on pb.RelatedSpiFixtureId = p.RelatedSpiFixtureId
 							) parcel
 						on sof.RelatedParcelBerthId = parcel.ParcelBerthId
+					left join Warehouse.Dim_Parcel wparcel
+						on wparcel.ParcelAlternateKey = parcel.ParcelId
 					left join Warehouse.Dim_PostFixture wpostfixture
 						on wpostfixture.PostFixtureAlternateKey = parcel.PostFixtureAlternateKey
 					left join PostFixtures epostfixture
@@ -162,7 +167,7 @@ begin
 		select @ErrorMsg = 'Staging SOFEvent records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
-
+	
 	-- Update LoadDischarge
 	begin try
 		update
@@ -230,21 +235,50 @@ begin
 		update
 				Staging.Fact_SOFEvent
 			set
-				ParcelNumber = parcelnumbers.ParcelNumber
+				ParcelNumber = pp.[Order]
 			from
-				(
-					select
-							row_number() over (partition by p.RelatedSpiFixtureId order by p.QbRecId)	ParcelNumber,
-							p.RelatedSpiFixtureId,
-							p.QbRecId ParcelId
-						from
-							Parcels p
-				) parcelnumbers
+				ParcelPorts pp
 			where
-				parcelnumbers.ParcelId = Staging.Fact_SOFEvent.ParcelAlternateKey;
+				PP.QBRecId = Staging.Fact_SOFEvent.ParcelPortAlternateKey;
+		--update
+		--		Staging.Fact_SOFEvent
+		--	set
+		--		ParcelNumber = parcelnumbers.ParcelNumber
+		--	from
+		--		(
+		--			select
+		--					row_number() over (partition by p.RelatedSpiFixtureId order by p.QbRecId)	ParcelNumber,
+		--					p.RelatedSpiFixtureId,
+		--					p.QbRecId ParcelId
+		--				from
+		--					Parcels p
+		--		) parcelnumbers
+		--	where
+		--		parcelnumbers.ParcelId = Staging.Fact_SOFEvent.ParcelAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating ParcelNumber - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update ProductKey
+	begin try
+		update
+				Staging.Fact_SOFEvent
+			set
+				ProductKey = wproduct.ProductKey
+			from
+				Parcels p
+					join ParcelProducts pp
+						on p.RelatedParcelProductId = pp.QBRecId
+					join Warehouse.Dim_Product wproduct
+						on pp.RelatedProductId = wproduct.ProductAlternateKey
+			where
+				pp.QBRecId = Staging.Fact_SOFEvent.ParcelAlternateKey
+				and p.QbRecId = Staging.Fact_SOFEvent.ParcelAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating ProductKey - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
@@ -261,6 +295,7 @@ begin
 					evt.ProductKey,
 					evt.PostFixtureKey,
 					evt.VesselKey,
+					evt.ParcelKey,
 					evt.ProrationType,
 					evt.EventType,
 					evt.IsLaytime,
