@@ -70,6 +70,8 @@ begin
 				isnull(wpostfixture.PostFixtureKey, -1)		PostFixtureKey,
 				isnull(vessel.VesselKey, -1)				VesselKey,
 				isnull(wparcel.ParcelKey, -1)				ParcelKey,
+				-1											LoadPortBerthKey,
+				-1											DischargePortBerthKey,
 				sof.LaytimeProationType						ProrationType,
 				eventtype.EventNameReports					EventType,
 				case sof.Laytime
@@ -235,11 +237,18 @@ begin
 		update
 				Staging.Fact_SOFEvent
 			set
-				ParcelNumber = pp.[Order]
+				ParcelNumber = parcelnumbers.ParcelNumber
 			from
-				ParcelPorts pp
+				(
+					select
+							row_number() over (partition by p.RelatedSpiFixtureId order by p.QbRecId)	ParcelNumber,
+							p.RelatedSpiFixtureId,
+							p.QbRecId ParcelId
+						from
+							Parcels p
+				) parcelnumbers
 			where
-				PP.QBRecId = Staging.Fact_SOFEvent.ParcelPortAlternateKey;
+				parcelnumbers.ParcelId = Staging.Fact_SOFEvent.ParcelAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating ParcelNumber - ' + error_message();
@@ -259,8 +268,7 @@ begin
 					join Warehouse.Dim_Product wproduct
 						on pp.RelatedProductId = wproduct.ProductAlternateKey
 			where
-				pp.QBRecId = Staging.Fact_SOFEvent.ParcelAlternateKey
-				and p.QbRecId = Staging.Fact_SOFEvent.ParcelAlternateKey;
+				pp.QBRecId = Staging.Fact_SOFEvent.ParcelAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating ProductKey - ' + error_message();
@@ -281,6 +289,8 @@ begin
 					evt.PostFixtureKey,
 					evt.VesselKey,
 					evt.ParcelKey,
+					evt.LoadPortBerthKey,
+					evt.DischargePortBerthKey
 					evt.ProrationType,
 					evt.EventType,
 					evt.IsLaytime,
