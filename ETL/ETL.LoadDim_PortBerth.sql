@@ -35,22 +35,14 @@ begin
 		as
 		(
 			select
-					p.RelatedLoadPortID,
-					p.RelatedLoadBerth
+				distinct	
+					pb.RelatedPortId,
+					pb.RelatedBerthId
 				from
-					Parcels p
+					ParcelBerths pb
 				where
-					isnull(p.RelatedLoadPortID, 0) > 0
-					and isnull(p.RelatedLoadBerth, 0) > 0
-			union
-			select
-					p.RelatedDischPortId,
-					p.RelatedDischBerth
-				from
-					Parcels p
-				where
-					isnull(p.RelatedDischPortId, 0) > 0
-					and isnull(p.RelatedDischBerth, 0) > 0
+					pb.RelatedPortId is not null
+					and pb.RelatedBerthId is not null
 		)
 
 		insert
@@ -64,21 +56,6 @@ begin
 							'/',
 							isnull(berth.BerthName, 'Unknown')
 						)										PortBerthName,
-				--case
-				--	when isnull([port].PortName, '') <> '' and isnull(berth.BerthName, '') <> ''
-				--		then	concat	(
-				--							[port].PortName,
-				--							'/',
-				--							berth.BerthName
-				--						)
-				--	when isnull([port].PortName, '') = '' and isnull(berth.BerthName, '') <> ''
-				--		then	concat	(
-				--							[port].PortName,
-				--							'/',
-				--							berth.BerthName
-				--						)
-				--	else [port].PortName
-				--end												PortBerthName,
 				isnull([port].PortName, 'Unknown')				PortName,
 				isnull(berth.BerthName, 'Unknown')				BerthName,
 				[port].City										City,
