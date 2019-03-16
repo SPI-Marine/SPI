@@ -6,6 +6,7 @@ Description:	Creates the LoadFact_SOFEvent stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	03/15/2019	Added LoadPortBerthKey and DischargePortBerthKey
 ==========================================================================================================	
 */
 
@@ -72,6 +73,8 @@ begin
 				isnull(wparcel.ParcelKey, -1)				ParcelKey,
 				-1											LoadPortBerthKey,
 				-1											DischargePortBerthKey,
+				--isnull(loadportberth.PortBerthKey, -1)		LoadPortBerthKey,
+				--isnull(dischportberth.PortBerthKey, -1)		DischargePortBerthKey,
 				sof.LaytimeProationType						ProrationType,
 				eventtype.EventNameReports					EventType,
 				case sof.Laytime
@@ -107,6 +110,11 @@ begin
 				try_convert(time, sof.StopTime)				StopTime,
 				try_convert(datetime, sof.StartDate)		StartDate,
 				try_convert(datetime, sof.StopDate)			StopDate,
+				parcel.LoadPortID							LoadPortID,
+				parcel.LoadBerthID							LoadBerthID,
+				parcel.DischargePortID						DischargePortID,
+				parcel.DischargeBerthID						DischargeBerthID,
+				parcel.ParcelProductId						ParcelProductId,
 				isnull(rs.RecordStatus, @NewRecord)			RecordStatus
 			from
 				SOFEvents sof
@@ -119,15 +127,19 @@ begin
 					join	(
 								select
 									distinct
-										pb.QBRecId ParcelBerthId,
-										p.QbRecId ParcelId,
-										pb.RelatedSpiFixtureId PostFixtureAlternateKey,
-										pb.RelatedLDPId ParcelPortAlternateKey,
-										pb.RelatedPortId,
-										pb.RelatedBerthId,
-										pb.LaytimeAllowedBerthHrs_QBC LaytimeAllowed,
-										p.BLQty ParcelQuantity,
-										p.RelatedParcelProductId
+										pb.QBRecId						ParcelBerthId,
+										p.QbRecId						ParcelId,
+										pb.RelatedSpiFixtureId			PostFixtureAlternateKey,
+										pb.RelatedLDPId					ParcelPortAlternateKey,
+										pb.RelatedPortId				RelatedPortId,
+										pb.RelatedBerthId				RelatedBerthId,
+										pb.LaytimeAllowedBerthHrs_QBC	LaytimeAllowed,
+										p.BLQty							ParcelQuantity,
+										p.RelatedParcelProductId		ParcelProductId,
+										p.RelatedLoadPortID				LoadPortID,
+										p.RelatedLoadBerth				LoadBerthID,
+										p.RelatedDischPortId			DischargePortID,
+										p.RelatedDischBerth				DischargeBerthID
 									from
 										UniqueParcelBerths pb
 											join Parcels p
@@ -146,6 +158,14 @@ begin
 						on [port].PortAlternateKey = parcel.RelatedPortId
 					left join Warehouse.Dim_Berth berth
 						on berth.BerthAlternateKey = parcel.RelatedBerthId
+					--left join ParcelPorts loadparcelport
+					--	on loadparcelport.QBRecId = parcel.LoadPortID
+					--left join Warehouse.Dim_PortBerth loadportberth
+					--	on loadportberth.PortAlternateKey = loadparcelport.RelatedPortId
+					--		and loadportberth.BerthAlternateKey = parcel.LoadBerthAltKey
+					--left join Warehouse.Dim_PortBerth dischportberth
+					--	on dischportberth.PortAlternateKey = parcel.DischargePortAltKey
+					--		and dischportberth.BerthAlternateKey = parcel.DischargeBerthAltKey
 					left join	(
 									select
 											sum(qty.BLQty) TotalQuantity,
@@ -262,16 +282,88 @@ begin
 			set
 				ProductKey = wproduct.ProductKey
 			from
-				Parcels p
-					join ParcelProducts pp
-						on p.RelatedParcelProductId = pp.QBRecId
+				ParcelProducts pp
 					join Warehouse.Dim_Product wproduct
 						on pp.RelatedProductId = wproduct.ProductAlternateKey
 			where
-				pp.QBRecId = Staging.Fact_SOFEvent.ParcelAlternateKey;
+				pp.QBRecId = Staging.Fact_SOFEvent.ParcelProductID;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating ProductKey - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update LoadPortBerthKey
+	begin try
+		update
+				stagingevent
+			set
+				LoadPortBerthKey = isnull(lpb.PortBerthKey, -1)
+			from
+				Staging.Fact_SOFEvent stagingevent
+					outer apply	(
+									select
+										top 1
+											pp.RelatedPortId
+										from
+											ParcelPorts pp												
+										where
+											stagingevent.LoadPortID = pp.QBRecId
+								) lp
+					outer apply	(
+									select
+										top 1
+											pb.RelatedBerthId
+										from
+											ParcelBerths pb
+										where
+											stagingevent.LoadBerthID = pb.QBRecId
+								) lb
+					left join Warehouse.Dim_PortBerth lpb
+						on lpb.PortAlternateKey = lp.RelatedPortId
+							and lpb.BerthAlternateKey = lb.RelatedBerthId
+			where
+				stagingevent.EventAlternateKey = EventAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating LoadPortBerthKey - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update DischargePortBerthKey
+	begin try
+		update
+				stagingevent
+			set
+				DischargePortBerthKey = isnull(dpb.PortBerthKey, -1)
+			from
+				Staging.Fact_SOFEvent stagingevent
+					outer apply	(
+									select
+										top 1
+											pp.RelatedPortId
+										from
+											ParcelPorts pp												
+										where
+											stagingevent.DischargePortID = pp.QBRecId
+								) dp
+					outer apply	(
+									select
+										top 1
+											pb.RelatedBerthId
+										from
+											ParcelBerths pb
+										where
+											stagingevent.DischargeBerthID = pb.QBRecId
+								) db
+					left join Warehouse.Dim_PortBerth dpb
+						on dpb.PortAlternateKey = dp.RelatedPortId
+							and dpb.BerthAlternateKey = db.RelatedBerthId
+			where
+				stagingevent.EventAlternateKey = EventAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating DischargePortBerthKey - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
@@ -290,7 +382,7 @@ begin
 					evt.VesselKey,
 					evt.ParcelKey,
 					evt.LoadPortBerthKey,
-					evt.DischargePortBerthKey
+					evt.DischargePortBerthKey,
 					evt.ProrationType,
 					evt.EventType,
 					evt.IsLaytime,
