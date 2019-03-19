@@ -39,6 +39,7 @@ create table Staging.Fact_SOFEvent
 		Duration				decimal(18, 4)		null,		-- Metrics
 		LaytimeActual			decimal(18, 4)		null,
 		LaytimeAllowed			decimal(18, 4)		null,
+		LaytimeAllowedProrated	decimal(18, 4)		null,
 		ProrationPercentage		decimal(18, 4)		null,		-- ETL fields
 		ParcelQuantity			decimal(18, 4)		null,
 		TotalQuantity			decimal(18, 4)		null,

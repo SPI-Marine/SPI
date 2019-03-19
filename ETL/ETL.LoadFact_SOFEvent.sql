@@ -73,8 +73,6 @@ begin
 				isnull(wparcel.ParcelKey, -1)				ParcelKey,
 				-1											LoadPortBerthKey,
 				-1											DischargePortBerthKey,
-				--isnull(loadportberth.PortBerthKey, -1)		LoadPortBerthKey,
-				--isnull(dischportberth.PortBerthKey, -1)		DischargePortBerthKey,
 				sof.LaytimeProationType						ProrationType,
 				eventtype.EventNameReports					EventType,
 				case sof.Laytime
@@ -103,6 +101,7 @@ begin
 				null										Duration,
 				null										LaytimeActual,
 				parcel.LaytimeAllowed						LaytimeAllowed,
+				null										LaytimeAllowedProrated,
 				null										ProrationPercentage,
 				parcel.ParcelQuantity						ParcelQuantity,
 				totqty.TotalQuantity						TotalQuantity,
@@ -158,14 +157,6 @@ begin
 						on [port].PortAlternateKey = parcel.RelatedPortId
 					left join Warehouse.Dim_Berth berth
 						on berth.BerthAlternateKey = parcel.RelatedBerthId
-					--left join ParcelPorts loadparcelport
-					--	on loadparcelport.QBRecId = parcel.LoadPortID
-					--left join Warehouse.Dim_PortBerth loadportberth
-					--	on loadportberth.PortAlternateKey = loadparcelport.RelatedPortId
-					--		and loadportberth.BerthAlternateKey = parcel.LoadBerthAltKey
-					--left join Warehouse.Dim_PortBerth dischportberth
-					--	on dischportberth.PortAlternateKey = parcel.DischargePortAltKey
-					--		and dischportberth.BerthAlternateKey = parcel.DischargeBerthAltKey
 					left join	(
 									select
 											sum(qty.BLQty) TotalQuantity,
@@ -246,9 +237,15 @@ begin
 										then ProrationPercentage*Duration
 									else null
 								end;
+
+		-- Calculate LaytimeAllowedProrated
+		update
+				Staging.Fact_SOFEvent
+			set
+				LaytimeAllowedProrated = ProrationPercentage*LaytimeAllowed;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating SOFEvent Duration/LaytimeActual - ' + error_message();
+		select @ErrorMsg = 'Updating SOFEvent Duration/LaytimeActual/LaytimeAllowedProrated - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
@@ -395,6 +392,7 @@ begin
 					evt.Duration,
 					evt.LaytimeActual,
 					evt.LaytimeAllowed,
+					evt.LaytimeAllowedProrated,
 					evt.ParcelQuantity,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate
