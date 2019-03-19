@@ -20,6 +20,8 @@ create table Warehouse.Fact_FixtureFinance
 		ChargeAlternateKey				int					not null,
 		ParcelProductAlternateKey		int					not null,
 		ProductAlternateKey				int					not null,
+		ParcelAlternateKey				int					not null,
+		ChargeTypeAlternateKey			smallint			not null,
 		LoadPortKey						int					not null,
 		LoadBerthKey					int					not null,
 		DischargePortKey				int					not null,

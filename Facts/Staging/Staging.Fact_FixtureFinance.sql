@@ -19,6 +19,8 @@ create table Staging.Fact_FixtureFinance
 		ChargeAlternateKey				int					not null,
 		ParcelProductAlternateKey		int					not null,
 		ProductAlternateKey				int					not null,
+		ParcelAlternateKey				int					not null,
+		ChargeTypeAlternateKey			smallint			not null,
 		LoadPortKey						int					not null,
 		LoadBerthKey					int					not null,
 		DischargePortKey				int					not null,
@@ -42,7 +44,9 @@ create table Staging.Fact_FixtureFinance
 			RebillAlternateKey,
 			ChargeAlternateKey,
 			ParcelProductAlternateKey,
-			ProductAlternateKey asc
+			ProductAlternateKey,
+			ParcelAlternateKey,
+			ChargeTypeAlternateKey asc
 		)
 			with 
 				(pad_index = off, statistics_norecompute = off, ignore_dup_key = off, allow_row_locks = on, allow_page_locks = on) 

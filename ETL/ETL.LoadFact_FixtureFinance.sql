@@ -21,9 +21,13 @@ create procedure ETL.LoadFact_FixtureFinance
 as
 begin
 
-	declare	@NewRecord		smallint = 1,
-			@ExistingRecord smallint = 2,
-			@ErrorMsg		varchar(1000);
+	declare	@NewRecord				smallint = 1,
+			@ExistingRecord			smallint = 2,
+			@ErrorMsg				varchar(1000),
+			@FreightChargeType		smallint = 1,
+			@DemurrageChargeType	smallint = 2,
+			@ParcelChargeType		smallint = 3,
+			@AdditionalChargeType	smallint = 4;
 
 	-- Clear Staging table
 	if object_id(N'Staging.Fact_FixtureFinance', 'U') is not null
@@ -38,8 +42,10 @@ begin
 					parcel.RelatedSPIFixtureId									PostFixtureAlternateKey,
 					-1															RebillAlternateKey,
 					-1															ChargeAlternateKey,
-					parcel.QbRecId												ParcelProductAlternateKey,
+					isnull(parcel.RelatedParcelProductId, -1)					ParcelProductAlternateKey,
 					isnull(parprod.RelatedProductId, -1)						ProductAlternateKey,
+					parcel.QbRecId												ParcelAlternateKey,
+					@FreightChargeType											ChargeTypeAlternateKey,
 					isnull(loadport.PortKey, -1)								LoadPortKey,
 					isnull(loadberth.BerthKey, -1)								LoadBerthKey,
 					isnull(dischargeport.PortKey, -1)							DischargePortKey,
@@ -103,7 +109,8 @@ begin
 												RebillAlternateKey,
 												ChargeAlternateKey,
 												ParcelProductAlternateKey,
-												ProductAlternateKey
+												ProductAlternateKey,
+												ChargeTypeAlternateKey
 											from
 												Warehouse.Fact_FixtureFinance
 									) rs
@@ -112,6 +119,7 @@ begin
 								and rs.ChargeAlternateKey = -1	-- Used to indicate Parcel Freight records
 								and rs.ParcelProductAlternateKey = parcel.RelatedParcelProductId
 								and rs.ProductAlternateKey = parprod.RelatedProductId
+								and rs.ChargeTypeAlternateKey = @FreightChargeType
 				where
 					parcel.RelatedSPIFixtureId is not null
 					and parcel.ParcelFreightAmountQBC is not null;
@@ -128,10 +136,12 @@ begin
 			select
 				distinct
 					parcel.RelatedSPIFixtureId									PostFixtureAlternateKey,
-					-1															RebillAlternateKey,
-					-1															ChargeAlternateKey,
-					parcel.QbRecId												ParcelProductAlternateKey,
+					-2															RebillAlternateKey,
+					-2															ChargeAlternateKey,
+					isnull(parcel.RelatedParcelProductId, -1)					ParcelProductAlternateKey,
 					isnull(parprod.RelatedProductId, -1)						ProductAlternateKey,
+					parcel.QbRecId												ParcelAlternateKey,
+					@DemurrageChargeType										ChargeTypeAlternateKey,
 					isnull(loadport.PortKey, -1)								LoadPortKey,
 					isnull(loadberth.BerthKey, -1)								LoadBerthKey,
 					isnull(dischargeport.PortKey, -1)							DischargePortKey,
@@ -141,30 +151,34 @@ begin
 					isnull(wpostfixture.PostFixtureKey, -1)						PostFixtureKey,
 					isnull(vessel.VesselKey, -1)								VesselKey,
 					case
-						when parcel.DemurrageAgreedAmount_QBC is not null
+						when parcel.DemurrageAgreedAmount_QBC <> 0.0
 							then 'Agreed Demurrage'
-						when parcel.DemurrageClaimAmount_QBC is not null
+						when parcel.DemurrageClaimAmount_QBC <> 0.0
 							then 'Claim Demurrage'
-						when parcel.DemurrageVaultEstimateAmount_QBC is not null
+						when parcel.DemurrageVaultEstimateAmount_QBC <> 0.0
 							then 'Vault Demurrage'
-						else null
+						else 'Unknown'
 					end															ChargeType,
 					null														ChargeDescription,
 					null														ParcelNumber,
-					coalesce	(
-									parcel.DemurrageAgreedAmount_QBC,
-									parcel.DemurrageClaimAmount_QBC,
-									parcel.DemurrageVaultEstimateAmount_QBC
-								)												Charge,
+					case
+						when parcel.DemurrageAgreedAmount_QBC <> 0.0
+							then parcel.DemurrageAgreedAmount_QBC
+						when parcel.DemurrageClaimAmount_QBC <> 0.0
+							then parcel.DemurrageClaimAmount_QBC
+						when parcel.DemurrageVaultEstimateAmount_QBC <> 0.0
+							then parcel.DemurrageVaultEstimateAmount_QBC
+						else 'Unknown'
+					end															Charge,
 					case
 						when isnull(parcel.BLQty, 0) > 0
 							then
 									case
-										when parcel.DemurrageAgreedAmount_QBC is not null
+										when parcel.DemurrageAgreedAmount_QBC <> 0.0
 											then parcel.DemurrageAgreedAmount_QBC/parcel.BLQty
-										when parcel.DemurrageClaimAmount_QBC is not null
+										when parcel.DemurrageClaimAmount_QBC <> 0.0
 											then parcel.DemurrageClaimAmount_QBC/parcel.BLQty
-										when parcel.DemurrageVaultEstimateAmount_QBC is not null
+										when parcel.DemurrageVaultEstimateAmount_QBC <> 0.0
 											then parcel.DemurrageVaultEstimateAmount_QBC/parcel.BLQty
 										else null
 									end
@@ -174,11 +188,11 @@ begin
 					case
 						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(epostfixture.AddressCommissionPercent, 0.0) > 0.0
 							then	case
-										when parcel.DemurrageAgreedAmount_QBC is not null
+										when parcel.DemurrageAgreedAmount_QBC <> 0.0
 											then parcel.DemurrageAgreedAmount_QBC * epostfixture.AddressCommissionPercent
-										when parcel.DemurrageClaimAmount_QBC is not null
+										when parcel.DemurrageClaimAmount_QBC <> 0.0
 											then parcel.DemurrageClaimAmount_QBC * epostfixture.AddressCommissionPercent
-										when parcel.DemurrageVaultEstimateAmount_QBC is not null
+										when parcel.DemurrageVaultEstimateAmount_QBC <> 0.0
 											then parcel.DemurrageVaultEstimateAmount_QBC * epostfixture.AddressCommissionPercent
 										else null
 									end
@@ -187,17 +201,17 @@ begin
 					case
 						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(epostfixture.AddressCommissionPercent, 0.0) > 0.0
 							then	case
-										when parcel.DemurrageAgreedAmount_QBC is not null
+										when parcel.DemurrageAgreedAmount_QBC <> 0.0
 											then parcel.DemurrageAgreedAmount_QBC - isnull	(
 																								parcel.DemurrageAgreedAmount_QBC - (parcel.DemurrageAgreedAmount_QBC * epostfixture.AddressCommissionPercent),
 																								0.0
 																							)
-										when parcel.DemurrageClaimAmount_QBC is not null
+										when parcel.DemurrageClaimAmount_QBC <> 0.0
 											then parcel.DemurrageClaimAmount_QBC - isnull	(
 																								parcel.DemurrageClaimAmount_QBC - (parcel.DemurrageClaimAmount_QBC * epostfixture.AddressCommissionPercent),
 																								0.0
 																							)
-										when parcel.DemurrageVaultEstimateAmount_QBC is not null
+										when parcel.DemurrageVaultEstimateAmount_QBC <> 0.0
 											then parcel.DemurrageVaultEstimateAmount_QBC - isnull	(
 																										parcel.DemurrageVaultEstimateAmount_QBC - (parcel.DemurrageVaultEstimateAmount_QBC * epostfixture.AddressCommissionPercent),
 																										0.0
@@ -238,7 +252,8 @@ begin
 												RebillAlternateKey,
 												ChargeAlternateKey,
 												ParcelProductAlternateKey,
-												ProductAlternateKey
+												ProductAlternateKey,
+												ChargeTypeAlternateKey
 											from
 												Warehouse.Fact_FixtureFinance
 									) rs
@@ -247,14 +262,14 @@ begin
 								and rs.ChargeAlternateKey = -2	-- Used to indicate Demurrage records
 								and rs.ParcelProductAlternateKey = parcel.RelatedParcelProductId
 								and rs.ProductAlternateKey = parprod.RelatedProductId
+								and rs.ChargeTypeAlternateKey = @DemurrageChargeType
 				where
 					parcel.RelatedSPIFixtureId is not null
-					and coalesce	(
-										parcel.DemurrageAgreedAmount_QBC,
-										parcel.DemurrageClaimAmount_QBC,
-										parcel.DemurrageVaultEstimateAmount_QBC,
-										0
-									) > 0;
+					and	(
+							parcel.DemurrageAgreedAmount_QBC <> 0
+							or parcel.DemurrageClaimAmount_QBC <> 0
+							or parcel.DemurrageVaultEstimateAmount_QBC <> 0
+						);
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging Demurrage records - ' + error_message();
@@ -270,8 +285,10 @@ begin
 					parcel.RelatedSPIFixtureId																PostFixtureAlternateKey,
 					charge.RecordID																			RebillAlternateKey,
 					-1																						ChargeAlternateKey,
-					parcel.RelatedParcelProductId															ParcelProductAlternateKey,
+					isnull(parcel.RelatedParcelProductId, -1)												ParcelProductAlternateKey,
 					isnull(parprod.RelatedProductId, -1)													ProductAlternateKey,
+					isnull(parcel.QbRecId, -1)																ParcelAlternateKey,
+					@ParcelChargeType																		ChargeTypeAlternateKey,
 					isnull(loadport.PortKey, -1)															LoadPortKey,
 					isnull(loadberth.BerthKey, -1)															LoadBerthKey,
 					isnull(dischargeport.PortKey, -1)														DischargePortKey,
@@ -340,7 +357,8 @@ begin
 												RebillAlternateKey,
 												ChargeAlternateKey,
 												ParcelProductAlternateKey,
-												ProductAlternateKey
+												ProductAlternateKey,
+												ChargeTypeAlternateKey
 											from
 												Warehouse.Fact_FixtureFinance
 									) rs
@@ -349,6 +367,7 @@ begin
 								and rs.ChargeAlternateKey = -1
 								and rs.ParcelProductAlternateKey = parcel.RelatedParcelProductId
 								and rs.ProductAlternateKey = parprod.RelatedProductId
+								and rs.ChargeTypeAlternateKey = @ParcelChargeType
 				where
 					parcel.RelatedSPIFixtureId is not null
 					and parcel.RelatedParcelProductId is not null;
@@ -369,6 +388,8 @@ begin
 					charge.QBRecId												ChargeAlternateKey,
 					-1															ParcelProductAlternateKey,
 					-1															ProductAlternateKey,
+					-1															ParcelAlternateKey,
+					@AdditionalChargeType										ChargeTypeAlternateKey,
 					-1															LoadPortKey,
 					-1															LoadBerthKey,
 					-1															DischargePortKey,
@@ -412,7 +433,8 @@ begin
 												RebillAlternateKey,
 												ChargeAlternateKey,
 												ParcelProductAlternateKey,
-												ProductAlternateKey
+												ProductAlternateKey,
+												ChargeTypeAlternateKey
 											from
 												Warehouse.Fact_FixtureFinance
 									) rs
@@ -421,6 +443,7 @@ begin
 								and rs.ChargeAlternateKey = charge.QBRecId
 								and rs.ParcelProductAlternateKey = -1
 								and rs.ProductAlternateKey = -1
+								and rs.ChargeTypeAlternateKey = @AdditionalChargeType
 				where
 					charge.RelatedSPIFixtureId is not null;
 	end try
@@ -439,6 +462,8 @@ begin
 					finance.ChargeAlternateKey,
 					finance.ParcelProductAlternateKey,
 					finance.ProductAlternateKey,
+					finance.ParcelAlternateKey,
+					finance.ChargeTypeAlternateKey,
 					finance.LoadPortKey,
 					finance.LoadBerthKey,
 					finance.DischargePortKey,
