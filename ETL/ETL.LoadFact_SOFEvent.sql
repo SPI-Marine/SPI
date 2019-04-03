@@ -202,7 +202,11 @@ begin
 		update
 				Staging.Fact_SOFEvent
 			set
-				ProrationPercentage = ParcelQuantity/TotalQuantity;
+				ProrationPercentage =	case	
+											when isnull(TotalQuantity, 0) <> 0
+												then ParcelQuantity/TotalQuantity
+											else null
+										end;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating ProrationPercentage - ' + error_message();

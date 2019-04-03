@@ -54,6 +54,8 @@ begin
 					isnull(wparcel.ParcelKey, -1)								ParcelKey,
 					isnull(wpostfixture.PostFixtureKey, -1)						PostFixtureKey,
 					isnull(vessel.VesselKey, -1)								VesselKey,
+					isnull(cpdate.DateKey, -1)									CharterPartyDateKey,
+					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					'Freight'													ChargeType,
 					null														ChargeDescription,
 					null														ParcelNumber,
@@ -63,16 +65,19 @@ begin
 							then parcel.ParcelFreightAmountQBC/parcel.BLQty
 						else null
 					end															ChargePerMetricTon,
-					epostfixture.AddressCommissionPercent						AddressCommissionRate,
+					try_convert	(
+									decimal(20, 8),
+									epostfixture.AddressCommissionPercent
+								)												AddressCommissionRate,
 					case
-						when isnull(epostfixture.Add_Comm_applies_to_Frt_ADMIN, 0) = 1 and isnull(epostfixture.AddressCommissionPercent, 0.0) > 0.0
-							then parcel.ParcelFreightAmountQBC * epostfixture.AddressCommissionPercent
+						when isnull(epostfixture.Add_Comm_applies_to_Frt_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
+							then parcel.ParcelFreightAmountQBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)
 						else null
 					end															AddressCommissionAmount,
 					case
-						when isnull(epostfixture.Add_Comm_applies_to_Frt_ADMIN, 0) = 1 and isnull(epostfixture.AddressCommissionPercent, 0.0) > 0.0
+						when isnull(epostfixture.Add_Comm_applies_to_Frt_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
 							then parcel.ParcelFreightAmountQBC - isnull	(
-																			parcel.ParcelFreightAmountQBC - (parcel.ParcelFreightAmountQBC * epostfixture.AddressCommissionPercent),
+																			parcel.ParcelFreightAmountQBC - (parcel.ParcelFreightAmountQBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)),
 																			0.0
 																		)
 						else null
@@ -100,6 +105,28 @@ begin
 							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 						left join PostFixtures epostfixture
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+						left join Warehouse.Dim_Calendar cpdate
+							on cpdate.FullDate = convert(date, epostfixture.CPDate)
+						left join	(
+										select
+												pf.QBRecId			PostFixtureAlternateKey,
+												min(e.StartDate)	FirstEventDate
+											from
+												SOFEvents e
+													join ParcelBerths pb
+														on pb.QBRecId = e.RelatedParcelBerthId
+													join PostFixtures pf
+														on pf.QBRecId = pb.RelatedSpiFixtureId
+													join ParcelPorts pp
+														on pb.RelatedLDPId = pp.QBRecID
+													where
+														pp.[Type] = 'Load'
+													group by
+														pf.QBRecId
+									) firstevent
+							on firstevent.PostFixtureAlternateKey = epostfixture.QBRecId
+						left join Warehouse.Dim_Calendar firsteventdate
+							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
 						left join Warehouse.Dim_Vessel vessel
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
 						left join	(
@@ -150,6 +177,8 @@ begin
 					isnull(wparcel.ParcelKey, -1)								ParcelKey,
 					isnull(wpostfixture.PostFixtureKey, -1)						PostFixtureKey,
 					isnull(vessel.VesselKey, -1)								VesselKey,
+					isnull(cpdate.DateKey, -1)									CharterPartyDateKey,
+					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					case
 						when parcel.DemurrageAgreedAmount_QBC <> 0.0
 							then 'Agreed Demurrage'
@@ -184,36 +213,39 @@ begin
 									end
 						else null
 					end															ChargePerMetricTon,
-					epostfixture.AddressCommissionPercent						AddressCommissionRate,
+					try_convert	(
+									decimal(20, 8),
+									epostfixture.AddressCommissionPercent
+								)												AddressCommissionRate,
 					case
-						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(epostfixture.AddressCommissionPercent, 0.0) > 0.0
+						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
 							then	case
 										when parcel.DemurrageAgreedAmount_QBC <> 0.0
-											then parcel.DemurrageAgreedAmount_QBC * epostfixture.AddressCommissionPercent
+											then parcel.DemurrageAgreedAmount_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)
 										when parcel.DemurrageClaimAmount_QBC <> 0.0
-											then parcel.DemurrageClaimAmount_QBC * epostfixture.AddressCommissionPercent
+											then parcel.DemurrageClaimAmount_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)
 										when parcel.DemurrageVaultEstimateAmount_QBC <> 0.0
-											then parcel.DemurrageVaultEstimateAmount_QBC * epostfixture.AddressCommissionPercent
+											then parcel.DemurrageVaultEstimateAmount_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)
 										else null
 									end
 						else null
 					end															AddressCommissionAmount,
 					case
-						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(epostfixture.AddressCommissionPercent, 0.0) > 0.0
+						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
 							then	case
 										when parcel.DemurrageAgreedAmount_QBC <> 0.0
 											then parcel.DemurrageAgreedAmount_QBC - isnull	(
-																								parcel.DemurrageAgreedAmount_QBC - (parcel.DemurrageAgreedAmount_QBC * epostfixture.AddressCommissionPercent),
+																								parcel.DemurrageAgreedAmount_QBC - (parcel.DemurrageAgreedAmount_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)),
 																								0.0
 																							)
 										when parcel.DemurrageClaimAmount_QBC <> 0.0
 											then parcel.DemurrageClaimAmount_QBC - isnull	(
-																								parcel.DemurrageClaimAmount_QBC - (parcel.DemurrageClaimAmount_QBC * epostfixture.AddressCommissionPercent),
+																								parcel.DemurrageClaimAmount_QBC - (parcel.DemurrageClaimAmount_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)),
 																								0.0
 																							)
 										when parcel.DemurrageVaultEstimateAmount_QBC <> 0.0
 											then parcel.DemurrageVaultEstimateAmount_QBC - isnull	(
-																										parcel.DemurrageVaultEstimateAmount_QBC - (parcel.DemurrageVaultEstimateAmount_QBC * epostfixture.AddressCommissionPercent),
+																										parcel.DemurrageVaultEstimateAmount_QBC - (parcel.DemurrageVaultEstimateAmount_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)),
 																										0.0
 																									)
 										else null
@@ -243,6 +275,28 @@ begin
 							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 						left join PostFixtures epostfixture
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+						left join Warehouse.Dim_Calendar cpdate
+							on cpdate.FullDate = convert(date, epostfixture.CPDate)
+						left join	(
+										select
+												pf.QBRecId			PostFixtureAlternateKey,
+												min(e.StartDate)	FirstEventDate
+											from
+												SOFEvents e
+													join ParcelBerths pb
+														on pb.QBRecId = e.RelatedParcelBerthId
+													join PostFixtures pf
+														on pf.QBRecId = pb.RelatedSpiFixtureId
+													join ParcelPorts pp
+														on pb.RelatedLDPId = pp.QBRecID
+													where
+														pp.[Type] = 'Load'
+													group by
+														pf.QBRecId
+									) firstevent
+							on firstevent.PostFixtureAlternateKey = epostfixture.QBRecId
+						left join Warehouse.Dim_Calendar firsteventdate
+							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
 						left join Warehouse.Dim_Vessel vessel
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
 						left join	(
@@ -297,6 +351,8 @@ begin
 					isnull(wparcel.ParcelKey, -1)															ParcelKey,
 					isnull(wpostfixture.PostFixtureKey, -1)													PostFixtureKey,
 					isnull(vessel.VesselKey, -1)															VesselKey,
+					isnull(cpdate.DateKey, -1)																CharterPartyDateKey,
+					isnull(firsteventdate.DateKey, -1)														FirstLoadEventDateKey,
 					chargetype.[Type]																		ChargeType,		
 					chargetype.[Description]																ChargeDescription,
 					null																					ParcelNumber,
@@ -307,16 +363,19 @@ begin
 								charge.ParcelAdditionalChargeAmountDue_QBC/parcel.BLQty
 						else null
 					end																						ChargePerMetricTon,
-					epostfixture.AddressCommissionPercent													AddressCommissionRate,
+					try_convert	(
+									decimal(20, 8),
+									epostfixture.AddressCommissionPercent
+								)																			AddressCommissionRate,
 					case
-						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(epostfixture.AddressCommissionPercent, 0.0) > 0.0
-							then charge.ParcelAdditionalChargeAmountDue_QBC * epostfixture.AddressCommissionPercent
+						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
+							then charge.ParcelAdditionalChargeAmountDue_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)
 						else null
 					end																						AddressCommissionAmount,
 					case
-						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(epostfixture.AddressCommissionPercent, 0.0) > 0.0
+						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
 							then charge.ParcelAdditionalChargeAmountDue_QBC - isnull	(
-																							charge.ParcelAdditionalChargeAmountDue_QBC - (charge.ParcelAdditionalChargeAmountDue_QBC * epostfixture.AddressCommissionPercent),
+																							charge.ParcelAdditionalChargeAmountDue_QBC - (charge.ParcelAdditionalChargeAmountDue_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)),
 																							0.0
 																						)
 						else null
@@ -348,6 +407,28 @@ begin
 							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 						left join PostFixtures epostfixture
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+						left join Warehouse.Dim_Calendar cpdate
+							on cpdate.FullDate = convert(date, epostfixture.CPDate)
+						left join	(
+										select
+												pf.QBRecId			PostFixtureAlternateKey,
+												min(e.StartDate)	FirstEventDate
+											from
+												SOFEvents e
+													join ParcelBerths pb
+														on pb.QBRecId = e.RelatedParcelBerthId
+													join PostFixtures pf
+														on pf.QBRecId = pb.RelatedSpiFixtureId
+													join ParcelPorts pp
+														on pb.RelatedLDPId = pp.QBRecID
+													where
+														pp.[Type] = 'Load'
+													group by
+														pf.QBRecId
+									) firstevent
+							on firstevent.PostFixtureAlternateKey = epostfixture.QBRecId
+						left join Warehouse.Dim_Calendar firsteventdate
+							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
 						left join Warehouse.Dim_Vessel vessel
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
 						left join	(
@@ -398,21 +479,26 @@ begin
 					-2															ParcelKey,
 					isnull(wpostfixture.PostFixtureKey, -1)						PostFixtureKey,
 					isnull(vessel.VesselKey, -1)								VesselKey,
+					isnull(cpdate.DateKey, -1)									CharterPartyDateKey,
+					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					charge.[Type]												ChargeType,
 					charge.[Description]										ChargeDescription,
 					null														ParcelNumber,
 					charge.Amount												Charge,
 					null														ChargePerMetricTon,
-					epostfixture.AddressCommissionPercent						AddressCommissionRate,
+					try_convert	(
+									decimal(20, 8),
+									epostfixture.AddressCommissionPercent
+								)												AddressCommissionRate,
 					case
-						when isnull(charge.Apply_Address_Commission_ADMIN, 0) = 1 and isnull(epostfixture.AddressCommissionPercent, 0.0) > 0.0
-							then charge.Amount * epostfixture.AddressCommissionPercent
+						when isnull(charge.Apply_Address_Commission_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
+							then charge.Amount * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)
 						else null
 					end															AddressCommissionAmount,
 					case
-						when isnull(charge.Apply_Address_Commission_ADMIN, 0) = 1 and isnull(epostfixture.AddressCommissionPercent, 0.0) > 0.0
+						when isnull(charge.Apply_Address_Commission_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
 							then charge.Amount - isnull	(
-															charge.Amount - (charge.Amount * epostfixture.AddressCommissionPercent),
+															charge.Amount - (charge.Amount * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)),
 															0.0
 														)
 						else null
@@ -424,6 +510,28 @@ begin
 							on wpostfixture.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
 						left join PostFixtures epostfixture
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+						left join Warehouse.Dim_Calendar cpdate
+							on cpdate.FullDate = convert(date, epostfixture.CPDate)
+						left join	(
+										select
+												pf.QBRecId			PostFixtureAlternateKey,
+												min(e.StartDate)	FirstEventDate
+											from
+												SOFEvents e
+													join ParcelBerths pb
+														on pb.QBRecId = e.RelatedParcelBerthId
+													join PostFixtures pf
+														on pf.QBRecId = pb.RelatedSpiFixtureId
+													join ParcelPorts pp
+														on pb.RelatedLDPId = pp.QBRecID
+													where
+														pp.[Type] = 'Load'
+													group by
+														pf.QBRecId
+									) firstevent
+							on firstevent.PostFixtureAlternateKey = epostfixture.QBRecId
+						left join Warehouse.Dim_Calendar firsteventdate
+							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
 						left join Warehouse.Dim_Vessel vessel
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
 						left join	(
@@ -472,6 +580,8 @@ begin
 					finance.ParcelKey,
 					finance.PostFixtureKey,
 					finance.VesselKey,
+					finance.CharterPartyDateKey,
+					finance.FirstLoadEventDateKey,
 					finance.ChargeType,
 					finance.ChargeDescription,
 					finance.ParcelNumber,

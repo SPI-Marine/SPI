@@ -30,14 +30,16 @@ create table Warehouse.Fact_FixtureFinance
 		ParcelKey						int					not null,
 		PostFixtureKey					int					not null,
 		VesselKey						int					not null,
+		CharterPartyDateKey				int					not null,
+		FirstLoadEventDateKey			int					not null,
 		ChargeType						nvarchar(500)		null,		-- Degenerate Dimension Attributes
 		ChargeDescription				nvarchar(500)		null,
 		ParcelNumber					smallint			null,
-		Charge							decimal(18, 2)		null,		-- Metrics
-		ChargePerMetricTon				decimal(18, 2)		null,
-		AddressCommissionRate			decimal(18, 2)		null,
-		AddressCommissionAmount			decimal(18, 2)		null,
-		AddressCommissionApplied		decimal(18, 2)		null,
+		Charge							decimal(20, 8)		null,		-- Metrics
+		ChargePerMetricTon				decimal(20, 8)		null,
+		AddressCommissionRate			decimal(20, 8)		null,
+		AddressCommissionAmount			decimal(20, 8)		null,
+		AddressCommissionApplied		decimal(20, 8)		null,
 		RowCreatedDate					datetime			not null,
 		RowUpdatedDate					datetime			not null,
 		constraint [PK_Warehouse_Fact_FixtureFinance_QBRecId] primary key clustered 
