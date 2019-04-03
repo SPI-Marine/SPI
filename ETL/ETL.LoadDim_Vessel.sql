@@ -306,7 +306,14 @@ begin
 
 	-- Insert Unknown record
 	begin try
-		if not exists (select 1 from Warehouse.Dim_Vessel where VesselKey = -1)
+		if exists (select 1 from Warehouse.Dim_Vessel where VesselKey = -1)
+		begin
+			delete
+					Warehouse.Dim_Vessel
+				where
+					VesselKey = -1;
+		end
+		else
 		begin
 			set identity_insert Warehouse.Dim_Vessel on;
 			insert

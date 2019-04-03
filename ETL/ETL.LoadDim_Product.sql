@@ -153,7 +153,14 @@ begin
 
 	-- Insert Unknown record
 	begin try
-		if not exists (select 1 from Warehouse.Dim_Product where ProductKey = -1)
+		if exists (select 1 from Warehouse.Dim_Product where ProductKey = -1)
+		begin
+			delete
+					Warehouse.Dim_Product
+				where
+					ProductKey = -1;
+		end
+		else
 		begin
 			set identity_insert Warehouse.Dim_Product on;
 			insert

@@ -174,7 +174,14 @@ begin
 
 	-- Insert Unknown record
 	begin try
-		if not exists (select 1 from Warehouse.Dim_Parcel where ParcelKey = -1)
+		if exists (select 1 from Warehouse.Dim_Parcel where ParcelKey in (-1, -2))
+		begin
+			delete
+					Warehouse.Dim_Parcel
+				where
+					ParcelKey in (-1, -2);
+		end
+		else
 		begin
 			set identity_insert Warehouse.Dim_Parcel on;
 			insert

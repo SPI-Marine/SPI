@@ -150,7 +150,14 @@ begin
 
 	-- Insert Unknown record
 	begin try
-		if not exists (select 1 from Warehouse.Dim_Berth where BerthKey = -1)
+		if exists (select 1 from Warehouse.Dim_Berth where BerthKey = -1)
+		begin
+			delete
+					Warehouse.Dim_Berth
+				where
+					BerthKey = -1;
+		end
+		else
 		begin
 			set identity_insert Warehouse.Dim_Berth on;
 			insert

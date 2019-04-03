@@ -202,9 +202,16 @@ begin
 
 	-- Insert Unknown record
 	begin try
-		if not exists (select 1 from Warehouse.Dim_Port where PortKey = -1)
+		if exists (select 1 from Warehouse.Dim_PortBerth where PortBerthKey = -1)
 		begin
-			set identity_insert Warehouse.Dim_Port on;
+			delete
+					Warehouse.Dim_PortBerth
+				where
+					PortBerthKey = -1;
+		end
+		else
+		begin
+			set identity_insert Warehouse.Dim_PortBerth on;
 			insert
 					Warehouse.Dim_PortBerth	(
 														PortBerthKey,
@@ -245,7 +252,7 @@ begin
 							getdate(),		-- RowUpdatedDate
 							'Y'				-- IsCurrentRow
 						);
-			set identity_insert Warehouse.Dim_Port off;
+			set identity_insert Warehouse.Dim_PortBerth off;
 		end
 	end try
 	begin catch
