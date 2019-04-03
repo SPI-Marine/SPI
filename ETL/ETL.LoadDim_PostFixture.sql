@@ -6,6 +6,7 @@ Description:	Creates the LoadDim_PostFixture stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	04/20/2019	Added ETL for COA related information
 ==========================================================================================================	
 */
 
@@ -36,7 +37,16 @@ begin
 		select
 			distinct
 				fixture.QBRecId,
-				fixture.RelatedBroker,
+				fixture.RelatedBroker						BrokerEmail,
+				isnull(brokername.FirstName, 'Unknown')		BrokerFirstName,
+				isnull(brokername.LastName, 'Unknown')		BrokerLastName,
+				concat	(
+							isnull(brokername.LastName, 'Unknown'),
+							', ',
+							isnull(brokername.FirstName, 'Unknown')
+						)									BrokerFullName,
+				ownerfullstyle.FullStyleName				OwnerFullStyle,
+				chartererfullstyle.FullStyleName			ChartererFullStyle,
 				fixture.RelatedOpsPrimary,
 				fixture.RelatedOpsBackup,
 				fixture.CPDate,
@@ -76,10 +86,27 @@ begin
 				fixture.P2FixtureRefNum,
 				fixture.VesselFixedOfficial,
 				fixture.LaycanCommencementOriginal,
+				coa.RecordID,
+				coa.[Status],
+				coa.SPICOADate,
+				coa.AddendumDate,
+				coa.AddendumExpiryDate,
+				coa.AddendumCommencementDate,
+				coa.RenewalDate_DeclareBy,
+				coa.ContractCommencement,
+				coa.ContractCancelling,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
 				PostFixtures fixture
+					left join FullStyles ownerfullstyle
+						on fixture.RelatedOwnerFullStyle = ownerfullstyle.QBRecId
+					left join FullStyles chartererfullstyle
+						on chartererfullstyle.QBRecId = fixture.RelatedChartererFullStyle
+					left join TeamMembers brokername
+						on rtrim(ltrim(brokername.EmailAddress)) = rtrim(ltrim(fixture.RelatedBroker))
+					left join SPICOA coa
+						on coa.RecordID = fixture.RelatedSPICOAId
 					left join	(
 									select
 											@ExistingRecord RecordStatus,
@@ -103,7 +130,12 @@ begin
 				Type1HashValue =	hashbytes	(
 													'MD2',
 													concat	(
-																RelatedBroker,
+																BrokerEmail,
+																BrokerFirstName,
+																BrokerLastName,
+																BrokerFullName,
+																OwnerFullStyle,
+																ChartererFullStyle,
 																RelatedOpsPrimary,
 																RelatedOpsBackup,
 																convert(nvarchar(30), CPDate),
@@ -142,7 +174,16 @@ begin
 																convert(nvarchar(30), BrokerFrtComm),
 																P2FixtureRefNum,
 																VesselFixedOfficial,
-																LaycanCommencementOriginal
+																LaycanCommencementOriginal,
+																SPI_COA_Number,
+																COA_Status,
+																COA_Date,
+																COA_AddendumDate,
+																COA_AddendumExpiryDate,
+																COA_AddendumCommencementDate,
+																COA_RenewalDateDeclareBy,
+																COA_ContractCommencement,
+																COA_ContractCancelling
 															)
 												);
 		
@@ -167,7 +208,12 @@ begin
 				Warehouse.Dim_PostFixture
 			select
 					fixture.PostFixtureAlternateKey,
-					fixture.RelatedBroker,
+					fixture.BrokerEmail,
+					fixture.BrokerFirstName,
+					fixture.BrokerLastName,
+					fixture.BrokerFullName,
+					fixture.OwnerFullStyle,
+					fixture.ChartererFullStyle,
 					fixture.RelatedOpsPrimary,
 					fixture.RelatedOpsBackup,
 					fixture.CPDate,
@@ -207,6 +253,15 @@ begin
 					fixture.P2FixtureRefNum,
 					fixture.VesselFixedOfficial,
 					fixture.LaycanCommencementOriginal,
+					fixture.SPI_COA_Number,
+					fixture.COA_Status,
+					fixture.COA_Date,
+					fixture.COA_AddendumDate,
+					fixture.COA_AddendumExpiryDate,
+					fixture.COA_AddendumCommencementDate,
+					fixture.COA_RenewalDateDeclareBy,
+					fixture.COA_ContractCommencement,
+					fixture.COA_ContractCancelling,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -226,7 +281,12 @@ begin
 		update
 				Warehouse.Dim_PostFixture
 			set
-				RelatedBroker = fixture.RelatedBroker,
+				BrokerEmail = fixture.BrokerEmail,
+				BrokerFirstName = fixture.BrokerFirstName,
+				BrokerLastName = fixture.BrokerLastName,
+				BrokerFullName = fixture.BrokerFullName,
+				OwnerFullStyle = fixture.OwnerFullStyle,
+				ChartererFullStyle = fixture.ChartererFullStyle,
 				RelatedOpsPrimary = fixture.RelatedOpsPrimary,
 				RelatedOpsBackup = fixture.RelatedOpsBackup,
 				CPDate = fixture.CPDate,
@@ -266,6 +326,15 @@ begin
 				P2FixtureRefNum = fixture.P2FixtureRefNum,
 				VesselFixedOfficial = fixture.VesselFixedOfficial,
 				LaycanCommencementOriginal = fixture.LaycanCommencementOriginal,
+				SPI_COA_Number = fixture.SPI_COA_Number,
+				COA_Status = fixture.[COA_Status],
+				COA_Date = fixture.COA_Date,
+				COA_AddendumDate = fixture.COA_AddendumDate,
+				COA_AddendumExpiryDate = fixture.COA_AddendumExpiryDate,
+				COA_AddendumCommencementDate = fixture.COA_AddendumCommencementDate,
+				COA_RenewalDateDeclareBy = fixture.COA_RenewalDateDeclareBy,
+				COA_ContractCommencement = fixture.COA_ContractCommencement,
+				COA_ContractCancelling = fixture.COA_ContractCancelling,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -282,14 +351,26 @@ begin
 
 	-- Insert Unknown record
 	begin try
-		if not exists (select 1 from Warehouse.Dim_PostFixture where PostFixtureKey = -1)
+		if exists (select 1 from Warehouse.Dim_PostFixture where PostFixtureKey = -1)
+		begin
+			delete
+					Warehouse.Dim_PostFixture
+				where
+					PostFixtureKey = -1;
+		end
+		else
 		begin
 			set identity_insert Warehouse.Dim_PostFixture on;
 			insert
 					Warehouse.Dim_PostFixture	(
 													PostFixtureKey,
 													PostFixtureAlternateKey,
-													RelatedBroker,
+													BrokerEmail,
+													BrokerFirstName,
+													BrokerLastName,
+													BrokerFullName,
+													OwnerFullStyle,
+													ChartererFullStyle,
 													RelatedOpsPrimary,
 													RelatedOpsBackup,
 													CPDate,
@@ -329,6 +410,15 @@ begin
 													P2FixtureRefNum,
 													VesselFixedOfficial,
 													LaycanCommencementOriginal,
+													SPI_COA_Number,
+													COA_Status,
+													COA_Date,
+													COA_AddendumDate,
+													COA_AddendumExpiryDate,
+													COA_AddendumCommencementDate,
+													COA_RenewalDateDeclareBy,
+													COA_ContractCommencement,
+													COA_ContractCancelling,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -338,7 +428,12 @@ begin
 				values	(
 							-1,				-- PostFixtureKey
 							0,				-- PostFixtureAlternateKey
-							'Unknown',		-- RelatedBroker
+							'Unknown',		-- BrokerEmail
+							'Unknown',		-- BrokerFirstName
+							'Unknown',		-- BrokerLastName
+							'Unknown',		-- BrokerFullName
+							'Unknown',		-- OwnerFullStyle
+							'Unknown',		-- ChartererFullStyle
 							'Unknown',		-- RelatedOpsPrimary
 							'Unknown',		-- RelatedOpsBackup
 							'12/30/1899',	-- CPDate
@@ -378,6 +473,15 @@ begin
 							'Unknown',		-- P2FixtureRefNum
 							'Unknown',		-- VesselFixedOfficial
 							'12/30/1899',	-- LaycanCommencementOriginal
+							0,				-- SPI_COA_Number
+							'12/30/1899',	-- COA_Status
+							'12/30/1899',	-- COA_Date
+							'12/30/1899',	-- COA_AddendumDate
+							'12/30/1899',	-- COA_AddendumExpiryDate
+							'12/30/1899',	-- COA_AddendumCommencementDate
+							'12/30/1899',	-- COA_RenewalDateDeclareBy
+							'12/30/1899',	-- COA_ContractCommencement
+							'12/30/1899',	-- COA_ContractCancelling
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate

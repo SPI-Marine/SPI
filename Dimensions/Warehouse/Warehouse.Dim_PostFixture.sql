@@ -6,6 +6,8 @@ Description:	Creates the Warehouse.Dim_PostFixture table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	03/19/2019	Added Broker name, Charterer and Owner
+Brian Boswick	04/20/2019	Added COA related information
 ==========================================================================================================	
 */
 
@@ -16,7 +18,12 @@ create table Warehouse.Dim_PostFixture
 	(
 		PostFixtureKey					int					not null identity(1, 1),
 		PostFixtureAlternateKey			int					not null,
-		RelatedBroker					nvarchar(250)		null,
+		BrokerEmail						nvarchar(250)		null,
+		BrokerFirstName					nvarchar(250)		null,
+		BrokerLastName					nvarchar(250)		null,
+		BrokerFullName					nvarchar(250)		null,
+		OwnerFullStyle					nvarchar(250)		null,
+		ChartererFullStyle				nvarchar(250)		null,
 		RelatedOpsPrimary				nvarchar(250)		null,
 		RelatedOpsBackup				nvarchar(250)		null,
 		CPDate							date				null,
@@ -56,6 +63,15 @@ create table Warehouse.Dim_PostFixture
 		P2FixtureRefNum					nvarchar(100)		null,
 		VesselFixedOfficial				nvarchar(100)		null,
 		LaycanCommencementOriginal		date				null,
+		SPI_COA_Number					int					null,
+		COA_Status						varchar(50)			null,
+		COA_Date						date				null,
+		COA_AddendumDate				date				null,
+		COA_AddendumExpiryDate			date				null,
+		COA_AddendumCommencementDate	date				null,
+		COA_RenewalDateDeclareBy		date				null,
+		COA_ContractCommencement		date				null,
+		COA_ContractCancelling			date				null,
 		Type1HashValue					varbinary(16)		not null,
 		RowCreatedDate					date				not null,
 		RowUpdatedDate					date				not null,
