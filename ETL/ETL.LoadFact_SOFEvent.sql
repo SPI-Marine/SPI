@@ -302,24 +302,21 @@ begin
 				LoadPortBerthKey = isnull(lpb.PortBerthKey, -1)
 			from
 				Staging.Fact_SOFEvent stagingevent
-					outer apply	(
+					left join	(
 									select
-										top 1
+											pp.QBRecId,
 											pp.RelatedPortId
 										from
-											ParcelPorts pp												
-										where
-											stagingevent.LoadPortID = pp.QBRecId
-								) lp
-					outer apply	(
+											ParcelPorts pp																							
+								) lp on stagingevent.LoadPortID = lp.QBRecId
+					left join	(
 									select
-										top 1
+											pb.QBRecId,
 											pb.RelatedBerthId
 										from
 											ParcelBerths pb
-										where
-											stagingevent.LoadBerthID = pb.QBRecId
-								) lb
+								) lb on stagingevent.LoadBerthID = lb.QBRecId
+
 					left join Warehouse.Dim_PortBerth lpb
 						on lpb.PortAlternateKey = lp.RelatedPortId
 							and lpb.BerthAlternateKey = lb.RelatedBerthId
@@ -339,24 +336,21 @@ begin
 				DischargePortBerthKey = isnull(dpb.PortBerthKey, -1)
 			from
 				Staging.Fact_SOFEvent stagingevent
-					outer apply	(
+					left join	(
 									select
-										top 1
+											pp.QBRecId,
 											pp.RelatedPortId
 										from
 											ParcelPorts pp												
-										where
-											stagingevent.DischargePortID = pp.QBRecId
-								) dp
-					outer apply	(
+								) dp on stagingevent.DischargePortID = dp.QBRecId
+
+					left join	(
 									select
-										top 1
+											pb.QBRecId,
 											pb.RelatedBerthId
 										from
 											ParcelBerths pb
-										where
-											stagingevent.DischargeBerthID = pb.QBRecId
-								) db
+								) db on stagingevent.DischargeBerthID = db.QBRecId
 					left join Warehouse.Dim_PortBerth dpb
 						on dpb.PortAlternateKey = dp.RelatedPortId
 							and dpb.BerthAlternateKey = db.RelatedBerthId
