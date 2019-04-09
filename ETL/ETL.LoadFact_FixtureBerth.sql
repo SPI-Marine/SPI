@@ -30,48 +30,104 @@ begin
 	if object_id(N'Staging.Fact_FixtureBerth', 'U') is not null
 		truncate table Staging.Fact_FixtureBerth;
 
+	if object_id(N'Staging.Fact_FixtureBerthEvents', 'U') is not null
+		truncate table Staging.Fact_FixtureBerthEvents;
+
 	begin try
 		-- Get Unique FixtureBerth records
-		with UniqueFixtureBerthProducts	(
-											RelatedSpiFixtureId,
-											RelatedPortId,
-											RelatedBerthId,
-											RelatedLDPId,
-											ParcelAlternateKey,
-											ProductAlternateKey,
-											ParcelQuantity										
-										)
+		with LoadPortBerths	(
+								PostFixtureAlternateKey,
+								PortAlternateKey,
+								BerthAlternateKey,
+								LoadDischargeAlternateKey,
+								ParcelAlternateKey,
+								ProductAlternateKey,
+								ParcelQuantity,
+								LoadDischarge
+							)
 		as
 		(
 			select
 				distinct
-					pb.RelatedSpiFixtureId,
-					pb.RelatedPortId,
-					pb.RelatedBerthId,
-					pb.RelatedLDPId,
-					p.QBRecId,
+					p.RelatedSpiFixtureId,
+					loadport.RelatedPortId,
+					loadberth.RelatedBerthId,
+					loadport.QBRecId,
+					p.QbRecId,
 					prod.QBRecId,
-					p.BLQty
+					p.BLQty,
+					loadport.[Type]
 				from
-					SOFEvents e
-						join ParcelBerths pb
-							on e.RelatedParcelBerthId = pb.QBRecId
-						join Parcels p
-							on p.RelatedSpiFixtureId = pb.RelatedSpiFixtureId
-						join ParcelProducts pp 
-							on pp.QBRecId = p.RelatedParcelProductId
+					Parcels p
+						join ParcelPorts loadport
+							on p.RelatedLoadPortID = loadport.QBRecId
+						join ParcelBerths loadberth
+							on p.RelatedLoadBerth = loadberth.QBRecId
+						join ParcelProducts parprod
+							on parprod.QBRecId = p.RelatedParcelProductId
 						join Products prod
-							on prod.QBRecId = pp.RelatedProductId
+							on prod.QBRecId = parprod.RelatedProductId
 				where
-					pb.RelatedSpiFixtureId is not null
-					and pb.RelatedPortId is not null
-					and pb.RelatedBerthId is not null
+					p.RelatedSpiFixtureId is not null
+		),
+		DischPortBerths	(
+							PostFixtureAlternateKey,
+							PortAlternateKey,
+							BerthAlternateKey,
+							LoadDischargeAlternateKey,
+							ParcelAlternateKey,
+							ProductAlternateKey,
+							ParcelQuantity,
+							LoadDischarge
+						)
+		as
+		(
+			select
+				distinct
+					p.RelatedSpiFixtureId,
+					dischport.RelatedPortId,
+					dischberth.RelatedBerthId,
+					dischport.QBRecId,
+					p.QbRecId,
+					prod.QBRecId,
+					p.BLQty,
+					dischport.[Type]
+				from
+					Parcels p
+						join ParcelPorts dischport
+							on p.RelatedDischPortId = dischport.QBRecId
+						join ParcelBerths dischberth
+							on p.RelatedDischBerth = dischberth.QBRecId
+						join ParcelProducts parprod
+							on parprod.QBRecId = p.RelatedParcelProductId
+						join Products prod
+							on prod.QBRecId = parprod.RelatedProductId
+				where
+					p.RelatedSpiFixtureId is not null
+		),
+		UniqueFixtureBerths	(
+								PostFixtureAlternateKey,
+								PortAlternateKey,
+								BerthAlternateKey,
+								LoadDischargeAlternateKey,
+								ParcelAlternateKey,
+								ProductAlternateKey,
+								ParcelQuantity,
+								LoadDischarge
+							)
+		as
+		(
+			select * from LoadPortBerths
+			union all
+			select * from DischPortBerths
 		)
+
 
 		insert
 				Staging.Fact_FixtureBerth with (tablock)
 											(
 												PostFixtureAlternateKey,
+												PortAlternateKey,
 												BerthAlternateKey,
 												LoadDischargeAlternateKey,
 												ParcelAlternateKey,
@@ -87,10 +143,11 @@ begin
 											)
 			select
 				distinct
-					ufb.RelatedSpiFixtureId						PostFixtureAlternateKey,
-					ufb.RelatedBerthId							BerthAlternateKey,
-					ufb.RelatedLDPId							LoadDischargeAlternateKey,
-					ufb.ParcelAlternateKey						ParcelAlternateKey,
+					ufb.PostFixtureAlternateKey					PostFixtureAlternateKey,
+					isnull(ufb.PortAlternateKey, -1)			PortAlternateKey,
+					isnull(ufb.BerthAlternateKey, -1)			BerthAlternateKey,
+					ufb.LoadDischargeAlternateKey				LoadDischargeAlternateKey,
+					isnull(ufb.ParcelAlternateKey, -1)			ParcelAlternateKey,
 					--isnull([port].PortKey, -1)					PortKey,
 					--isnull(berth.BerthKey, -1)					BerthKey,
 					isnull(portberth.PortBerthKey, -1)			PortBerthKey,
@@ -99,22 +156,21 @@ begin
 					isnull(vessel.VesselKey, -1)				VesselKey,
 					-1											FirstEventDateKey,
 					isnull(parcel.ParcelKey, -1)				ParcelKey,
-					pp.[Type]									LoadDischarge,
+					ufb.LoadDischarge							LoadDischarge,
 					ufb.ParcelQuantity							ParcelQuantity,
-					isnull(rs.RecordStatus, @NewRecord)			RecordStatus
+					--isnull(rs.RecordStatus, @NewRecord)			RecordStatus,
+					1
 				from
-					UniqueFixtureBerthProducts ufb
-						join ParcelPorts pp
-							on ufb.RelatedLDPId = pp.QBRecId
+					UniqueFixtureBerths ufb
 						left join Warehouse.Dim_PostFixture wpostfixture
-							on wpostfixture.PostFixtureAlternateKey = ufb.RelatedSpiFixtureId
+							on wpostfixture.PostFixtureAlternateKey = ufb.PostFixtureAlternateKey
 						left join PostFixtures epostfixture
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
 						left join Warehouse.Dim_Vessel vessel
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
 						left join Warehouse.Dim_PortBerth portberth
-							on portberth.PortAlternateKey = ufb.RelatedPortId
-								and portberth.BerthAlternateKey = ufb.RelatedBerthId
+							on portberth.PortAlternateKey = ufb.PortAlternateKey
+								and portberth.BerthAlternateKey = ufb.BerthAlternateKey
 						left join Warehouse.Dim_Product product
 							on product.ProductAlternateKey = ufb.ProductAlternateKey
 						left join Warehouse.Dim_Parcel parcel
@@ -137,15 +193,17 @@ begin
 										select
 												@ExistingRecord RecordStatus,
 												PostFixtureAlternateKey,
+												PortAlternateKey,
 												BerthAlternateKey,
 												LoadDischargeAlternateKey,
 												ParcelAlternateKey
 											from
 												Warehouse.Fact_FixtureBerth
 									) rs
-							on rs.PostFixtureAlternateKey = ufb.RelatedSpiFixtureId
-								and rs.BerthAlternateKey = ufb.RelatedBerthId
-								and rs.LoadDischargeAlternateKey = ufb.RelatedLDPId
+							on rs.PostFixtureAlternateKey = ufb.PostFixtureAlternateKey
+								and rs.PortAlternateKey = ufb.PortAlternateKey
+								and rs.BerthAlternateKey = ufb.BerthAlternateKey
+								and rs.LoadDischargeAlternateKey = ufb.LoadDischargeAlternateKey
 								and rs.ParcelAlternateKey = ufb.ParcelAlternateKey;
 	end try
 	begin catch
@@ -181,25 +239,112 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-/*	-- Update ProductKey
+	-- Get FixtureBerth events
+	--begin try
+	--	insert
+	--			Staging.Fact_FixtureBerthEvents with (tablock)
+	--		select
+	--			distinct
+	--				pb.RelatedSpiFixtureId							PostFixtureAlternateKey,
+	--				pb.QBRecId										ParcelBerthAlternateKey,
+	--				row_number() over	(
+	--										partition by pb.QBRecId 
+	--										order by try_convert(date, e.StartDate), try_convert(time, e.StartTime)
+	--									)							EventNum,
+	--				en.EventNameReports								EventName,
+	--				lead(e.RelatedPortTimeEventId, 1, 0)  over	(
+	--																partition by pb.QBRecId
+	--																order by try_convert(date, e.StartDate), try_convert(time, e.StartTime)
+	--															)	NextEventId,
+	--				lead(en.EventNameReports, 1, 0)  over	(
+	--															partition by pb.QBRecId
+	--															order by try_convert(date, e.StartDate), try_convert(time, e.StartTime)
+	--														)		NextEventName,
+	--				try_convert(date, e.StartDate)					StartDate,
+	--				try_convert(time, e.StartTime)					StartTime,
+	--				--null											StartDateTime,
+	--				datetimefromparts	(
+	--										year(try_convert(date, e.StartDate)),
+	--										month(try_convert(date, e.StartDate)),
+	--										day(try_convert(date, e.StartDate)),
+	--										datepart(hour, try_convert(time, e.StartTime)),
+	--										datepart(minute, try_convert(time, e.StartTime)),
+	--										0,
+	--										0
+	--									)							StartDateTime,
+	--				try_convert(date, e.StopDate)					StopDate,
+	--				try_convert(time, e.StopTime)					StopTime,
+	--				--null											StopDateTime,
+	--				datetimefromparts	(
+	--										year(try_convert(date, e.StopDate)),
+	--										month(try_convert(date, e.StopDate)),
+	--										day(try_convert(date, e.StopDate)),
+	--										datepart(hour, try_convert(time, e.StopTime)),
+	--										datepart(minute, try_convert(time, e.StopTime)),
+	--										0,
+	--										0
+	--									)							StopDateTime,
+	--				null											Duration
+	--			from
+	--				SOFEvents e
+	--					join PortEventTimes en
+	--						on e.RelatedPortTimeEventId = en.QBRecId
+	--					join ParcelBerths pb
+	--						on pb.QBRecId = e.RelatedParcelBerthId
+	--					join Warehouse.Dim_Calendar sd
+	--						on sd.FullDate = convert(date, e.StartDate)
+	--					join Warehouse.Dim_Calendar ed
+	--						on sd.FullDate = convert(date, e.StopDate)
+	--			where
+	--				pb.RelatedSpiFixtureId is not null;
+	--end try
+	--begin catch
+	--	select @ErrorMsg = 'Staging FixtureBerth events - ' + error_message();
+	--	throw 51000, @ErrorMsg, 1;
+	--end catch	
+
+	-- Calculate Duration
+	--begin try
+	--	-- Create full start and stop datetimes
+	--	update
+	--			Staging.Fact_FixtureBerthEvents
+	--		set
+	--			StartDateTime = datetimefromparts(year(StartDate), month(StartDate), day(StartDate), datepart(hour, StartTime), datepart(minute, StartTime), 0, 0),
+	--			StopDateTime = datetimefromparts(year(StopDate), month(StopDate), day(StopDate), datepart(hour, StopTime), datepart(minute, StopTime), 0, 0);
+	--end try
+	--begin catch
+	--	select @ErrorMsg = 'Calculating duration of events - ' + error_message();
+	--	throw 51000, @ErrorMsg, 1;
+	--end catch	
+
+	-- Update WaitTimeNOR_Berth
 	begin try
-		update
-				Staging.Fact_SOFEvent
-			set
-				ProductKey = wproduct.ProductKey
-			from
-				ParcelProducts pp
-					join Warehouse.Dim_Product wproduct
-						on pp.RelatedProductId = wproduct.ProductAlternateKey
-			where
-				pp.QBRecId = Staging.Fact_SOFEvent.ParcelProductID;
+		select 1
+		--update
+		--		Staging.Fact_FixtureBerth
+		--	set
+		--		ProductKey = 0
+		--	from
+		--		(
+		--			select
+		--					sum(convert(decimal(18, 4), e.dur)) FirstEventDate,
+		--					pb.RelatedSpiFixtureId PostFixtureAlternateKey
+		--				from
+		--					SOFEvents e
+		--						join ParcelBerths pb 
+		--							on e.RelatedParcelBerthId = pb.QBRecId
+		--				group by
+		--					pb.RelatedSpiFixtureId
+		--		) fe
+		--	where
+		--		pp.QBRecId = Staging.Fact_FixtureBerth.ParcelProductID;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating ProductKey - ' + error_message();
+		select @ErrorMsg = 'Updating WaitTimeNOR_Berth - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Insert new events into Warehouse table
+/*	-- Insert new events into Warehouse table
 	begin try
 		insert
 				Warehouse.Fact_SOFEvent

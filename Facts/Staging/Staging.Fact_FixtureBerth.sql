@@ -15,6 +15,7 @@ go
 create table Staging.Fact_FixtureBerth
 	(
 		PostFixtureAlternateKey				int					not null,
+		PortAlternateKey					int					not null,
 		BerthAlternateKey					int					not null,
 		LoadDischargeAlternateKey			int					not null,
 		ParcelAlternateKey					int					not null,
@@ -28,24 +29,25 @@ create table Staging.Fact_FixtureBerth
 		ParcelKey							int					not null,
 		LoadDischarge						varchar(50)			null,		-- Degenerate Dimension Attributes
 		ParcelQuantityTShirtSize			varchar(50)			null,
-		WaitTimeNOR_Berth					decimal(18, 4)		null,		-- Metrics
+		WaitTimeNOR_Berth					decimal(20, 8)		null,		-- Metrics
 		WaitTimeBerth_HoseOn				decimal(20, 8)		null,
 		WaitTimeBerth_HoseOff				decimal(20, 8)		null,
 		WaitTimeCompleteLoad_HoseOff		decimal(20, 8)		null,
 		WaitTimeCompleteDischarge_HoseOff	decimal(20, 8)		null,
-		LayTimeNOR_Berth					decimal(18, 4)		null,
+		LayTimeNOR_Berth					decimal(20, 8)		null,
 		LayTimeBerth_HoseOn					decimal(20, 8)		null,
 		LayTimeBerth_HoseOff				decimal(20, 8)		null,
 		LayTimeCompleteLoad_HoseOff			decimal(20, 8)		null,
 		LayTimeCompleteDischarge_HoseOff	decimal(20, 8)		null,
-		ParcelQuantity						decimal(18, 4)		null,
-		LaytimeActual						decimal(18, 4)		null,
-		LaytimeAllowed						decimal(18, 4)		null,
-		Pumptime							decimal(18, 4)		null,
+		ParcelQuantity						decimal(20, 8)		null,
+		LaytimeActual						decimal(20, 8)		null,
+		LaytimeAllowed						decimal(20, 8)		null,
+		Pumptime							decimal(20, 8)		null,
 		RecordStatus						int					not null,
-		constraint [PK_Staging_Fact_FixtureBerth_QBRecId] primary key clustered 
+		constraint [PK_Staging_Fact_FixtureBerth_AltKeys] primary key clustered 
 		(
 			PostFixtureAlternateKey,
+			PortAlternateKey,
 			BerthAlternateKey,
 			LoadDischargeAlternateKey,
 			ParcelAlternateKey asc
