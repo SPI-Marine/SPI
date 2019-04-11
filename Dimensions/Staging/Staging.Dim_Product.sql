@@ -6,6 +6,7 @@ Description:	Creates the Staging.Dim_Product table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	04/10/2019	Added ProductType
 ==========================================================================================================	
 */
 
@@ -23,6 +24,7 @@ create table Staging.Dim_Product
 		NIOP					nvarchar(100)		null,
 		Notes					nvarchar(1000)		null,
 		LiquidType				nvarchar(100)		null,
+		ProductType				nvarchar(100)		null,
 		Type1HashValue			varbinary(16)		not null,
 		RecordStatus			int					not null,
 		constraint [PK_Staging_Dim_Product_QBRecId] primary key clustered 

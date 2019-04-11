@@ -6,6 +6,7 @@ Description:	Creates the LoadDim_Product stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	04/10/2019	Added ProductType ETL
 ==========================================================================================================	
 */
 
@@ -34,19 +35,22 @@ begin
 		insert
 				Staging.Dim_Product
 		select
-				product.QBRecId,
-				product.ProductName,
-				product.SpecificGravity,
-				product.RequiredCoating,
-				product.EU,
-				product.CIQ,
-				product.NIOP,
-				product.Notes,
-				product.LiquidType,
-				0 Type1HashValue,
+				product.QBRecId						ProductAlternateKey,
+				product.ProductName					ProductName,
+				product.SpecificGravity				SpecificGravity,
+				product.RequiredCoating				RequiredCoating,
+				product.EU							EU,
+				product.CIQ							CIQ,
+				product.NIOP						NIOP,
+				product.Notes						Notes,
+				product.LiquidType					LiquidType,
+				prodtype.TypeName					ProductType,
+				0									Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
 				Products product
+					left join ProductType prodtype
+						on product.RelatedProductTypeId = prodtype.QBRecId
 					left join	(
 									select
 											@ExistingRecord RecordStatus,
@@ -77,7 +81,8 @@ begin
 																CIQ,
 																NIOP,
 																Notes,
-																LiquidType
+																LiquidType,
+																ProductType
 															)
 												);
 		
@@ -101,23 +106,24 @@ begin
 		insert
 				Warehouse.Dim_Product
 			select
-					[Product].ProductAlternateKey,
-					[Product].ProductName,
-					[Product].SpecificGravity,
-					[Product].RequiredCoating,
-					[Product].EU,
-					[Product].CIQ,
-					[Product].NIOP,
-					[Product].Notes,
-					[Product].LiquidType,
-					[Product].Type1HashValue,
+					product.ProductAlternateKey,
+					product.ProductName,
+					product.SpecificGravity,
+					product.RequiredCoating,
+					product.EU,
+					product.CIQ,
+					product.NIOP,
+					product.Notes,
+					product.LiquidType,
+					product.ProductType,
+					product.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
 					'Y' IsCurrentRow
 				from
-					Staging.Dim_Product [Product]
+					Staging.Dim_Product product
 				where
-					[Product].RecordStatus & @NewRecord = @NewRecord;
+					product.RecordStatus & @NewRecord = @NewRecord;
 	end try
 	begin catch
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();
@@ -137,6 +143,7 @@ begin
 				NIOP = product.NIOP,
 				Notes = product.Notes,
 				LiquidType = product.LiquidType,
+				ProductType = product.ProductType,
 				Type1HashValue = product.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -175,6 +182,7 @@ begin
 														NIOP,
 														Notes,
 														LiquidType,
+														ProductType,
 														Type1HashValue,
 														RowCreatedDate,
 														RowUpdatedDate,
@@ -192,6 +200,7 @@ begin
 							'Unknown',		-- NIOP
 							'Unknown',		-- Notes
 							'Unknown',		-- LiquidType
+							'Unknown',		-- ProductType
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate

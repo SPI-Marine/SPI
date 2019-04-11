@@ -6,6 +6,7 @@ Description:	Creates the Warehouse.Dim_Product table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	04/10/2019	Added ProductType
 ==========================================================================================================	
 */
 
@@ -24,9 +25,10 @@ create table Warehouse.Dim_Product
 		NIOP					nvarchar(100)		null,
 		Notes					nvarchar(1000)		null,
 		LiquidType				nvarchar(100)		null,
+		ProductType				nvarchar(100)		null,
 		Type1HashValue			varbinary(16)		not null,
-		RowCreatedDate			date				not null,
-		RowUpdatedDate			date				not null,
+		RowCreatedDate			datetime			not null,
+		RowUpdatedDate			datetime			not null,
 		IsCurrentRow			char(1)				not null,
 		constraint [PK_Warehouse_Dim_Product_Key] primary key clustered 
 		(
