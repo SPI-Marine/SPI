@@ -33,7 +33,14 @@ begin
 
 	begin try
 		-- Get Unique ParcelBerth records
-		with UniqueParcelBerths(QbRecId, RelatedSpiFixtureId, RelatedLDPId, RelatedPortId, RelatedBerthId, LaytimeAllowedBerthHrs_QBC)
+		with UniqueParcelBerths	(
+									QbRecId,
+									RelatedSpiFixtureId,
+									RelatedLDPId,
+									RelatedPortId,
+									RelatedBerthId,
+									LaytimeAllowedBerthHrs_QBC
+								)
 		as
 		(
 			select
@@ -57,7 +64,7 @@ begin
 		)
 
 		insert
-				Staging.Fact_SOFEvent
+				Staging.Fact_SOFEvent with (tablock)
 		select
 			distinct
 				sof.QBRecId									EventAlternateKey,
@@ -184,7 +191,7 @@ begin
 	-- Update LoadDischarge
 	begin try
 		update
-				Staging.Fact_SOFEvent
+				Staging.Fact_SOFEvent with (tablock)
 			set
 				LoadDischarge = pp.[Type]
 			from
@@ -200,7 +207,7 @@ begin
 	-- Update ProrationPercentage
 	begin try
 		update
-				Staging.Fact_SOFEvent
+				Staging.Fact_SOFEvent with (tablock)
 			set
 				ProrationPercentage =	case	
 											when isnull(TotalQuantity, 0) <> 0
@@ -217,14 +224,14 @@ begin
 	begin try
 		-- Create full start and stop datetimes
 		update
-				Staging.Fact_SOFEvent
+				Staging.Fact_SOFEvent with (tablock)
 			set
 				StartDate = datetimefromparts(year(StartDate), month(StartDate), day(StartDate), datepart(hour, StartTime), datepart(minute, StartTime), 0, 0),
 				StopDate = datetimefromparts(year(StopDate), month(StopDate), day(StopDate), datepart(hour, StopTime), datepart(minute, StopTime), 0, 0);
 	
 		-- Calculate Duration
 		update
-				Staging.Fact_SOFEvent
+				Staging.Fact_SOFEvent with (tablock)
 			set
 				Duration =	case
 								when StartDateKey > 19000000 and StopDateKey < 47000000
@@ -234,7 +241,7 @@ begin
 
 		-- Calculate LaytimeActual
 		update
-				Staging.Fact_SOFEvent
+				Staging.Fact_SOFEvent with (tablock)
 			set
 				LaytimeActual =	case IsLaytime
 									when 'Y'
@@ -244,7 +251,7 @@ begin
 
 		-- Calculate LaytimeAllowedProrated
 		update
-				Staging.Fact_SOFEvent
+				Staging.Fact_SOFEvent with (tablock)
 			set
 				LaytimeAllowedProrated = ProrationPercentage*LaytimeAllowed;
 	end try
@@ -256,7 +263,7 @@ begin
 	-- Update ParcelNumber
 	begin try
 		update
-				Staging.Fact_SOFEvent
+				Staging.Fact_SOFEvent with (tablock)
 			set
 				ParcelNumber = parcelnumbers.ParcelNumber
 			from
@@ -279,7 +286,7 @@ begin
 	-- Update ProductKey
 	begin try
 		update
-				Staging.Fact_SOFEvent
+				Staging.Fact_SOFEvent with (tablock)
 			set
 				ProductKey = wproduct.ProductKey
 			from
@@ -297,7 +304,7 @@ begin
 	-- Update LoadPortBerthKey
 	begin try
 		update
-				stagingevent
+				stagingevent with (tablock)
 			set
 				LoadPortBerthKey = isnull(lpb.PortBerthKey, -1)
 			from
@@ -331,7 +338,7 @@ begin
 	-- Update DischargePortBerthKey
 	begin try
 		update
-				stagingevent
+				stagingevent with (tablock)
 			set
 				DischargePortBerthKey = isnull(dpb.PortBerthKey, -1)
 			from
@@ -365,7 +372,7 @@ begin
 	-- Insert new events into Warehouse table
 	begin try
 		insert
-				Warehouse.Fact_SOFEvent
+				Warehouse.Fact_SOFEvent with (tablock)
 			select
 					evt.EventAlternateKey,
 					evt.PortKey,
