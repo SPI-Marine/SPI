@@ -32,37 +32,6 @@ begin
 		truncate table Staging.Fact_SOFEvent;
 
 	begin try
-		-- Get Unique ParcelBerth records
-		with UniqueParcelBerths	(
-									QbRecId,
-									RelatedSpiFixtureId,
-									RelatedLDPId,
-									RelatedPortId,
-									RelatedBerthId,
-									LaytimeAllowedBerthHrs_QBC
-								)
-		as
-		(
-			select
-					pb.QBRecId,
-					pb.RelatedSpiFixtureId,
-					pb.RelatedLDPId,
-					pb.RelatedPortId,
-					pb.RelatedBerthId,
-					pb.LaytimeAllowedBerthHrs_QBC
-				from
-					ParcelBerths pb
-				where
-					pb.Id in	(
-									select
-											max(Id)
-										from
-											ParcelBerths
-										where
-											QBRecId = pb.QBRecId
-								)
-		)
-
 		insert
 				Staging.Fact_SOFEvent with (tablock)
 		select
@@ -92,7 +61,8 @@ begin
 						then 'Y'
 					else 'N'
 				end											IsPumpingTime,
-				null 										LoadDischarge,
+				--null 										LoadDischarge,
+				parcel.LoadDischarge						LoadDischarge,
 				sof.Comments								Comments,
 				null										ParcelNumber,
 				concat	(
@@ -110,7 +80,19 @@ begin
 				parcel.LaytimeAllowed						LaytimeAllowed,
 				null										LaytimeAllowedProrated,
 				null										ProrationPercentage,
-				parcel.ParcelQuantity						ParcelQuantity,
+				--parcel.ParcelQuantity						ParcelQuantity,
+				case
+					when parcel.RelatedPortId = parcel.LoadPortAlternateKey
+							and parcel.RelatedBerthId = parcel.LoadBerthAlternateKey
+							and parcel.LoadDischarge = 'Load'
+						then parcel.ParcelQuantity
+					when parcel.RelatedPortId = parcel.DischPortAlternateKey
+							and parcel.RelatedBerthId = parcel.DischBerthAlternateKey
+							and parcel.LoadDischarge = 'Discharge'
+						then parcel.ParcelQuantity
+					else null
+				end											ParcelQuantity,
+				parcel.ParcelQuantity						ParcelQuantityETL,
 				totqty.TotalQuantity						TotalQuantity,
 				try_convert(time, sof.StartTime)			StartTime,
 				try_convert(time, sof.StopTime)				StopTime,
@@ -145,11 +127,27 @@ begin
 										p.RelatedLoadPortID				LoadPortID,
 										p.RelatedLoadBerth				LoadBerthID,
 										p.RelatedDischPortId			DischargePortID,
-										p.RelatedDischBerth				DischargeBerthID
+										p.RelatedDischBerth				DischargeBerthID,
+										loadport.RelatedPortId			LoadPortAlternateKey,
+										loadberth.[RelatedBerthId]		LoadBerthAlternateKey,
+										loaddischarge.[Type]			LoadDischarge,
+										dischport.[RelatedPortId]		DischPortAlternateKey,
+										dischberth.RelatedBerthId		DischBerthAlternateKey										
 									from
-										UniqueParcelBerths pb
+										--UniqueParcelBerths pb
+										ParcelBerths pb
 											join Parcels p
 												on pb.RelatedSpiFixtureId = p.RelatedSpiFixtureId
+											join ParcelPorts loadport
+												on loadport.QBRecId = p.RelatedLoadPortID
+											join ParcelBerths loadberth
+												on loadberth.QBRecId = p.RelatedLoadBerth
+											join ParcelPorts dischport
+												on dischport.QBRecId = p.RelatedDischPortId
+											join ParcelBerths dischberth
+												on dischberth.QBRecId = p.RelatedDischBerth
+											join ParcelPorts loaddischarge
+												on pb.RelatedLDPId = loaddischarge.QBRecId
 							) parcel
 						on sof.RelatedParcelBerthId = parcel.ParcelBerthId
 					left join Warehouse.Dim_Parcel wparcel
@@ -189,20 +187,20 @@ begin
 	end catch	
 	
 	-- Update LoadDischarge
-	begin try
-		update
-				Staging.Fact_SOFEvent with (tablock)
-			set
-				LoadDischarge = pp.[Type]
-			from
-				ParcelPorts pp
-			where
-				pp.QBRecId = Staging.Fact_SOFEvent.ParcelPortAlternateKey;
-	end try
-	begin catch
-		select @ErrorMsg = 'Updating LoadDischarge - ' + error_message();
-		throw 51000, @ErrorMsg, 1;
-	end catch	
+	--begin try
+	--	update
+	--			Staging.Fact_SOFEvent with (tablock)
+	--		set
+	--			LoadDischarge = pp.[Type]
+	--		from
+	--			ParcelPorts pp
+	--		where
+	--			pp.QBRecId = Staging.Fact_SOFEvent.ParcelPortAlternateKey;
+	--end try
+	--begin catch
+	--	select @ErrorMsg = 'Updating LoadDischarge - ' + error_message();
+	--	throw 51000, @ErrorMsg, 1;
+	--end catch	
 
 	-- Update ProrationPercentage
 	begin try
@@ -211,7 +209,7 @@ begin
 			set
 				ProrationPercentage =	case	
 											when isnull(TotalQuantity, 0) <> 0
-												then ParcelQuantity/TotalQuantity
+												then ParcelQuantityETL/TotalQuantity
 											else null
 										end;
 	end try
