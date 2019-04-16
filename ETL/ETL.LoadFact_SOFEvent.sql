@@ -47,8 +47,7 @@ begin
 				isnull(wpostfixture.PostFixtureKey, -1)		PostFixtureKey,
 				isnull(vessel.VesselKey, -1)				VesselKey,
 				isnull(wparcel.ParcelKey, -1)				ParcelKey,
-				-1											LoadPortBerthKey,
-				-1											DischargePortBerthKey,
+				isnull(portberth.PortBerthKey, -1)			PortBerthKey,
 				sof.LaytimeProationType						ProrationType,
 				eventtype.EventNameReports					EventType,
 				case sof.Laytime
@@ -61,7 +60,6 @@ begin
 						then 'Y'
 					else 'N'
 				end											IsPumpingTime,
-				--null 										LoadDischarge,
 				parcel.LoadDischarge						LoadDischarge,
 				sof.Comments								Comments,
 				null										ParcelNumber,
@@ -80,7 +78,6 @@ begin
 				parcel.LaytimeAllowed						LaytimeAllowed,
 				null										LaytimeAllowedProrated,
 				null										ProrationPercentage,
-				--parcel.ParcelQuantity						ParcelQuantity,
 				case
 					when parcel.RelatedPortId = parcel.LoadPortAlternateKey
 							and parcel.RelatedBerthId = parcel.LoadBerthAlternateKey
@@ -98,10 +95,6 @@ begin
 				try_convert(time, sof.StopTime)				StopTime,
 				try_convert(datetime, sof.StartDate)		StartDate,
 				try_convert(datetime, sof.StopDate)			StopDate,
-				parcel.LoadPortID							LoadPortID,
-				parcel.LoadBerthID							LoadBerthID,
-				parcel.DischargePortID						DischargePortID,
-				parcel.DischargeBerthID						DischargeBerthID,
 				parcel.ParcelProductId						ParcelProductId,
 				isnull(rs.RecordStatus, @NewRecord)			RecordStatus
 			from
@@ -134,7 +127,6 @@ begin
 										dischport.[RelatedPortId]		DischPortAlternateKey,
 										dischberth.RelatedBerthId		DischBerthAlternateKey										
 									from
-										--UniqueParcelBerths pb
 										ParcelBerths pb
 											join Parcels p
 												on pb.RelatedSpiFixtureId = p.RelatedSpiFixtureId
@@ -162,6 +154,9 @@ begin
 						on [port].PortAlternateKey = parcel.RelatedPortId
 					left join Warehouse.Dim_Berth berth
 						on berth.BerthAlternateKey = parcel.RelatedBerthId
+					left join Warehouse.Dim_PortBerth portberth
+						on portberth.PortAlternateKey = parcel.RelatedPortId
+							and portberth.BerthAlternateKey = parcel.RelatedBerthId
 					left join	(
 									select
 											sum(qty.BLQty) TotalQuantity,
@@ -186,22 +181,6 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 	
-	-- Update LoadDischarge
-	--begin try
-	--	update
-	--			Staging.Fact_SOFEvent with (tablock)
-	--		set
-	--			LoadDischarge = pp.[Type]
-	--		from
-	--			ParcelPorts pp
-	--		where
-	--			pp.QBRecId = Staging.Fact_SOFEvent.ParcelPortAlternateKey;
-	--end try
-	--begin catch
-	--	select @ErrorMsg = 'Updating LoadDischarge - ' + error_message();
-	--	throw 51000, @ErrorMsg, 1;
-	--end catch	
-
 	-- Update ProrationPercentage
 	begin try
 		update
@@ -299,74 +278,6 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update LoadPortBerthKey
-	begin try
-		update
-				stagingevent with (tablock)
-			set
-				LoadPortBerthKey = isnull(lpb.PortBerthKey, -1)
-			from
-				Staging.Fact_SOFEvent stagingevent
-					left join	(
-									select
-											pp.QBRecId,
-											pp.RelatedPortId
-										from
-											ParcelPorts pp																							
-								) lp on stagingevent.LoadPortID = lp.QBRecId
-					left join	(
-									select
-											pb.QBRecId,
-											pb.RelatedBerthId
-										from
-											ParcelBerths pb
-								) lb on stagingevent.LoadBerthID = lb.QBRecId
-
-					left join Warehouse.Dim_PortBerth lpb
-						on lpb.PortAlternateKey = lp.RelatedPortId
-							and lpb.BerthAlternateKey = lb.RelatedBerthId
-			where
-				stagingevent.EventAlternateKey = EventAlternateKey;
-	end try
-	begin catch
-		select @ErrorMsg = 'Updating LoadPortBerthKey - ' + error_message();
-		throw 51000, @ErrorMsg, 1;
-	end catch	
-
-	-- Update DischargePortBerthKey
-	begin try
-		update
-				stagingevent with (tablock)
-			set
-				DischargePortBerthKey = isnull(dpb.PortBerthKey, -1)
-			from
-				Staging.Fact_SOFEvent stagingevent
-					left join	(
-									select
-											pp.QBRecId,
-											pp.RelatedPortId
-										from
-											ParcelPorts pp												
-								) dp on stagingevent.DischargePortID = dp.QBRecId
-
-					left join	(
-									select
-											pb.QBRecId,
-											pb.RelatedBerthId
-										from
-											ParcelBerths pb
-								) db on stagingevent.DischargeBerthID = db.QBRecId
-					left join Warehouse.Dim_PortBerth dpb
-						on dpb.PortAlternateKey = dp.RelatedPortId
-							and dpb.BerthAlternateKey = db.RelatedBerthId
-			where
-				stagingevent.EventAlternateKey = EventAlternateKey;
-	end try
-	begin catch
-		select @ErrorMsg = 'Updating DischargePortBerthKey - ' + error_message();
-		throw 51000, @ErrorMsg, 1;
-	end catch	
-
 	-- Insert new events into Warehouse table
 	begin try
 		insert
@@ -381,8 +292,7 @@ begin
 					evt.PostFixtureKey,
 					evt.VesselKey,
 					evt.ParcelKey,
-					evt.LoadPortBerthKey,
-					evt.DischargePortBerthKey,
+					evt.PortBerthKey,
 					evt.ProrationType,
 					evt.EventType,
 					evt.IsLaytime,

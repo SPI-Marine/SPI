@@ -25,8 +25,7 @@ create table Staging.Fact_SOFEvent
 		PostFixtureKey			int					not null,
 		VesselKey				int					not null,
 		ParcelKey				int					not null,
-		LoadPortBerthKey		int					not null,
-		DischargePortBerthKey	int					not null,
+		PortBerthKey			int					not null,
 		ProrationType			nvarchar(100)		null,		-- Degenerate Dimension Attributes
 		EventType				nvarchar(250)		null,
 		IsLaytime				char(1)				null,
@@ -48,10 +47,6 @@ create table Staging.Fact_SOFEvent
 		StopTime				time				null,
 		StartDate				datetime			null,
 		StopDate				datetime			null,
-		LoadPortID				int					null,
-		LoadBerthID				int					null,
-		DischargePortID			int					null,
-		DischargeBerthID		int					null,
 		ParcelProductID			int					null,
 		RecordStatus			int					not null,
 		constraint [PK_Staging_Fact_SOFEvent_QBRecId] primary key clustered 
