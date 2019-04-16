@@ -28,11 +28,15 @@ create table Staging.Fact_FixtureBerth
 		ParcelQuantityTShirtSize			varchar(50)			null,
 		WaitTimeNOR_Berth					decimal(20, 8)		null,		-- Metrics
 		WaitTimeBerth_HoseOn				decimal(20, 8)		null,
+		WaitTimeHoseOn_CommenceLoad			decimal(20, 8)		null,
+		WaitTimeHoseOn_CommenceDischarge	decimal(20, 8)		null,
 		WaitTimeBerth_HoseOff				decimal(20, 8)		null,
 		WaitTimeCompleteLoad_HoseOff		decimal(20, 8)		null,
 		WaitTimeCompleteDischarge_HoseOff	decimal(20, 8)		null,
 		LayTimeNOR_Berth					decimal(20, 8)		null,
 		LayTimeBerth_HoseOn					decimal(20, 8)		null,
+		LayTimeHoseOn_CommenceLoad			decimal(20, 8)		null,
+		LayTimeHoseOn_CommenceDischarge		decimal(20, 8)		null,
 		LayTimeBerth_HoseOff				decimal(20, 8)		null,
 		LayTimeCompleteLoad_HoseOff			decimal(20, 8)		null,
 		LayTimeCompleteDischarge_HoseOff	decimal(20, 8)		null,
@@ -50,7 +54,6 @@ create table Staging.Fact_FixtureBerth
 			BerthAlternateKey,
 			LoadDischargeAlternateKey,
 			ParcelBerthAlternateKey asc
-			--ParcelAlternateKey asc
 		)
 			with 
 				(pad_index = off, statistics_norecompute = off, ignore_dup_key = off, allow_row_locks = on, allow_page_locks = on) 
