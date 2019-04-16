@@ -36,7 +36,7 @@ begin
 	-- Get Freight Charges
 	begin try
 		insert
-				Staging.Fact_FixtureFinance
+				Staging.Fact_FixtureFinance with (tablock)
 			select
 				distinct
 					parcel.RelatedSPIFixtureId									PostFixtureAlternateKey,
@@ -46,10 +46,8 @@ begin
 					isnull(parprod.RelatedProductId, -1)						ProductAlternateKey,
 					parcel.QbRecId												ParcelAlternateKey,
 					@FreightChargeType											ChargeTypeAlternateKey,
-					isnull(loadport.PortKey, -1)								LoadPortKey,
-					isnull(loadberth.BerthKey, -1)								LoadBerthKey,
-					isnull(dischargeport.PortKey, -1)							DischargePortKey,
-					isnull(dischargeberth.BerthKey, -1)							DischargeBerthKey,
+					isnull(loadportberth.PortBerthKey, -1)						LoadPortBerthKey,
+					isnull(dischargeportberth.PortBerthKey, -1)					DischargePortBerthKey,
 					isnull(wproduct.ProductKey, -1)								ProductKey,
 					isnull(wparcel.ParcelKey, -1)								ParcelKey,
 					isnull(wpostfixture.PostFixtureKey, -1)						PostFixtureKey,
@@ -58,6 +56,10 @@ begin
 					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					'Freight'													ChargeType,
 					null														ChargeDescription,
+					--row_number() over	(
+					--						partition by parcel.RelatedSPIFixtureId
+					--						order by parcel.QBRecId
+					--					)										ParcelNumber,
 					null														ParcelNumber,
 					parcel.ParcelFreightAmountQBC								Charge,
 					case
@@ -93,14 +95,20 @@ begin
 							on wproduct.ProductAlternateKey = product.QBRecId	
 						left join Warehouse.Dim_Parcel wparcel
 							on wparcel.ParcelAlternateKey = parcel.QbRecId
-						left join Warehouse.Dim_Port loadport
-							on loadport.PortAlternateKey = parcel.RelatedLoadPortID
-						left join Warehouse.Dim_Port dischargeport
-							on dischargeport.PortAlternateKey = parcel.RelatedDischPortId
-						left join Warehouse.Dim_Berth loadberth
-							on loadberth.BerthAlternateKey = parcel.RelatedLoadBerth
-						left join Warehouse.Dim_Berth dischargeberth
-							on dischargeberth.BerthAlternateKey = parcel.RelatedDischBerth
+						left join ParcelPorts loadparcelport
+							on loadparcelport.QBRecId = parcel.RelatedLoadPortID
+						left join ParcelBerths loadparcelberth
+							on loadparcelberth.QBRecId = parcel.RelatedLoadBerth
+						left join ParcelPorts dischargeparcelport
+							on dischargeparcelport.QBRecId = parcel.RelatedDischPortId
+						left join ParcelBerths dischargeparcelberth
+							on dischargeparcelberth.QBRecId = parcel.RelatedDischBerth
+						left join Warehouse.Dim_PortBerth loadportberth
+							on loadportberth.PortAlternateKey = loadparcelport.RelatedPortId
+								and loadportberth.BerthAlternateKey = loadparcelberth.RelatedBerthId
+						left join Warehouse.Dim_PortBerth dischargeportberth
+							on dischargeportberth.PortAlternateKey = dischargeparcelport.RelatedPortId
+								and dischargeportberth.BerthAlternateKey = dischargeparcelberth.RelatedBerthId
 						left join Warehouse.Dim_PostFixture wpostfixture
 							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 						left join PostFixtures epostfixture
@@ -159,7 +167,7 @@ begin
 	-- Get Demurrage Charges
 	begin try
 		insert
-				Staging.Fact_FixtureFinance
+				Staging.Fact_FixtureFinance with (tablock)
 			select
 				distinct
 					parcel.RelatedSPIFixtureId									PostFixtureAlternateKey,
@@ -169,10 +177,8 @@ begin
 					isnull(parprod.RelatedProductId, -1)						ProductAlternateKey,
 					parcel.QbRecId												ParcelAlternateKey,
 					@DemurrageChargeType										ChargeTypeAlternateKey,
-					isnull(loadport.PortKey, -1)								LoadPortKey,
-					isnull(loadberth.BerthKey, -1)								LoadBerthKey,
-					isnull(dischargeport.PortKey, -1)							DischargePortKey,
-					isnull(dischargeberth.BerthKey, -1)							DischargeBerthKey,
+					isnull(loadportberth.PortBerthKey, -1)						LoadPortBerthKey,
+					isnull(dischargeportberth.PortBerthKey, -1)					DischargePortBerthKey,
 					isnull(wproduct.ProductKey, -1)								ProductKey,
 					isnull(wparcel.ParcelKey, -1)								ParcelKey,
 					isnull(wpostfixture.PostFixtureKey, -1)						PostFixtureKey,
@@ -189,6 +195,10 @@ begin
 						else 'Unknown'
 					end															ChargeType,
 					null														ChargeDescription,
+					--row_number() over	(
+					--						partition by parcel.RelatedSPIFixtureId
+					--						order by parcel.QBRecId
+					--					)										ParcelNumber,
 					null														ParcelNumber,
 					case
 						when parcel.DemurrageAgreedAmount_QBC <> 0.0
@@ -263,14 +273,20 @@ begin
 							on wproduct.ProductAlternateKey = product.QBRecId	
 						left join Warehouse.Dim_Parcel wparcel
 							on wparcel.ParcelAlternateKey = parcel.QbRecId
-						left join Warehouse.Dim_Port loadport
-							on loadport.PortAlternateKey = parcel.RelatedLoadPortID
-						left join Warehouse.Dim_Port dischargeport
-							on dischargeport.PortAlternateKey = parcel.RelatedDischPortId
-						left join Warehouse.Dim_Berth loadberth
-							on loadberth.BerthAlternateKey = parcel.RelatedLoadBerth
-						left join Warehouse.Dim_Berth dischargeberth
-							on dischargeberth.BerthAlternateKey = parcel.RelatedDischBerth
+						left join ParcelPorts loadparcelport
+							on loadparcelport.QBRecId = parcel.RelatedLoadPortID
+						left join ParcelBerths loadparcelberth
+							on loadparcelberth.QBRecId = parcel.RelatedLoadBerth
+						left join ParcelPorts dischargeparcelport
+							on dischargeparcelport.QBRecId = parcel.RelatedDischPortId
+						left join ParcelBerths dischargeparcelberth
+							on dischargeparcelberth.QBRecId = parcel.RelatedDischBerth
+						left join Warehouse.Dim_PortBerth loadportberth
+							on loadportberth.PortAlternateKey = loadparcelport.RelatedPortId
+								and loadportberth.BerthAlternateKey = loadparcelberth.RelatedBerthId
+						left join Warehouse.Dim_PortBerth dischargeportberth
+							on dischargeportberth.PortAlternateKey = dischargeparcelport.RelatedPortId
+								and dischargeportberth.BerthAlternateKey = dischargeparcelberth.RelatedBerthId
 						left join Warehouse.Dim_PostFixture wpostfixture
 							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 						left join PostFixtures epostfixture
@@ -333,7 +349,7 @@ begin
 	-- Get Parcel Charges
 	begin try
 		insert
-				Staging.Fact_FixtureFinance
+				Staging.Fact_FixtureFinance with (tablock)
 			select
 				distinct
 					parcel.RelatedSPIFixtureId																PostFixtureAlternateKey,
@@ -343,10 +359,8 @@ begin
 					isnull(parprod.RelatedProductId, -1)													ProductAlternateKey,
 					isnull(parcel.QbRecId, -1)																ParcelAlternateKey,
 					@ParcelChargeType																		ChargeTypeAlternateKey,
-					isnull(loadport.PortKey, -1)															LoadPortKey,
-					isnull(loadberth.BerthKey, -1)															LoadBerthKey,
-					isnull(dischargeport.PortKey, -1)														DischargePortKey,
-					isnull(dischargeberth.BerthKey, -1)														DischargeBerthKey,
+					isnull(loadportberth.PortBerthKey, -1)													LoadPortBerthKey,
+					isnull(dischargeportberth.PortBerthKey, -1)												DischargePortBerthKey,
 					isnull(wproduct.ProductKey, -1)															ProductKey,
 					isnull(wparcel.ParcelKey, -1)															ParcelKey,
 					isnull(wpostfixture.PostFixtureKey, -1)													PostFixtureKey,
@@ -355,7 +369,12 @@ begin
 					isnull(firsteventdate.DateKey, -1)														FirstLoadEventDateKey,
 					chargetype.[Type]																		ChargeType,		
 					chargetype.[Description]																ChargeDescription,
-					null																					ParcelNumber,
+					--row_number() over	(
+					--						partition by parcel.RelatedSPIFixtureId
+					--						order by parcel.QBRecId
+					--					)										ParcelNumber,
+					
+					null														ParcelNumber,
 					charge.ParcelAdditionalChargeAmountDue_QBC												Charge,
 					case
 						when isnull(parcel.BLQty, 0) > 0
@@ -395,14 +414,20 @@ begin
 							on wproduct.ProductAlternateKey = product.QBRecId	
 						left join Warehouse.Dim_Parcel wparcel
 							on wparcel.ParcelAlternateKey = parcel.QbRecId
-						left join Warehouse.Dim_Port loadport
-							on loadport.PortAlternateKey = parcel.RelatedLoadPortID
-						left join Warehouse.Dim_Port dischargeport
-							on dischargeport.PortAlternateKey = parcel.RelatedDischPortId
-						left join Warehouse.Dim_Berth loadberth
-							on loadberth.BerthAlternateKey = parcel.RelatedLoadBerth
-						left join Warehouse.Dim_Berth dischargeberth
-							on dischargeberth.BerthAlternateKey = parcel.RelatedDischBerth
+						left join ParcelPorts loadparcelport
+							on loadparcelport.QBRecId = parcel.RelatedLoadPortID
+						left join ParcelBerths loadparcelberth
+							on loadparcelberth.QBRecId = parcel.RelatedLoadBerth
+						left join ParcelPorts dischargeparcelport
+							on dischargeparcelport.QBRecId = parcel.RelatedDischPortId
+						left join ParcelBerths dischargeparcelberth
+							on dischargeparcelberth.QBRecId = parcel.RelatedDischBerth
+						left join Warehouse.Dim_PortBerth loadportberth
+							on loadportberth.PortAlternateKey = loadparcelport.RelatedPortId
+								and loadportberth.BerthAlternateKey = loadparcelberth.RelatedBerthId
+						left join Warehouse.Dim_PortBerth dischargeportberth
+							on dischargeportberth.PortAlternateKey = dischargeparcelport.RelatedPortId
+								and dischargeportberth.BerthAlternateKey = dischargeparcelberth.RelatedBerthId
 						left join Warehouse.Dim_PostFixture wpostfixture
 							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 						left join PostFixtures epostfixture
@@ -461,7 +486,7 @@ begin
 	-- Get Additional Charges
 	begin try
 		insert
-				Staging.Fact_FixtureFinance
+				Staging.Fact_FixtureFinance with (tablock)
 			select
 				distinct
 					charge.RelatedSPIFixtureId									PostFixtureAlternateKey,
@@ -471,10 +496,8 @@ begin
 					-1															ProductAlternateKey,
 					-1															ParcelAlternateKey,
 					@AdditionalChargeType										ChargeTypeAlternateKey,
-					-1															LoadPortKey,
-					-1															LoadBerthKey,
-					-1															DischargePortKey,
-					-1															DischargeBerthKey,
+					-1															LoadPortBerthKey,
+					-1															DischargePortBerthKey,
 					-1															ProductKey,
 					-2															ParcelKey,
 					isnull(wpostfixture.PostFixtureKey, -1)						PostFixtureKey,
@@ -560,10 +583,33 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+	-- Update ParcelNumber
+	begin try
+		update
+				Staging.Fact_FixtureFinance with (tablock)
+			set
+				ParcelNumber = parcelnumbers.ParcelNumber
+			from
+				(
+					select
+							row_number() over (partition by p.RelatedSpiFixtureId order by p.QbRecId)	ParcelNumber,
+							p.RelatedSpiFixtureId,
+							p.QbRecId ParcelId
+						from
+							Parcels p
+				) parcelnumbers
+			where
+				parcelnumbers.ParcelId = Staging.Fact_FixtureFinance.ParcelAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating ParcelNumber - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
 	-- Insert new charges into Warehouse table
 	begin try
 		insert
-				Warehouse.Fact_FixtureFinance
+				Warehouse.Fact_FixtureFinance with (tablock)
 			select
 					finance.PostFixtureAlternateKey,
 					finance.RebillAlternateKey,
@@ -572,10 +618,8 @@ begin
 					finance.ProductAlternateKey,
 					finance.ParcelAlternateKey,
 					finance.ChargeTypeAlternateKey,
-					finance.LoadPortKey,
-					finance.LoadBerthKey,
-					finance.DischargePortKey,
-					finance.DischargeBerthKey,
+					finance.LoadPortBerthKey,
+					finance.DischargePortBerthKey,
 					finance.ProductKey,
 					finance.ParcelKey,
 					finance.PostFixtureKey,

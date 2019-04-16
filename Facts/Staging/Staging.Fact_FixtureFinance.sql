@@ -6,6 +6,7 @@ Description:	Creates the Staging.Fact_FixtureFinance table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	04/13/2019 Added LoadPortBerthKey and DischargePortBerthKey
 ==========================================================================================================	
 */
 
@@ -21,10 +22,8 @@ create table Staging.Fact_FixtureFinance
 		ProductAlternateKey				int					not null,
 		ParcelAlternateKey				int					not null,
 		ChargeTypeAlternateKey			smallint			not null,
-		LoadPortKey						int					not null,
-		LoadBerthKey					int					not null,
-		DischargePortKey				int					not null,
-		DischargeBerthKey				int					not null,
+		LoadPortBerthKey				int					not null,
+		DischargePortBerthKey			int					not null,
 		ProductKey						int					not null,
 		ParcelKey						int					not null,
 		PostFixtureKey					int					not null,
