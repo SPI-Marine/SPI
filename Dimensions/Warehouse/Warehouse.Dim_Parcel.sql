@@ -6,6 +6,7 @@ Description:	Creates the Warehouse.Dim_Parcel table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	04/17/2019	Added ParcelNumber
 ==========================================================================================================	
 */
 
@@ -29,6 +30,7 @@ create table Warehouse.Dim_Parcel
 		ClaimDemurrage			decimal(18, 2)		null,
 		VaultDemurrage			decimal(18, 2)		null,
 		IsAgreedProRated		varchar(15)			null,
+		ParcelNumber			smallint			null,
 		Type1HashValue			varbinary(16)		not null,
 		RowCreatedDate			datetime			not null,
 		RowUpdatedDate			datetime			not null,

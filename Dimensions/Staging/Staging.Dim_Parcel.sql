@@ -6,6 +6,7 @@ Description:	Creates the Staging.Dim_Parcel table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	04/17/2019	Added ParcelNumber
 ==========================================================================================================	
 */
 
@@ -28,6 +29,7 @@ create table Staging.Dim_Parcel
 		ClaimDemurrage			decimal(18, 2)		null,
 		VaultDemurrage			decimal(18, 2)		null,
 		IsAgreedProRated		varchar(15)			null,
+		ParcelNumber			smallint			null,
 		Type1HashValue			varbinary(16)		not null,
 		RecordStatus			int					not null,
 		constraint [PK_Staging_Dim_Parcel_QBRecId] primary key clustered 

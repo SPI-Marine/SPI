@@ -32,7 +32,7 @@ begin
 
 	begin try
 		insert
-				Staging.Dim_Parcel
+				Staging.Dim_Parcel with (tablock)
 		select
 			distinct
 				parcel.QBRecId								ParcelAlternateKey,
@@ -49,6 +49,7 @@ begin
 				parcel.DemurrageClaimAmount_QBC				ClaimDemurrage,
 				parcel.DemurrageVaultEstimateAmount_QBC		VaultDemurrage,
 				parcel.[DemurrageAgreedPro-ration_QBC]		IsAgreedProRated,
+				null										ParcelNumber,
 				0 											Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord)			RecordStatus
 			from
@@ -67,10 +68,40 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+	-- Update ParcelNumber
+	begin try
+		update
+				Staging.Dim_Parcel with (tablock)
+			set
+				ParcelNumber = parcelnumber.ParcelNumber
+			from
+				Parcels parcel
+					left join	(
+									select
+											p.QbRecId					ParcelAltKey,
+											p.RelatedSpiFixtureId,
+											row_number() over	(
+																	partition by p.RelatedSpiFixtureId
+																	order by p.QbRecId
+																)		ParcelNumber
+										from
+											Parcels p
+										where
+											p.RelatedSpiFixtureId is not null
+								) parcelnumber
+						on parcelnumber.ParcelAltKey = parcel.QbRecId
+			where
+				parcel.QbRecId = Staging.Dim_Parcel.ParcelAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating hash values - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+
 	-- Generate hash values for Type 1 changes. Only Type 1 SCDs
 	begin try
 		update
-				Staging.Dim_Parcel
+				Staging.Dim_Parcel with (tablock)
 			set
 				-- Type 1 SCD
 				Type1HashValue =	hashbytes	(
@@ -88,12 +119,13 @@ begin
 																AgreedDemurrage,
 																ClaimDemurrage,
 																VaultDemurrage,
-																IsAgreedProRated
+																IsAgreedProRated,
+																ParcelNumber
 															)
 												);
 		
 		update
-				Staging.Dim_Parcel
+				Staging.Dim_Parcel with (tablock)
 			set
 				RecordStatus += @Type1Change
 			from
@@ -110,7 +142,7 @@ begin
 	-- Insert new berths into Warehouse table
 	begin try
 		insert
-				Warehouse.Dim_Parcel
+				Warehouse.Dim_Parcel with (tablock)
 			select
 					parcel.ParcelAlternateKey,
 					parcel.BillLadingDate,
@@ -126,6 +158,7 @@ begin
 					parcel.ClaimDemurrage,
 					parcel.VaultDemurrage,
 					parcel.IsAgreedProRated,
+					parcel.ParcelNumber,
 					parcel.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -158,6 +191,7 @@ begin
 				ClaimDemurrage = parcel.ClaimDemurrage,
 				VaultDemurrage = parcel.VaultDemurrage,
 				IsAgreedProRated = parcel.IsAgreedProRated,
+				ParcelNumber = parcel.ParcelNumber,
 				Type1HashValue = parcel.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -201,6 +235,7 @@ begin
 														ClaimDemurrage,
 														VaultDemurrage,
 														IsAgreedProRated,
+														ParcelNumber,
 														Type1HashValue,
 														RowCreatedDate,
 														RowUpdatedDate,
@@ -223,6 +258,7 @@ begin
 							0.0,						-- ClaimDemurrage
 							0.0,						-- VaultDemurrage
 							'Unknown',					-- IsAgreedProRated
+							0,							-- ParcelNumber
 							0,							-- Type1HashValue
 							getdate(),					-- RowCreatedDate
 							getdate(),					-- RowUpdatedDate
@@ -244,6 +280,7 @@ begin
 							0.0,						-- ClaimDemurrage
 							0.0,						-- VaultDemurrage
 							'Unknown',					-- IsAgreedProRated
+							0,							-- ParcelNumber
 							0,							-- Type1HashValue
 							getdate(),					-- RowCreatedDate
 							getdate(),					-- RowUpdatedDate
