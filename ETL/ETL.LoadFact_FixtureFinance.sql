@@ -56,10 +56,6 @@ begin
 					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					'Freight'													ChargeType,
 					null														ChargeDescription,
-					--row_number() over	(
-					--						partition by parcel.RelatedSPIFixtureId
-					--						order by parcel.QBRecId
-					--					)										ParcelNumber,
 					null														ParcelNumber,
 					parcel.ParcelFreightAmountQBC								Charge,
 					case
@@ -152,8 +148,8 @@ begin
 							on rs.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 								and rs.RebillAlternateKey = -1	-- Used to indicate Parcel Freight records
 								and rs.ChargeAlternateKey = -1	-- Used to indicate Parcel Freight records
-								and rs.ParcelProductAlternateKey = parcel.RelatedParcelProductId
-								and rs.ProductAlternateKey = parprod.RelatedProductId
+								and rs.ParcelProductAlternateKey = isnull(parcel.RelatedParcelProductId, -1)
+								and rs.ProductAlternateKey = isnull(parprod.RelatedProductId, -1)
 								and rs.ChargeTypeAlternateKey = @FreightChargeType
 				where
 					parcel.RelatedSPIFixtureId is not null
@@ -195,10 +191,6 @@ begin
 						else 'Unknown'
 					end															ChargeType,
 					null														ChargeDescription,
-					--row_number() over	(
-					--						partition by parcel.RelatedSPIFixtureId
-					--						order by parcel.QBRecId
-					--					)										ParcelNumber,
 					null														ParcelNumber,
 					case
 						when parcel.DemurrageAgreedAmount_QBC <> 0.0
@@ -330,8 +322,8 @@ begin
 							on rs.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 								and rs.RebillAlternateKey = -2	-- Used to indicate Demurrage records
 								and rs.ChargeAlternateKey = -2	-- Used to indicate Demurrage records
-								and rs.ParcelProductAlternateKey = parcel.RelatedParcelProductId
-								and rs.ProductAlternateKey = parprod.RelatedProductId
+								and rs.ParcelProductAlternateKey = isnull(parcel.RelatedParcelProductId, -1)
+								and rs.ProductAlternateKey = isnull(parprod.RelatedProductId, -1)
 								and rs.ChargeTypeAlternateKey = @DemurrageChargeType
 				where
 					parcel.RelatedSPIFixtureId is not null
@@ -369,11 +361,6 @@ begin
 					isnull(firsteventdate.DateKey, -1)														FirstLoadEventDateKey,
 					chargetype.[Type]																		ChargeType,		
 					chargetype.[Description]																ChargeDescription,
-					--row_number() over	(
-					--						partition by parcel.RelatedSPIFixtureId
-					--						order by parcel.QBRecId
-					--					)										ParcelNumber,
-					
 					null														ParcelNumber,
 					charge.ParcelAdditionalChargeAmountDue_QBC												Charge,
 					case
@@ -471,8 +458,8 @@ begin
 							on rs.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 								and rs.RebillAlternateKey = charge.RecordID
 								and rs.ChargeAlternateKey = -1
-								and rs.ParcelProductAlternateKey = parcel.RelatedParcelProductId
-								and rs.ProductAlternateKey = parprod.RelatedProductId
+								and rs.ParcelProductAlternateKey = isnull(parcel.RelatedParcelProductId, -1)
+								and rs.ProductAlternateKey = isnull(parprod.RelatedProductId, -1)
 								and rs.ChargeTypeAlternateKey = @ParcelChargeType
 				where
 					parcel.RelatedSPIFixtureId is not null
