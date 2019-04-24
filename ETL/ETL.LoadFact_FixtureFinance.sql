@@ -182,6 +182,9 @@ begin
 					isnull(cpdate.DateKey, -1)									CharterPartyDateKey,
 					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					case
+						when parcel.DemurrageAgreedAmount_QBC = 0.0
+								and epostfixture.ZeroDemurrage = 1
+							then 'Agreed Demurrage'
 						when parcel.DemurrageAgreedAmount_QBC <> 0.0
 							then 'Agreed Demurrage'
 						when parcel.DemurrageClaimAmount_QBC <> 0.0
@@ -199,7 +202,7 @@ begin
 							then parcel.DemurrageClaimAmount_QBC
 						when parcel.DemurrageVaultEstimateAmount_QBC <> 0.0
 							then parcel.DemurrageVaultEstimateAmount_QBC
-						else 'Unknown'
+						else null
 					end															Charge,
 					case
 						when isnull(parcel.BLQty, 0) > 0
@@ -630,6 +633,42 @@ begin
 	end try
 	begin catch
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+
+	-- Update existing records
+	begin try
+		update 
+				Warehouse.Fact_FixtureFinance
+			set
+				LoadPortBerthKey = finance.LoadPortBerthKey,
+				DischargePortBerthKey = finance.DischargePortBerthKey,
+				VesselKey = finance.VesselKey,
+				CharterPartyDateKey = finance.CharterPartyDateKey,
+				FirstLoadEventDateKey = finance.FirstLoadEventDateKey,
+				ChargeType = finance.ChargeType,
+				ChargeDescription = finance.ChargeDescription,
+				ParcelNumber = finance.ParcelNumber,
+				Charge = finance.Charge,
+				ChargePerMetricTon = finance.ChargePerMetricTon,
+				AddressCommissionRate = finance.AddressCommissionRate,
+				AddressCommissionAmount = finance.AddressCommissionAmount,
+				AddressCommissionApplied = finance.AddressCommissionApplied,
+				RowUpdatedDate = getdate()
+			from
+				Staging.Fact_FixtureFinance finance
+			where
+				Warehouse.Fact_FixtureFinance.PostFixtureAlternateKey = finance.PostFixtureAlternateKey
+				and Warehouse.Fact_FixtureFinance.RebillAlternateKey = finance.RebillAlternateKey
+				and Warehouse.Fact_FixtureFinance.ChargeAlternateKey = finance.ChargeAlternateKey
+				and Warehouse.Fact_FixtureFinance.ParcelProductAlternateKey = finance.ParcelProductAlternateKey
+				and Warehouse.Fact_FixtureFinance.ProductAlternateKey = finance.ProductAlternateKey
+				and Warehouse.Fact_FixtureFinance.ParcelAlternateKey = finance.ParcelAlternateKey
+				and Warehouse.Fact_FixtureFinance.ChargeTypeAlternateKey = finance.ChargeTypeAlternateKey
+				and finance.RecordStatus & @ExistingRecord = @ExistingRecord;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating existing Warehouse records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch
 end
