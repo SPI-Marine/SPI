@@ -93,8 +93,8 @@ begin
 										from
 											Warehouse.Dim_PortBerth
 								) rs
-						on rs.PortAlternateKey = [port].QBRecId
-							and rs.BerthAlternateKey = berth.QBRecId;
+						on rs.PortAlternateKey = portberth.PortAlternateKey
+							and rs.BerthAlternateKey = portberth.BerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging PortBerth records - ' + error_message();
