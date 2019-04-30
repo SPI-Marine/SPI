@@ -8,6 +8,8 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	03/19/2019	Added Broker name, Charterer and Owner
 Brian Boswick	04/20/2019	Added COA related information
+Brian Boswick	04/25/2019	Added LaycanCancellingOriginal, LaycanCancellingFinal_QBC,
+							LaycanCommencementFinal_QBC,
 ==========================================================================================================	
 */
 
@@ -72,6 +74,10 @@ create table Warehouse.Dim_PostFixture
 		COA_RenewalDateDeclareBy		date				null,
 		COA_ContractCommencement		date				null,
 		COA_ContractCancelling			date				null,
+		LaycanCancellingOriginal		date				null,
+		LaycanCancellingFinal_QBC		date				null,
+		LaycanCommencementFinal_QBC		date				null,
+		SPIFixtureStatus				varchar(100)		null,
 		Type1HashValue					varbinary(16)		not null,
 		RowCreatedDate					date				not null,
 		RowUpdatedDate					date				not null,

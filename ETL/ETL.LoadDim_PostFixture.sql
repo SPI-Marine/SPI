@@ -7,6 +7,8 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	04/20/2019	Added ETL for COA related information
+Brian Boswick	04/25/2019	Added LaycanCancellingOriginal, LaycanCancellingFinal_QBC,
+							LaycanCommencementFinal_QBC,
 ==========================================================================================================	
 */
 
@@ -33,7 +35,7 @@ begin
 
 	begin try
 		insert
-				Staging.Dim_PostFixture
+				Staging.Dim_PostFixture with (tablock)
 		select
 			distinct
 				fixture.QBRecId,
@@ -95,6 +97,10 @@ begin
 				coa.RenewalDate_DeclareBy,
 				coa.ContractCommencement,
 				coa.ContractCancelling,
+				fixture.LaycanCancelOrig,
+				fixture.Laycan_Cancelling_Final_QBC,
+				fixture.Laycan_Commencement_Final_QBC,
+				fixture.SPI_Fixture_Status,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -124,7 +130,7 @@ begin
 	-- Generate hash values for Type 1 changes. Only Type 1 SCDs
 	begin try
 		update
-				Staging.Dim_PostFixture
+				Staging.Dim_PostFixture with (tablock)
 			set
 				-- Type 1 SCD
 				Type1HashValue =	hashbytes	(
@@ -183,12 +189,16 @@ begin
 																COA_AddendumCommencementDate,
 																COA_RenewalDateDeclareBy,
 																COA_ContractCommencement,
-																COA_ContractCancelling
+																COA_ContractCancelling,
+																LaycanCancellingOriginal,
+																LaycanCancellingFinal_QBC,
+																LaycanCommencementFinal_QBC,
+																SPIFixtureStatus
 															)
 												);
 		
 		update
-				Staging.Dim_PostFixture
+				Staging.Dim_PostFixture with (tablock)
 			set
 				RecordStatus += @Type1Change
 			from
@@ -205,7 +215,7 @@ begin
 	-- Insert new post fixtures into Warehouse table
 	begin try
 		insert
-				Warehouse.Dim_PostFixture
+				Warehouse.Dim_PostFixture with (tablock)
 			select
 					fixture.PostFixtureAlternateKey,
 					fixture.BrokerEmail,
@@ -262,6 +272,10 @@ begin
 					fixture.COA_RenewalDateDeclareBy,
 					fixture.COA_ContractCommencement,
 					fixture.COA_ContractCancelling,
+					fixture.LaycanCancellingOriginal,
+					fixture.LaycanCancellingFinal_QBC,
+					fixture.LaycanCommencementFinal_QBC,
+					fixture.SPIFixtureStatus,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -279,7 +293,7 @@ begin
 	-- Update existing records that have changed
 	begin try
 		update
-				Warehouse.Dim_PostFixture
+				Warehouse.Dim_PostFixture with (tablock)
 			set
 				BrokerEmail = fixture.BrokerEmail,
 				BrokerFirstName = fixture.BrokerFirstName,
@@ -335,6 +349,10 @@ begin
 				COA_RenewalDateDeclareBy = fixture.COA_RenewalDateDeclareBy,
 				COA_ContractCommencement = fixture.COA_ContractCommencement,
 				COA_ContractCancelling = fixture.COA_ContractCancelling,
+				LaycanCancellingOriginal = fixture.LaycanCancellingOriginal,
+				LaycanCancellingFinal_QBC = fixture.LaycanCancellingFinal_QBC,
+				LaycanCommencementFinal_QBC = fixture.LaycanCommencementFinal_QBC,
+				SPIFixtureStatus = fixture.SPIFixtureStatus,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -419,6 +437,10 @@ begin
 													COA_RenewalDateDeclareBy,
 													COA_ContractCommencement,
 													COA_ContractCancelling,
+													LaycanCancellingOriginal,
+													LaycanCancellingFinal_QBC,
+													LaycanCommencementFinal_QBC,
+													SPIFixtureStatus,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -482,6 +504,10 @@ begin
 							'12/30/1899',	-- COA_RenewalDateDeclareBy
 							'12/30/1899',	-- COA_ContractCommencement
 							'12/30/1899',	-- COA_ContractCancelling
+							'12/30/1899',	-- LaycanCancellingOriginal
+							'12/30/1899',	-- LaycanCancellingFinal_QBC
+							'12/30/1899',	-- LaycanCommencementFinal_QBC
+							'Unknown',		-- SPIFixtureStatus
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
