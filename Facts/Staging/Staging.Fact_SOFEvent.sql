@@ -48,7 +48,6 @@ create table Staging.Fact_SOFEvent
 		StartDate				datetime			null,
 		StopDate				datetime			null,
 		ParcelProductID			int					null,
-		RecordStatus			int					not null,
 		constraint [PK_Staging_Fact_SOFEvent_QBRecId] primary key clustered 
 		(
 			EventAlternateKey, ParcelAlternateKey, ParcelPortAlternateKey asc

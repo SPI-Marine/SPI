@@ -38,7 +38,6 @@ create table Staging.Fact_FixtureFinance
 		AddressCommissionRate			decimal(20, 8)		null,
 		AddressCommissionAmount			decimal(20, 8)		null,
 		AddressCommissionApplied		decimal(20, 8)		null,
-		RecordStatus					int					not null,
 		constraint [PK_Staging_Fact_FixtureFinance_QBRecId] primary key clustered 
 		(
 			PostFixtureAlternateKey,

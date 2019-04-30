@@ -40,7 +40,6 @@ create table Warehouse.Fact_FixtureFinance
 		AddressCommissionAmount			decimal(20, 8)		null,
 		AddressCommissionApplied		decimal(20, 8)		null,
 		RowCreatedDate					datetime			not null,
-		RowUpdatedDate					datetime			not null,
 		constraint [PK_Warehouse_Fact_FixtureFinance_QBRecId] primary key clustered 
 		(
 			FixtureFinanceKey asc
