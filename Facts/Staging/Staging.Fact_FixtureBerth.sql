@@ -46,7 +46,13 @@ create table Staging.Fact_FixtureBerth
 		LaytimeActual						decimal(20, 8)		null,
 		LaytimeAllowed						decimal(20, 8)		null,
 		PumpTime							decimal(20, 8)		null,
-		RecordStatus						int					not null,
+		WithinLaycanOriginal				smallint			null,
+		LaycanOverUnderOriginal				int					null,
+		WithinLaycanFinal					smallint			null,
+		LaycanOverUnderFinal				int					null,
+		VoyageDuration						int					null,		-- 1st NOR to last NOR on Post Fixture
+		MinimumNORDate						date				null,
+		MaximumNORDate						date				null,
 		constraint [PK_Staging_Fact_FixtureBerth_AltKeys] primary key clustered 
 		(
 			PostFixtureAlternateKey,

@@ -1,3 +1,11 @@
+set ansi_nulls on;
+go
+set quoted_identifier on;
+go
+
+drop procedure if exists ETL.LoadFact_FixtureBerth;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -9,24 +17,14 @@ Developer		Date		Change
 ==========================================================================================================	
 */
 
-set ansi_nulls on;
-go
-set quoted_identifier on;
-go
-
-drop procedure if exists ETL.LoadFact_FixtureBerth;
-go
-
 create procedure ETL.LoadFact_FixtureBerth
 as
 begin
 	set nocount on;
 
-	declare	@NewRecord		smallint = 1,
-			@ExistingRecord smallint = 2,
-			@ErrorMsg		varchar(1000);
+	declare	@ErrorMsg		varchar(1000);
 
-	-- Clear Staging table
+	-- Clear Staging tables
 	if object_id(N'Staging.Fact_FixtureBerth', 'U') is not null
 		truncate table Staging.Fact_FixtureBerth;
 
@@ -165,8 +163,7 @@ begin
 												FirstEventDateKey,
 												LoadDischarge,
 												ParcelQuantity,
-												LaytimeAllowed,
-												RecordStatus
+												LaytimeAllowed
 											)
 			select
 				distinct
@@ -181,8 +178,7 @@ begin
 					-1											FirstEventDateKey,
 					ufb.LoadDischarge							LoadDischarge,
 					ufb.ParcelQuantity							ParcelQuantity,
-					ufb.LaytimeAllowed							LaytimeAllowed,
-					isnull(rs.RecordStatus, @NewRecord)			RecordStatus
+					ufb.LaytimeAllowed							LaytimeAllowed
 				from
 					AggregatedParcelQuantity ufb
 						left join Warehouse.Dim_PostFixture wpostfixture
@@ -193,23 +189,7 @@ begin
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
 						left join Warehouse.Dim_PortBerth portberth
 							on portberth.PortAlternateKey = ufb.PortAlternateKey
-								and portberth.BerthAlternateKey = ufb.BerthAlternateKey
-						left join	(
-										select
-												@ExistingRecord RecordStatus,
-												PostFixtureAlternateKey,
-												PortAlternateKey,
-												BerthAlternateKey,
-												LoadDischargeAlternateKey,
-												ParcelBerthAlternateKey
-											from
-												Warehouse.Fact_FixtureBerth
-									) rs
-							on rs.PostFixtureAlternateKey = ufb.PostFixtureAlternateKey
-								and rs.PortAlternateKey = ufb.PortAlternateKey
-								and rs.BerthAlternateKey = ufb.BerthAlternateKey
-								and rs.LoadDischargeAlternateKey = ufb.LoadDischargeAlternateKey
-								and rs.ParcelBerthAlternateKey = ufb.ParcelBerthAlternateKey;
+								and portberth.BerthAlternateKey = ufb.BerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging FixtureBerth records - ' + error_message();
@@ -322,7 +302,7 @@ begin
 							on wevent.EventAlternateKey = e.QBRecId
 				where
 					wevent.PostFixtureKey > 0
-					and isnull(wevent.Duration, 0) > 0
+					and isnull(wevent.Duration, 0) >= 0
 		),
 		OrderedEvents	(
 							PostFixtureAlternateKey,
@@ -395,46 +375,47 @@ begin
 	-- Update WaitTimeNOR_Berth
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				WaitTimeNOR_Berth = fbed.WaitTimeNOR_Berth
+				WaitTimeNOR_Berth = isnull(fbed.WaitTimeNOR_Berth, 0)
 			from
-				(
-					select
-							sum(fbe.Duration)				WaitTimeNOR_Berth,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 219	-- NOR Tendered
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				WaitTimeNOR_Berth,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 219	-- NOR Tendered
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
 							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 228	-- Berth/Alongside
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 228	-- Berth/Alongside
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
+
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating WaitTimeNOR_Berth - ' + error_message();
@@ -444,46 +425,46 @@ begin
 	-- Update WaitTimeBerth_HoseOn
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				WaitTimeBerth_HoseOn = fbed.WaitTimeBerth_HoseOn
+				WaitTimeBerth_HoseOn = isnull(fbed.WaitTimeBerth_HoseOn, 0)
 			from
-				(
-					select
-							sum(fbe.Duration)				WaitTimeBerth_HoseOn,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 228	-- Berth/Alongside
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				WaitTimeBerth_HoseOn,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 228	-- Berth/Alongside
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
 							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 257	-- Hose Connected
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 257	-- Hose Connected
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fb.PostFixtureAlternateKey = fbed.PostFixtureAlternateKey
+						 and fb.ParcelBerthAlternateKey = fbed.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating WaitTimeBerth_HoseOn - ' + error_message();
@@ -493,46 +474,46 @@ begin
 	-- Update WaitTimeHoseOn_CommenceLoad
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				WaitTimeHoseOn_CommenceLoad = fbed.WaitTimeHoseOn_CommenceLoad
+				WaitTimeHoseOn_CommenceLoad = isnull(fbed.WaitTimeHoseOn_CommenceLoad, 0)
 			from
-				(
-					select
-							sum(fbe.Duration)				WaitTimeHoseOn_CommenceLoad,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 257	-- Hose Connected
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				WaitTimeHoseOn_CommenceLoad,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 257	-- Hose Connected
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
 							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 262	-- Commence Loading
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 262	-- Commence Loading
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating WaitTimeHoseOn_CommenceLoad - ' + error_message();
@@ -542,46 +523,46 @@ begin
 	-- Update WaitTimeHoseOn_CommenceDischarge
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				WaitTimeHoseOn_CommenceDischarge = fbed.WaitTimeHoseOn_CommenceDischarge
+				WaitTimeHoseOn_CommenceDischarge = isnull(fbed.WaitTimeHoseOn_CommenceDischarge, 0)
 			from
-				(
-					select
-							sum(fbe.Duration)				WaitTimeHoseOn_CommenceDischarge,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 257	-- Hose Connected
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				WaitTimeHoseOn_CommenceDischarge,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 257	-- Hose Connected
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
 							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 268	-- Commence Discharge
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 268	-- Commence Discharge
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating WaitTimeHoseOn_CommenceDischarge - ' + error_message();
@@ -591,46 +572,46 @@ begin
 	-- Update WaitTimeBerth_HoseOff
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				WaitTimeBerth_HoseOff = fbed.WaitTimeBerth_HoseOff
+				WaitTimeBerth_HoseOff = isnull(fbed.WaitTimeBerth_HoseOff, 0)
 			from
-				(
-					select
-							sum(fbe.Duration)				WaitTimeBerth_HoseOff,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 228	-- Berth/Alongside
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				WaitTimeBerth_HoseOff,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 228	-- Berth/Alongside
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
 							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 260	-- Hose Disconnected
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 260	-- Hose Disconnected
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating WaitTimeBerth_HoseOff - ' + error_message();
@@ -640,46 +621,46 @@ begin
 	-- Update WaitTimeCompleteLoad_HoseOff
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				WaitTimeCompleteLoad_HoseOff = fbed.WaitTimeCompleteLoad_HoseOff
+				WaitTimeCompleteLoad_HoseOff = isnull(fbed.WaitTimeCompleteLoad_HoseOff, 0)
 			from
-				(
-					select
-							sum(fbe.Duration)				WaitTimeCompleteLoad_HoseOff,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 265	-- Completed Loading
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				WaitTimeCompleteLoad_HoseOff,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 265	-- Completed Loading
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
 							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 260	-- Hose Disconnected
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 260	-- Hose Disconnected
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+				and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating WaitTimeCompleteLoad_HoseOff - ' + error_message();
@@ -689,46 +670,46 @@ begin
 	-- Update WaitTimeCompleteDischarge_HoseOff
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				WaitTimeCompleteDischarge_HoseOff = fbed.WaitTimeCompleteDischarge_HoseOff
+				WaitTimeCompleteDischarge_HoseOff = isnull(fbed.WaitTimeCompleteDischarge_HoseOff, 0)
 			from
-				(
-					select
-							sum(fbe.Duration)				WaitTimeCompleteDischarge_HoseOff,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 271	-- Complete Discharge
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				WaitTimeCompleteDischarge_HoseOff,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 271	-- Complete Discharge
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
 							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 260	-- Hose Disconnected
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 260	-- Hose Disconnected
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating WaitTimeCompleteDischarge_HoseOff - ' + error_message();
@@ -738,47 +719,47 @@ begin
 	-- Update LayTimeNOR_Berth
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				LayTimeNOR_Berth = fbed.LayTimeNOR_Berth
+				LayTimeNOR_Berth = isnull(fbed.LayTimeNOR_Berth, 0)
 			from
-				(
-					select
-							sum(fbe.LayTimeUsedProrated)	LayTimeNOR_Berth,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 219	-- NOR Tendered
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.LayTimeUsedProrated)	LayTimeNOR_Berth,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 219	-- NOR Tendered
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
 							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 228	-- Berth/Alongside
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-							and fbe.IsLayTime = 'Y'
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 228	-- Berth/Alongside
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+											and fbe.IsLayTime = 'Y'
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LayTimeNOR_Berth - ' + error_message();
@@ -788,47 +769,47 @@ begin
 	-- Update LayTimeBerth_HoseOn
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				LayTimeBerth_HoseOn = fbed.LayTimeBerth_HoseOn
+				LayTimeBerth_HoseOn = isnull(fbed.LayTimeBerth_HoseOn, 0)
 			from
-				(
-					select
-							sum(fbe.LayTimeUsedProrated)	LayTimeBerth_HoseOn,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 228	-- Berth/Alongside
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.LayTimeUsedProrated)	LayTimeBerth_HoseOn,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 228	-- Berth/Alongside
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
 							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 257	-- Hose Connected
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-							and fbe.IsLayTime = 'Y'
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 257	-- Hose Connected
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+											and fbe.IsLayTime = 'Y'
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LayTimeBerth_HoseOn - ' + error_message();
@@ -838,46 +819,46 @@ begin
 	-- Update LayTimeHoseOn_CommenceLoad
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				LayTimeHoseOn_CommenceLoad = fbed.LayTimeHoseOn_CommenceLoad
+				LayTimeHoseOn_CommenceLoad = isnull(fbed.LayTimeHoseOn_CommenceLoad, 0)
 			from
-				(
-					select
-							sum(fbe.Duration)				LayTimeHoseOn_CommenceLoad,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 257	-- Hose Connected
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 262	-- Commence Loading
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-							and fbe.IsLayTime = 'Y'
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				LayTimeHoseOn_CommenceLoad,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 257	-- Hose Connected
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)							
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 262	-- Commence Loading
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+											and fbe.IsLayTime = 'Y'
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LayTimeHoseOn_CommenceLoad - ' + error_message();
@@ -887,46 +868,46 @@ begin
 	-- Update LayTimeHoseOn_CommenceDischarge
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				LayTimeHoseOn_CommenceDischarge = fbed.LayTimeHoseOn_CommenceDischarge
+				LayTimeHoseOn_CommenceDischarge = isnull(fbed.LayTimeHoseOn_CommenceDischarge, 0)
 			from
-				(
-					select
-							sum(fbe.Duration)				LayTimeHoseOn_CommenceDischarge,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 257	-- Hose Connected
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 268	-- Commence Discharge
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-							and fbe.IsLayTime = 'Y'
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				LayTimeHoseOn_CommenceDischarge,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 257	-- Hose Connected
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)							
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 268	-- Commence Discharge
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+											and fbe.IsLayTime = 'Y'
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LayTimeHoseOn_CommenceDischarge - ' + error_message();
@@ -936,47 +917,47 @@ begin
 	-- Update LayTimeBerth_HoseOff
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				LayTimeBerth_HoseOff = fbed.LayTimeBerth_HoseOff
+				LayTimeBerth_HoseOff = isnull(fbed.LayTimeBerth_HoseOff, 0)
 			from
-				(
-					select
-							sum(fbe.LayTimeUsedProrated)	LayTimeBerth_HoseOff,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 228	-- Berth/Alongside
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.LayTimeUsedProrated)	LayTimeBerth_HoseOff,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 228	-- Berth/Alongside
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
 							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 260	-- Hose Disconnected
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-							and fbe.IsLayTime = 'Y'
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 260	-- Hose Disconnected
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+											and fbe.IsLayTime = 'Y'
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LayTimeBerth_HoseOff - ' + error_message();
@@ -986,47 +967,47 @@ begin
 	-- Update LayTimeCompleteLoad_HoseOff
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				LayTimeCompleteLoad_HoseOff = fbed.LayTimeCompleteLoad_HoseOff
+				LayTimeCompleteLoad_HoseOff = isnull(fbed.LayTimeCompleteLoad_HoseOff, 0)
 			from
-				(
-					select
-							sum(fbe.LayTimeUsedProrated)	LayTimeCompleteLoad_HoseOff,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 265	-- Completed Loading
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.LayTimeUsedProrated)	LayTimeCompleteLoad_HoseOff,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 265	-- Completed Loading
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
 							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 260	-- Hose Disconnected
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-							and fbe.IsLayTime = 'Y'
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 260	-- Hose Disconnected
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+											and fbe.IsLayTime = 'Y'
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LayTimeCompleteLoad_HoseOff - ' + error_message();
@@ -1036,47 +1017,47 @@ begin
 	-- Update LayTimeCompleteDischarge_HoseOff
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				LayTimeCompleteDischarge_HoseOff = fbed.LayTimeCompleteDischarge_HoseOff
+				LayTimeCompleteDischarge_HoseOff = isnull(fbed.LayTimeCompleteDischarge_HoseOff, 0)
 			from
-				(
-					select
-							sum(fbe.LayTimeUsedProrated)	LayTimeCompleteDischarge_HoseOff,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.EventNum >=	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 271	-- Complete Discharge
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.LayTimeUsedProrated)	LayTimeCompleteDischarge_HoseOff,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 271	-- Complete Discharge
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
 							
-							and	fbe.EventNum <	(
-													select
-															min(EventNum)
-														from
-															Staging.Fact_FixtureBerthEvents en
-														where
-															en.EventTypeId = 260	-- Hose Disconnected
-															and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-															and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-												)
-							and fbe.IsLayTime = 'Y'
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 260	-- Hose Disconnected
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+											and fbe.IsLayTime = 'Y'
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LayTimeCompleteDischarge_HoseOff - ' + error_message();
@@ -1086,27 +1067,27 @@ begin
 	-- Update LayTimePumpingTime
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				LayTimePumpingTime = fbed.LayTimePumpingTime
+				LayTimePumpingTime = isnull(fbed.LayTimePumpingTime, 0)
 			from
-				(
-					select
-							sum(fbe.LayTimeUsedProrated)	LayTimePumpingTime,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.IsLayTime = 'Y'
-							and fbe.IsPumpingTime = 'Y'
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.LayTimeUsedProrated)	LayTimePumpingTime,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.IsLayTime = 'Y'
+											and fbe.IsPumpingTime = 'Y'
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+						on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+							and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LayTimePumpingTime - ' + error_message();
@@ -1120,8 +1101,8 @@ begin
 			set
 				LayTimePumpingRate =	case										
 											when isnull(fbed.LayTimePumpingTime, 0.0) > 0
-												then fbe.ParcelQuantity/fbed.LayTimePumpingTime
-											else null
+												then isnull(fbe.ParcelQuantity/fbed.LayTimePumpingTime, 0)
+											else 0
 										end
 			from
 				(
@@ -1143,7 +1124,7 @@ begin
 							and fbed.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
 			where
 				fbed.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+				and fbed.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LayTimePumpingRate - ' + error_message();
@@ -1153,26 +1134,26 @@ begin
 	-- Update LaytimeActual
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				LaytimeActual = fbed.LaytimeActual
+				LaytimeActual = isnull(fbed.LaytimeActual, 0)
 			from
-				(
-					select
-							sum(fbe.LayTimeUsedProrated)	LaytimeActual,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.IsLayTime = 'Y'
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.LayTimeUsedProrated)	LaytimeActual,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.IsLayTime = 'Y'
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+						on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+							and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LaytimeActual - ' + error_message();
@@ -1182,26 +1163,26 @@ begin
 	-- Update PumpTime
 	begin try
 		update
-				Staging.Fact_FixtureBerth with (tablock)
+				fb with (tablock)
 			set
-				PumpTime = fbed.PumpTime
+				PumpTime = isnull(fbed.PumpTime, 0)
 			from
-				(
-					select
-							sum(fbe.Duration)				PumpTime,
-							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
-						from
-							Staging.Fact_FixtureBerthEvents fbe
-						where
-							fbe.IsPumpingTime = 'Y'
-						group by
-							fbe.PostFixtureAlternateKey,
-							fbe.ParcelBerthAlternateKey
-				) fbed
-			where
-				fbed.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey
-				and fbed.ParcelBerthAlternateKey = Staging.Fact_FixtureBerth.ParcelBerthAlternateKey
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				PumpTime,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.IsPumpingTime = 'Y'
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+						on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+							and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating PumpTime - ' + error_message();
@@ -1234,6 +1215,151 @@ begin
 		select @ErrorMsg = 'Updating ParcelQuantityTShirtSize - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
+
+	-- Update MinimumNORDate/MaxNORDate
+	begin try
+		update
+				fb with (tablock)
+			set
+				MinimumNORDate = minnor.MinNORDate,
+				MaximumNORDate = maxnor.MaxNORDate
+			from
+				Staging.Fact_FixtureBerth fb
+					left join
+						(
+							select
+									min(evt.StartDateTime) MinNORDate,
+									evt.PostFixtureAlternateKey
+								from
+									Staging.Fact_FixtureBerthEvents evt
+								where
+									evt.EventTypeId = 219	-- NOR Tendered
+								group by
+									evt.PostFixtureAlternateKey
+						) minnor
+							on minnor.PostFixtureAlternateKey = fb.PostFixtureAlternateKey				
+					left join
+						(
+							select
+									max(evt.StartDateTime) MaxNORDate,
+									evt.PostFixtureAlternateKey
+								from
+									Staging.Fact_FixtureBerthEvents evt
+								where
+									evt.EventTypeId = 219	-- NOR Tendered
+								group by
+									evt.PostFixtureAlternateKey
+						) maxnor
+							on maxnor.PostFixtureAlternateKey = fb.PostFixtureAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating MinimumNORDate/MaxNORDate - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update VoyageDuration
+	begin try
+		update
+				Staging.Fact_FixtureBerth with (tablock)
+			set
+				VoyageDuration = datediff(day, fb.MinimumNORDate, fb.MaximumNORDate)
+			from
+				Staging.Fact_FixtureBerth fb;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating VoyageDuration - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update WithinLaycanOriginal
+	begin try
+		update
+				Staging.Fact_FixtureBerth with (tablock)
+			set
+				WithinLaycanOriginal =	case
+											when MinimumNORDate between convert(date, pf.LaycanCommencementOriginal)
+													and convert(date, pf.LaycanCancelOrig)
+												then 1
+											else 0
+										end
+			from
+				PostFixtures pf
+			where
+				pf.QBRecId = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating WithinLaycanOriginal - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update LaycanOverUnderOriginal
+	begin try
+		update
+				Staging.Fact_FixtureBerth with (tablock)
+			set
+				LaycanOverUnderOriginal =	case
+												when MinimumNORDate <= convert(date, pf.LaycanCommencementOriginal)
+													then datediff(day, convert(date, pf.LaycanCommencementOriginal), MinimumNORDate)
+												when MinimumNORDate > convert(date, pf.LaycanCancelOrig)
+													then datediff(day, convert(date, pf.LaycanCancelOrig), MinimumNORDate)
+												else 0
+											end
+			from
+				PostFixtures pf
+			where
+				pf.QBRecId = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating LaycanOverUnderOriginal - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update WithinLaycanFinal
+	begin try
+		update
+				Staging.Fact_FixtureBerth with (tablock)
+			set
+				WithinLaycanFinal =	case
+										when MinimumNORDate between convert(date, pf.Laycan_Commencement_Final_QBC)
+												and convert(date, pf.Laycan_Cancelling_Final_QBC)
+											then 1
+										else 0
+									end
+			from
+				PostFixtures pf
+			where
+				pf.QBRecId = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating WithinLaycanFinal - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update LaycanOverUnderFinal
+	begin try
+		update
+				Staging.Fact_FixtureBerth with (tablock)
+			set
+				LaycanOverUnderFinal =	case
+											when MinimumNORDate <= convert(date, pf.Laycan_Commencement_Final_QBC)
+												then datediff(day, convert(date, pf.Laycan_Commencement_Final_QBC), MinimumNORDate)
+											when MinimumNORDate > convert(date, pf.Laycan_Cancelling_Final_QBC)
+												then datediff(day, convert(date, pf.Laycan_Cancelling_Final_QBC), MinimumNORDate)
+											else 0
+										end
+			from
+				PostFixtures pf
+			where
+				pf.QBRecId = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating LaycanOverUnderFinal - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Truncate Warehouse table before insert to capture changes
+	if object_id(N'Warehouse.Fact_FixtureBerth', 'U') is not null
+		truncate table Warehouse.Fact_FixtureBerth;
 
 	-- Insert new events into Warehouse table
 	begin try
@@ -1272,12 +1398,15 @@ begin
 					sfb.LaytimeActual,
 					sfb.LaytimeAllowed,
 					sfb.PumpTime,
+					sfb.WithinLaycanOriginal,
+					sfb.LaycanOverUnderOriginal,
+					sfb.WithinLaycanFinal,
+					sfb.LaycanOverUnderFinal,
+					sfb.VoyageDuration,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate
 				from
-					Staging.Fact_FixtureBerth sfb
-				where
-					sfb.RecordStatus & @NewRecord = @NewRecord;
+					Staging.Fact_FixtureBerth sfb;
 	end try
 	begin catch
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();

@@ -47,6 +47,11 @@ create table Warehouse.Fact_FixtureBerth
 		LaytimeActual						decimal(20, 8)		null,
 		LaytimeAllowed						decimal(20, 8)		null,
 		Pumptime							decimal(20, 8)		null,
+		WithinLaycanOriginal				smallint			null,
+		LaycanOverUnderOriginal				int					null,
+		WithinLaycanFinal					smallint			null,
+		LaycanOverUnderFinal				int					null,
+		VoyageDuration						int					null,		-- 1st NOR to last NOR on Post Fixture
 		RowCreatedDate						date				not null,
 		RowUpdatedDate						date				not null,
 		constraint [PK_Warehouse_Fact_FixtureBerth_Key] primary key clustered 
