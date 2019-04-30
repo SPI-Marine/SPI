@@ -66,21 +66,20 @@ begin
 					try_convert	(
 									decimal(20, 8),
 									epostfixture.AddressCommissionPercent
-								)												AddressCommissionRate,
+								) / 100											AddressCommissionRate,
 					case
 						when isnull(epostfixture.Add_Comm_applies_to_Frt_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
-							then parcel.ParcelFreightAmountQBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)
+							then parcel.ParcelFreightAmountQBC * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)
 						else null
 					end															AddressCommissionAmount,
 					case
 						when isnull(epostfixture.Add_Comm_applies_to_Frt_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
 							then parcel.ParcelFreightAmountQBC - isnull	(
-																			parcel.ParcelFreightAmountQBC - (parcel.ParcelFreightAmountQBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)),
+																			parcel.ParcelFreightAmountQBC - (parcel.ParcelFreightAmountQBC * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)),
 																			0.0
 																		)
 						else null
-					end															AddressCommissionApplied,
-					isnull(rs.RecordStatus, @NewRecord)							RecordStatus
+					end															AddressCommissionApplied
 				from
 					Parcels parcel
 						left join ParcelProducts parprod
@@ -133,24 +132,6 @@ begin
 							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
 						left join Warehouse.Dim_Vessel vessel
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
-						left join	(
-										select
-												@ExistingRecord RecordStatus,
-												PostFixtureAlternateKey,
-												RebillAlternateKey,
-												ChargeAlternateKey,
-												ParcelProductAlternateKey,
-												ProductAlternateKey,
-												ChargeTypeAlternateKey
-											from
-												Warehouse.Fact_FixtureFinance
-									) rs
-							on rs.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
-								and rs.RebillAlternateKey = -1	-- Used to indicate Parcel Freight records
-								and rs.ChargeAlternateKey = -1	-- Used to indicate Parcel Freight records
-								and rs.ParcelProductAlternateKey = isnull(parcel.RelatedParcelProductId, -1)
-								and rs.ProductAlternateKey = isnull(parprod.RelatedProductId, -1)
-								and rs.ChargeTypeAlternateKey = @FreightChargeType
 				where
 					parcel.RelatedSPIFixtureId is not null
 					and parcel.ParcelFreightAmountQBC is not null;
@@ -189,20 +170,19 @@ begin
 							then 'Agreed Demurrage'
 						when parcel.DemurrageClaimAmount_QBC <> 0.0
 							then 'Claim Demurrage'
-						when parcel.DemurrageVaultEstimateAmount_QBC <> 0.0
-							then 'Vault Demurrage'
-						else 'Unknown'
+						else 'Vault Demurrage'
 					end															ChargeType,
 					null														ChargeDescription,
 					null														ParcelNumber,
 					case
+						when parcel.DemurrageAgreedAmount_QBC = 0.0
+								and epostfixture.ZeroDemurrage = 1
+							then parcel.DemurrageAgreedAmount_QBC
 						when parcel.DemurrageAgreedAmount_QBC <> 0.0
 							then parcel.DemurrageAgreedAmount_QBC
 						when parcel.DemurrageClaimAmount_QBC <> 0.0
 							then parcel.DemurrageClaimAmount_QBC
-						when parcel.DemurrageVaultEstimateAmount_QBC <> 0.0
-							then parcel.DemurrageVaultEstimateAmount_QBC
-						else null
+						else parcel.DemurrageVaultEstimateAmount_QBC
 					end															Charge,
 					case
 						when isnull(parcel.BLQty, 0) > 0
@@ -221,16 +201,16 @@ begin
 					try_convert	(
 									decimal(20, 8),
 									epostfixture.AddressCommissionPercent
-								)												AddressCommissionRate,
+								) / 100											AddressCommissionRate,
 					case
 						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
 							then	case
 										when parcel.DemurrageAgreedAmount_QBC <> 0.0
-											then parcel.DemurrageAgreedAmount_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)
+											then parcel.DemurrageAgreedAmount_QBC * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)
 										when parcel.DemurrageClaimAmount_QBC <> 0.0
-											then parcel.DemurrageClaimAmount_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)
+											then parcel.DemurrageClaimAmount_QBC * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)
 										when parcel.DemurrageVaultEstimateAmount_QBC <> 0.0
-											then parcel.DemurrageVaultEstimateAmount_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)
+											then parcel.DemurrageVaultEstimateAmount_QBC * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)
 										else null
 									end
 						else null
@@ -240,24 +220,23 @@ begin
 							then	case
 										when parcel.DemurrageAgreedAmount_QBC <> 0.0
 											then parcel.DemurrageAgreedAmount_QBC - isnull	(
-																								parcel.DemurrageAgreedAmount_QBC - (parcel.DemurrageAgreedAmount_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)),
+																								parcel.DemurrageAgreedAmount_QBC - (parcel.DemurrageAgreedAmount_QBC * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)),
 																								0.0
 																							)
 										when parcel.DemurrageClaimAmount_QBC <> 0.0
 											then parcel.DemurrageClaimAmount_QBC - isnull	(
-																								parcel.DemurrageClaimAmount_QBC - (parcel.DemurrageClaimAmount_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)),
+																								parcel.DemurrageClaimAmount_QBC - (parcel.DemurrageClaimAmount_QBC * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)),
 																								0.0
 																							)
 										when parcel.DemurrageVaultEstimateAmount_QBC <> 0.0
 											then parcel.DemurrageVaultEstimateAmount_QBC - isnull	(
-																										parcel.DemurrageVaultEstimateAmount_QBC - (parcel.DemurrageVaultEstimateAmount_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)),
+																										parcel.DemurrageVaultEstimateAmount_QBC - (parcel.DemurrageVaultEstimateAmount_QBC * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)),
 																										0.0
 																									)
 										else null
 									end
 						else null
-					end															AddressCommissionApplied,
-					isnull(rs.RecordStatus, @NewRecord)							RecordStatus
+					end															AddressCommissionApplied
 				from
 					Parcels parcel
 						left join ParcelProducts parprod
@@ -310,31 +289,14 @@ begin
 							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
 						left join Warehouse.Dim_Vessel vessel
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
-						left join	(
-										select
-												@ExistingRecord RecordStatus,
-												PostFixtureAlternateKey,
-												RebillAlternateKey,
-												ChargeAlternateKey,
-												ParcelProductAlternateKey,
-												ProductAlternateKey,
-												ChargeTypeAlternateKey
-											from
-												Warehouse.Fact_FixtureFinance
-									) rs
-							on rs.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
-								and rs.RebillAlternateKey = -2	-- Used to indicate Demurrage records
-								and rs.ChargeAlternateKey = -2	-- Used to indicate Demurrage records
-								and rs.ParcelProductAlternateKey = isnull(parcel.RelatedParcelProductId, -1)
-								and rs.ProductAlternateKey = isnull(parprod.RelatedProductId, -1)
-								and rs.ChargeTypeAlternateKey = @DemurrageChargeType
 				where
 					parcel.RelatedSPIFixtureId is not null
-					and	(
-							parcel.DemurrageAgreedAmount_QBC <> 0
-							or parcel.DemurrageClaimAmount_QBC <> 0
-							or parcel.DemurrageVaultEstimateAmount_QBC <> 0
-						);
+					and coalesce	(
+										parcel.DemurrageAgreedAmount_QBC,
+										parcel.DemurrageClaimAmount_QBC,
+										parcel.DemurrageVaultEstimateAmount_QBC,
+										-1
+									) >= 0;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging Demurrage records - ' + error_message();
@@ -378,18 +340,17 @@ begin
 								)																			AddressCommissionRate,
 					case
 						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
-							then charge.ParcelAdditionalChargeAmountDue_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)
+							then charge.ParcelAdditionalChargeAmountDue_QBC * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)
 						else null
 					end																						AddressCommissionAmount,
 					case
 						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
 							then charge.ParcelAdditionalChargeAmountDue_QBC - isnull	(
-																							charge.ParcelAdditionalChargeAmountDue_QBC - (charge.ParcelAdditionalChargeAmountDue_QBC * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)),
+																							charge.ParcelAdditionalChargeAmountDue_QBC - (charge.ParcelAdditionalChargeAmountDue_QBC * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)),
 																							0.0
 																						)
 						else null
-					end																						AddressCommissionApplied,
-					isnull(rs.RecordStatus, @NewRecord)														RecordStatus
+					end																						AddressCommissionApplied
 				from
 					ParcelAdditionalCharges charge
 						left join AdditionalCharges chargetype
@@ -446,24 +407,6 @@ begin
 							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
 						left join Warehouse.Dim_Vessel vessel
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
-						left join	(
-										select
-												@ExistingRecord RecordStatus,
-												PostFixtureAlternateKey,
-												RebillAlternateKey,
-												ChargeAlternateKey,
-												ParcelProductAlternateKey,
-												ProductAlternateKey,
-												ChargeTypeAlternateKey
-											from
-												Warehouse.Fact_FixtureFinance
-									) rs
-							on rs.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
-								and rs.RebillAlternateKey = charge.RecordID
-								and rs.ChargeAlternateKey = -1
-								and rs.ParcelProductAlternateKey = isnull(parcel.RelatedParcelProductId, -1)
-								and rs.ProductAlternateKey = isnull(parprod.RelatedProductId, -1)
-								and rs.ChargeTypeAlternateKey = @ParcelChargeType
 				where
 					parcel.RelatedSPIFixtureId is not null
 					and parcel.RelatedParcelProductId is not null;
@@ -505,18 +448,17 @@ begin
 								)												AddressCommissionRate,
 					case
 						when isnull(charge.Apply_Address_Commission_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
-							then charge.Amount * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)
+							then charge.Amount * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)
 						else null
 					end															AddressCommissionAmount,
 					case
 						when isnull(charge.Apply_Address_Commission_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
 							then charge.Amount - isnull	(
-															charge.Amount - (charge.Amount * try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent)),
+															charge.Amount - (charge.Amount * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)),
 															0.0
 														)
 						else null
-					end															AddressCommissionApplied,
-					isnull(rs.RecordStatus, @NewRecord)							RecordStatus
+					end															AddressCommissionApplied
 				from
 					AdditionalCharges charge
 						left join Warehouse.Dim_PostFixture wpostfixture
@@ -547,24 +489,6 @@ begin
 							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
 						left join Warehouse.Dim_Vessel vessel
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
-						left join	(
-										select
-												@ExistingRecord RecordStatus,
-												PostFixtureAlternateKey,
-												RebillAlternateKey,
-												ChargeAlternateKey,
-												ParcelProductAlternateKey,
-												ProductAlternateKey,
-												ChargeTypeAlternateKey
-											from
-												Warehouse.Fact_FixtureFinance
-									) rs
-							on rs.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
-								and rs.RebillAlternateKey = -1
-								and rs.ChargeAlternateKey = charge.QBRecId
-								and rs.ParcelProductAlternateKey = -1
-								and rs.ProductAlternateKey = -1
-								and rs.ChargeTypeAlternateKey = @AdditionalChargeType
 				where
 					charge.RelatedSPIFixtureId is not null;
 	end try
@@ -596,6 +520,10 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+	-- Clear Warehouse table
+	if object_id(N'Warehouse.Fact_FixtureFinance', 'U') is not null
+		truncate table Warehouse.Fact_FixtureFinance;
+
 	-- Insert new charges into Warehouse table
 	begin try
 		insert
@@ -624,51 +552,12 @@ begin
 					finance.AddressCommissionRate,
 					finance.AddressCommissionAmount,
 					finance.AddressCommissionApplied,
-					getdate() RowStartDate,
-					getdate() RowUpdatedDate
+					getdate() RowStartDate
 				from
-					Staging.Fact_FixtureFinance finance
-				where
-					finance.RecordStatus & @NewRecord = @NewRecord;
+					Staging.Fact_FixtureFinance finance;
 	end try
 	begin catch
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();
-		throw 51000, @ErrorMsg, 1;
-	end catch
-
-	-- Update existing records
-	begin try
-		update 
-				Warehouse.Fact_FixtureFinance
-			set
-				LoadPortBerthKey = finance.LoadPortBerthKey,
-				DischargePortBerthKey = finance.DischargePortBerthKey,
-				VesselKey = finance.VesselKey,
-				CharterPartyDateKey = finance.CharterPartyDateKey,
-				FirstLoadEventDateKey = finance.FirstLoadEventDateKey,
-				ChargeType = finance.ChargeType,
-				ChargeDescription = finance.ChargeDescription,
-				ParcelNumber = finance.ParcelNumber,
-				Charge = finance.Charge,
-				ChargePerMetricTon = finance.ChargePerMetricTon,
-				AddressCommissionRate = finance.AddressCommissionRate,
-				AddressCommissionAmount = finance.AddressCommissionAmount,
-				AddressCommissionApplied = finance.AddressCommissionApplied,
-				RowUpdatedDate = getdate()
-			from
-				Staging.Fact_FixtureFinance finance
-			where
-				Warehouse.Fact_FixtureFinance.PostFixtureAlternateKey = finance.PostFixtureAlternateKey
-				and Warehouse.Fact_FixtureFinance.RebillAlternateKey = finance.RebillAlternateKey
-				and Warehouse.Fact_FixtureFinance.ChargeAlternateKey = finance.ChargeAlternateKey
-				and Warehouse.Fact_FixtureFinance.ParcelProductAlternateKey = finance.ParcelProductAlternateKey
-				and Warehouse.Fact_FixtureFinance.ProductAlternateKey = finance.ProductAlternateKey
-				and Warehouse.Fact_FixtureFinance.ParcelAlternateKey = finance.ParcelAlternateKey
-				and Warehouse.Fact_FixtureFinance.ChargeTypeAlternateKey = finance.ChargeTypeAlternateKey
-				and finance.RecordStatus & @ExistingRecord = @ExistingRecord;
-	end try
-	begin catch
-		select @ErrorMsg = 'Updating existing Warehouse records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch
 end
