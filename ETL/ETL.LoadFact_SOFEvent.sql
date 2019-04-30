@@ -23,9 +23,7 @@ as
 begin
 	set nocount on;
 
-	declare	@NewRecord		smallint = 1,
-			@ExistingRecord smallint = 2,
-			@ErrorMsg		varchar(1000);
+	declare	@ErrorMsg		varchar(1000);
 
 	-- Clear Staging table
 	if object_id(N'Staging.Fact_SOFEvent', 'U') is not null
@@ -95,8 +93,7 @@ begin
 				try_convert(time, sof.StopTime)				StopTime,
 				try_convert(datetime, sof.StartDate)		StartDate,
 				try_convert(datetime, sof.StopDate)			StopDate,
-				parcel.ParcelProductId						ParcelProductId,
-				isnull(rs.RecordStatus, @NewRecord)			RecordStatus
+				parcel.ParcelProductId						ParcelProductId
 			from
 				SOFEvents sof
 					left join Warehouse.Dim_Calendar startdate
@@ -112,7 +109,7 @@ begin
 										p.QbRecId						ParcelId,
 										pb.RelatedSpiFixtureId			PostFixtureAlternateKey,
 										pb.RelatedLDPId					ParcelPortAlternateKey,
-										pb.RelatedPortId				RelatedPortId,
+										eventport.RelatedPortId			RelatedPortId,
 										pb.RelatedBerthId				RelatedBerthId,
 										pb.LaytimeAllowedBerthHrs_QBC	LaytimeAllowed,
 										p.BLQty							ParcelQuantity,
@@ -128,6 +125,8 @@ begin
 										dischberth.RelatedBerthId		DischBerthAlternateKey										
 									from
 										ParcelBerths pb
+											join ParcelPorts eventport
+												on eventport.QBRecId = pb.RelatedLDPId
 											join Parcels p
 												on pb.RelatedSpiFixtureId = p.RelatedSpiFixtureId
 											join ParcelPorts loadport
@@ -166,15 +165,7 @@ begin
 										group by
 											qty.RelatedSpiFixtureId
 								) totqty
-						on totqty.PostFixtureAlternateKey = parcel.PostFixtureAlternateKey
-					left join	(
-									select
-											@ExistingRecord RecordStatus,
-											EventAlternateKey
-										from
-											Warehouse.Fact_SOFEvent
-								) rs
-						on rs.EventAlternateKey = sof.QBRecId;
+						on totqty.PostFixtureAlternateKey = parcel.PostFixtureAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging SOFEvent records - ' + error_message();
@@ -278,6 +269,10 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+	-- Clear Warehouse table
+	if object_id(N'Warehouse.Fact_SOFEvent', 'U') is not null
+		truncate table Warehouse.Fact_SOFEvent;
+
 	-- Insert new events into Warehouse table
 	begin try
 		insert
@@ -307,12 +302,9 @@ begin
 					evt.LaytimeAllowed,
 					evt.LaytimeAllowedProrated,
 					evt.ParcelQuantity,
-					getdate() RowStartDate,
-					getdate() RowUpdatedDate
+					getdate() RowStartDate
 				from
-					Staging.Fact_SOFEvent evt
-				where
-					evt.RecordStatus & @NewRecord = @NewRecord;
+					Staging.Fact_SOFEvent evt;
 	end try
 	begin catch
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();
