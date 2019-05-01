@@ -337,7 +337,7 @@ begin
 					try_convert	(
 									decimal(20, 8),
 									epostfixture.AddressCommissionPercent
-								)																			AddressCommissionRate,
+								) / 100																		AddressCommissionRate,
 					case
 						when isnull(epostfixture.Add_Comm_applies_to_Demurrage_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
 							then charge.ParcelAdditionalChargeAmountDue_QBC * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)
@@ -445,7 +445,7 @@ begin
 					try_convert	(
 									decimal(20, 8),
 									epostfixture.AddressCommissionPercent
-								)												AddressCommissionRate,
+								) / 100											AddressCommissionRate,
 					case
 						when isnull(charge.Apply_Address_Commission_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
 							then charge.Amount * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)
