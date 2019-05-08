@@ -211,11 +211,11 @@ begin
 		update
 				Staging.Fact_SOFEvent with (tablock)
 			set
-				LaytimeActual =	case IsLaytime
-									when 'Y'
-										then ProrationPercentage*Duration
-									else null
-								end;
+				LaytimeActual =	ee.LtUsedProrationAmtHrs_QBC
+			from
+				SOFEvents ee
+					join Staging.Fact_SOFEvent fe
+						on ee.QBRecId = fe.EventAlternateKey;
 
 		-- Calculate LaytimeAllowedProrated
 		update
@@ -308,6 +308,25 @@ begin
 	end try
 	begin catch
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+
+	-- Remove deleted source records
+	begin try
+		delete
+				Warehouse.Fact_SOFEvent with (tablock)
+			where
+				not exists	(
+								select
+										1
+									from
+										SOFEvents se
+									where
+										se.QBRecId = Warehouse.Fact_SOFEvent.EventAlternateKey
+							);
+	end try
+	begin catch
+		select @ErrorMsg = 'Deleting removed records Warehouse - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch
 end
