@@ -34,6 +34,7 @@ create table Warehouse.Fact_SOFEvent
 		ParcelNumber			smallint			null,
 		StartDateTime			varchar(50)			null,
 		StopDateTime			varchar(50)			null,
+		StartDateTimeSort		datetime			null,
 		Duration				decimal(18, 4)		null,		-- Metrics
 		LaytimeActual			decimal(18, 4)		null,
 		LaytimeAllowed			decimal(18, 4)		null,

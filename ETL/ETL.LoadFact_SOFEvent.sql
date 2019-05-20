@@ -71,6 +71,12 @@ begin
 							' ',
 							left(convert(varchar(50), try_convert(time, sof.StopTime), 108), 5)
 						)									StopDateTime,
+				try_convert	(
+								datetime,
+								sof.StartDate
+								+ ' '
+								+ sof.StartTime
+							)								StartDateTimeSort,
 				null										Duration,
 				null										LaytimeActual,
 				parcel.LaytimeAllowed						LaytimeAllowed,
@@ -297,6 +303,7 @@ begin
 					evt.ParcelNumber,
 					evt.StartDateTime,
 					evt.StopDateTime,
+					evt.StartDateTimeSort,
 					evt.Duration,
 					evt.LaytimeActual,
 					evt.LaytimeAllowed,
