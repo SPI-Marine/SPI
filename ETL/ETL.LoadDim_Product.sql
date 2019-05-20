@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	04/10/2019	Added ProductType ETL
+Brian Boswick	05/20/2019	Remove deleted records from Warehouse
 ==========================================================================================================	
 */
 
@@ -155,6 +156,25 @@ begin
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating existing records in Warehouse - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+
+	-- Delete rows removed from source system
+	begin try
+		delete
+				Warehouse.Dim_Product
+			where
+				not exists	(
+								select
+										1
+									from
+										Products p
+									where
+										p.QBRecId = ProductAlternateKey
+							);
+	end try
+	begin catch
+		select @ErrorMsg = 'Deleting removed records from Warehouse - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch
 

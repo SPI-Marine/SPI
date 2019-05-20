@@ -6,6 +6,7 @@ Description:	Creates the LoadDim_Parcel stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	05/20/2019	Remove deleted records from Warehouse
 ==========================================================================================================	
 */
 
@@ -203,6 +204,25 @@ begin
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating existing records in Warehouse - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+
+	-- Delete rows removed from source system
+	begin try
+		delete
+				Warehouse.Dim_Parcel
+			where
+				not exists	(
+								select
+										1
+									from
+										Parcels p
+									where
+										p.QBRecId = ParcelAlternateKey
+							);
+	end try
+	begin catch
+		select @ErrorMsg = 'Deleting removed records from Warehouse - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch
 

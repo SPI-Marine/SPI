@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	03/15/2019	Added LoadPortBerthKey and DischargePortBerthKey
+Brian Boswick	05/20/2019	Remove deleted records from Warehouse
 ==========================================================================================================	
 */
 
@@ -333,7 +334,7 @@ begin
 							);
 	end try
 	begin catch
-		select @ErrorMsg = 'Deleting removed records Warehouse - ' + error_message();
+		select @ErrorMsg = 'Deleting removed records from Warehouse - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch
 end

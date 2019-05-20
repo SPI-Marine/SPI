@@ -9,6 +9,7 @@ Developer		Date		Change
 Brian Boswick	04/20/2019	Added ETL for COA related information
 Brian Boswick	04/25/2019	Added LaycanCancellingOriginal, LaycanCancellingFinal_QBC,
 							LaycanCommencementFinal_QBC,
+Brian Boswick	05/20/2019	Remove deleted records from Warehouse
 ==========================================================================================================	
 */
 
@@ -364,6 +365,25 @@ begin
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating existing records in Warehouse - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+
+	-- Delete rows removed from source system
+	begin try
+		delete
+				Warehouse.Dim_PostFixture
+			where
+				not exists	(
+								select
+										1
+									from
+										PostFixtures pf
+									where
+										pf.QBRecId = PostFixtureAlternateKey
+							);
+	end try
+	begin catch
+		select @ErrorMsg = 'Deleting removed records from Warehouse - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch
 
