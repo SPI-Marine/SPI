@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	04/17/2019	Added ParcelNumber
+Brian Boswick	06/04/2019	Added DeadfreightQty
 ==========================================================================================================	
 */
 
@@ -30,6 +31,7 @@ create table Staging.Dim_Parcel
 		VaultDemurrage			decimal(18, 2)		null,
 		IsAgreedProRated		varchar(15)			null,
 		ParcelNumber			smallint			null,
+		DeadfreightQty			decimal(18, 2)		null,
 		Type1HashValue			varbinary(16)		not null,
 		RecordStatus			int					not null,
 		constraint [PK_Staging_Dim_Parcel_QBRecId] primary key clustered 

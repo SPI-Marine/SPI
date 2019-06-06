@@ -1,3 +1,11 @@
+set ansi_nulls on;
+go
+set quoted_identifier on;
+go
+
+drop procedure if exists ETL.LoadDim_Parcel;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -7,16 +15,9 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	05/20/2019	Remove deleted records from Warehouse
+Brian Boswick	06/04/2019	Added DeadfreightQty
 ==========================================================================================================	
 */
-
-set ansi_nulls on;
-go
-set quoted_identifier on;
-go
-
-drop procedure if exists ETL.LoadDim_Parcel;
-go
 
 create procedure ETL.LoadDim_Parcel
 as
@@ -51,6 +52,7 @@ begin
 				parcel.DemurrageVaultEstimateAmount_QBC		VaultDemurrage,
 				parcel.[DemurrageAgreedPro-ration_QBC]		IsAgreedProRated,
 				null										ParcelNumber,
+				parcel.DeadfreightQty						DeadfreightQty,
 				0 											Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord)			RecordStatus
 			from
@@ -121,7 +123,8 @@ begin
 																ClaimDemurrage,
 																VaultDemurrage,
 																IsAgreedProRated,
-																ParcelNumber
+																ParcelNumber,
+																DeadfreightQty
 															)
 												);
 		
@@ -160,6 +163,7 @@ begin
 					parcel.VaultDemurrage,
 					parcel.IsAgreedProRated,
 					parcel.ParcelNumber,
+					parcel.DeadfreightQty,
 					parcel.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -193,6 +197,7 @@ begin
 				VaultDemurrage = parcel.VaultDemurrage,
 				IsAgreedProRated = parcel.IsAgreedProRated,
 				ParcelNumber = parcel.ParcelNumber,
+				DeadfreightQty = parcel.DeadfreightQty,
 				Type1HashValue = parcel.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -256,6 +261,7 @@ begin
 														VaultDemurrage,
 														IsAgreedProRated,
 														ParcelNumber,
+														DeadfreightQty,
 														Type1HashValue,
 														RowCreatedDate,
 														RowUpdatedDate,
@@ -279,6 +285,7 @@ begin
 							0.0,						-- VaultDemurrage
 							'Unknown',					-- IsAgreedProRated
 							0,							-- ParcelNumber
+							0,							-- DeadfreightQty
 							0,							-- Type1HashValue
 							getdate(),					-- RowCreatedDate
 							getdate(),					-- RowUpdatedDate
@@ -301,6 +308,7 @@ begin
 							0.0,						-- VaultDemurrage
 							'Unknown',					-- IsAgreedProRated
 							0,							-- ParcelNumber
+							0,							-- DeadfreightQty
 							0,							-- Type1HashValue
 							getdate(),					-- RowCreatedDate
 							getdate(),					-- RowUpdatedDate
