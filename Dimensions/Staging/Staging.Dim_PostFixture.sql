@@ -10,6 +10,7 @@ Brian Boswick	03/19/2019	Added Broker name, Charterer and Owner
 Brian Boswick	04/20/2019	Added COA related information
 Brian Boswick	04/25/2019	Added LaycanCancellingOriginal, LaycanCancellingFinal_QBC,
 							LaycanCommencementFinal_QBC,
+Brian Boswick	06/13/2019	Added Region
 ==========================================================================================================	
 */
 
@@ -77,6 +78,7 @@ create table Staging.Dim_PostFixture
 		LaycanCancellingFinal_QBC		date				null,
 		LaycanCommencementFinal_QBC		date				null,
 		SPIFixtureStatus				varchar(100)		null,
+		Region							varchar(100)		null,
 		Type1HashValue					varbinary(16)		not null,
 		RecordStatus					int					not null
 		constraint [PK_Staging_Dim_PostFixture_QBRecId] primary key clustered 

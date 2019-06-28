@@ -303,6 +303,87 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+	-- Get Additional Charges
+	begin try
+		insert
+				Staging.Fact_FixtureFinance with (tablock)
+			select
+				distinct
+					charge.RelatedSPIFixtureId									PostFixtureAlternateKey,
+					-1															RebillAlternateKey,
+					charge.QBRecId												ChargeAlternateKey,
+					-1															ParcelProductAlternateKey,
+					-1															ProductAlternateKey,
+					-1															ParcelAlternateKey,
+					@AdditionalChargeType										ChargeTypeAlternateKey,
+					-1															LoadPortBerthKey,
+					-1															DischargePortBerthKey,
+					-1															ProductKey,
+					-2															ParcelKey,
+					isnull(wpostfixture.PostFixtureKey, -1)						PostFixtureKey,
+					isnull(vessel.VesselKey, -1)								VesselKey,
+					isnull(cpdate.DateKey, -1)									CharterPartyDateKey,
+					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
+					charge.[Type]												ChargeType,
+					charge.[Description]										ChargeDescription,
+					null														ParcelNumber,
+					charge.Amount												Charge,
+					null														ChargePerMetricTon,
+					try_convert	(
+									decimal(20, 8),
+									epostfixture.AddressCommissionPercent
+								) / 100											AddressCommissionRate,
+					case
+						when isnull(charge.Apply_Address_Commission_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
+							then charge.Amount * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)
+						else null
+					end															AddressCommissionAmount,
+					case
+						when isnull(charge.Apply_Address_Commission_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
+							then charge.Amount - isnull	(
+															charge.Amount - (charge.Amount * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)),
+															0.0
+														)
+						else null
+					end															AddressCommissionApplied
+				from
+					AdditionalCharges charge
+						left join Warehouse.Dim_PostFixture wpostfixture
+							on wpostfixture.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
+						left join PostFixtures epostfixture
+							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+						left join Warehouse.Dim_Calendar cpdate
+							on cpdate.FullDate = convert(date, epostfixture.CPDate)
+						left join	(
+										select
+												pf.QBRecId			PostFixtureAlternateKey,
+												min(e.StartDate)	FirstEventDate
+											from
+												SOFEvents e
+													join ParcelBerths pb
+														on pb.QBRecId = e.RelatedParcelBerthId
+													join PostFixtures pf
+														on pf.QBRecId = pb.RelatedSpiFixtureId
+													join ParcelPorts pp
+														on pb.RelatedLDPId = pp.QBRecID
+													where
+														pp.[Type] = 'Load'
+													group by
+														pf.QBRecId
+									) firstevent
+							on firstevent.PostFixtureAlternateKey = epostfixture.QBRecId
+						left join Warehouse.Dim_Calendar firsteventdate
+							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
+						left join Warehouse.Dim_Vessel vessel
+							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
+				where
+					charge.RelatedSPIFixtureId is not null;
+	end try
+	begin catch
+		select @ErrorMsg = 'Staging AdditionalCharge records - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
 	-- Get Parcel Charges
 	begin try
 		insert
@@ -326,7 +407,7 @@ begin
 					isnull(firsteventdate.DateKey, -1)														FirstLoadEventDateKey,
 					chargetype.[Type]																		ChargeType,		
 					chargetype.[Description]																ChargeDescription,
-					null														ParcelNumber,
+					null																					ParcelNumber,
 					charge.ParcelAdditionalChargeAmountDue_QBC												Charge,
 					case
 						when isnull(parcel.BLQty, 0) > 0
@@ -409,94 +490,21 @@ begin
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
 				where
 					parcel.RelatedSPIFixtureId is not null
-					and parcel.RelatedParcelProductId is not null;
+					and parcel.RelatedParcelProductId is not null
+					and not exists	(
+										select
+												1
+											from
+												Staging.Fact_FixtureFinance sff
+											where
+												sff.PostFixtureAlternateKey = parcel.RelatedSpiFixtureId
+									);
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging ParcelAdditionalCharges records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 	
-	-- Get Additional Charges
-	begin try
-		insert
-				Staging.Fact_FixtureFinance with (tablock)
-			select
-				distinct
-					charge.RelatedSPIFixtureId									PostFixtureAlternateKey,
-					-1															RebillAlternateKey,
-					charge.QBRecId												ChargeAlternateKey,
-					-1															ParcelProductAlternateKey,
-					-1															ProductAlternateKey,
-					-1															ParcelAlternateKey,
-					@AdditionalChargeType										ChargeTypeAlternateKey,
-					-1															LoadPortBerthKey,
-					-1															DischargePortBerthKey,
-					-1															ProductKey,
-					-2															ParcelKey,
-					isnull(wpostfixture.PostFixtureKey, -1)						PostFixtureKey,
-					isnull(vessel.VesselKey, -1)								VesselKey,
-					isnull(cpdate.DateKey, -1)									CharterPartyDateKey,
-					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
-					charge.[Type]												ChargeType,
-					charge.[Description]										ChargeDescription,
-					null														ParcelNumber,
-					charge.Amount												Charge,
-					null														ChargePerMetricTon,
-					try_convert	(
-									decimal(20, 8),
-									epostfixture.AddressCommissionPercent
-								) / 100											AddressCommissionRate,
-					case
-						when isnull(charge.Apply_Address_Commission_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
-							then charge.Amount * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)
-						else null
-					end															AddressCommissionAmount,
-					case
-						when isnull(charge.Apply_Address_Commission_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
-							then charge.Amount - isnull	(
-															charge.Amount - (charge.Amount * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)),
-															0.0
-														)
-						else null
-					end															AddressCommissionApplied
-				from
-					AdditionalCharges charge
-						left join Warehouse.Dim_PostFixture wpostfixture
-							on wpostfixture.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
-						left join PostFixtures epostfixture
-							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
-						left join Warehouse.Dim_Calendar cpdate
-							on cpdate.FullDate = convert(date, epostfixture.CPDate)
-						left join	(
-										select
-												pf.QBRecId			PostFixtureAlternateKey,
-												min(e.StartDate)	FirstEventDate
-											from
-												SOFEvents e
-													join ParcelBerths pb
-														on pb.QBRecId = e.RelatedParcelBerthId
-													join PostFixtures pf
-														on pf.QBRecId = pb.RelatedSpiFixtureId
-													join ParcelPorts pp
-														on pb.RelatedLDPId = pp.QBRecID
-													where
-														pp.[Type] = 'Load'
-													group by
-														pf.QBRecId
-									) firstevent
-							on firstevent.PostFixtureAlternateKey = epostfixture.QBRecId
-						left join Warehouse.Dim_Calendar firsteventdate
-							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
-						left join Warehouse.Dim_Vessel vessel
-							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
-				where
-					charge.RelatedSPIFixtureId is not null;
-	end try
-	begin catch
-		select @ErrorMsg = 'Staging AdditionalCharge records - ' + error_message();
-		throw 51000, @ErrorMsg, 1;
-	end catch	
-
 	-- Update ParcelNumber
 	begin try
 		update

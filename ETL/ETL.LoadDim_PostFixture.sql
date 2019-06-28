@@ -102,6 +102,7 @@ begin
 				fixture.Laycan_Cancelling_Final_QBC,
 				fixture.Laycan_Commencement_Final_QBC,
 				fixture.SPI_Fixture_Status,
+				region.RegionName,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -114,6 +115,18 @@ begin
 						on rtrim(ltrim(brokername.EmailAddress)) = rtrim(ltrim(fixture.RelatedBroker))
 					left join SPICOA coa
 						on coa.RecordID = fixture.RelatedSPICOAId
+					left join	(
+									select
+											tm.EmailAddress,
+											r.[Name] RegionName
+										from
+											TeamMembers tm
+												join SpiOffices o
+													on o.QBRecId = tm.RelatedSPIOfficeId
+												join SPIRegions r
+													on r.QBRecId = o.RelatedSpiRegionId
+								) region
+						on region.EmailAddress = fixture.RelatedBroker
 					left join	(
 									select
 											@ExistingRecord RecordStatus,
@@ -194,7 +207,8 @@ begin
 																LaycanCancellingOriginal,
 																LaycanCancellingFinal_QBC,
 																LaycanCommencementFinal_QBC,
-																SPIFixtureStatus
+																SPIFixtureStatus,
+																Region
 															)
 												);
 		
@@ -277,6 +291,7 @@ begin
 					fixture.LaycanCancellingFinal_QBC,
 					fixture.LaycanCommencementFinal_QBC,
 					fixture.SPIFixtureStatus,
+					fixture.Region,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -354,6 +369,7 @@ begin
 				LaycanCancellingFinal_QBC = fixture.LaycanCancellingFinal_QBC,
 				LaycanCommencementFinal_QBC = fixture.LaycanCommencementFinal_QBC,
 				SPIFixtureStatus = fixture.SPIFixtureStatus,
+				Region = fixture.Region,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -369,23 +385,23 @@ begin
 	end catch
 
 	-- Delete rows removed from source system
-	begin try
-		delete
-				Warehouse.Dim_PostFixture
-			where
-				not exists	(
-								select
-										1
-									from
-										PostFixtures pf
-									where
-										pf.QBRecId = PostFixtureAlternateKey
-							);
-	end try
-	begin catch
-		select @ErrorMsg = 'Deleting removed records from Warehouse - ' + error_message();
-		throw 51000, @ErrorMsg, 1;
-	end catch
+	--begin try
+	--	delete
+	--			Warehouse.Dim_PostFixture
+	--		where
+	--			not exists	(
+	--							select
+	--									1
+	--								from
+	--									PostFixtures pf
+	--								where
+	--									pf.QBRecId = PostFixtureAlternateKey
+	--						);
+	--end try
+	--begin catch
+	--	select @ErrorMsg = 'Deleting removed records from Warehouse - ' + error_message();
+	--	throw 51000, @ErrorMsg, 1;
+	--end catch
 
 	-- Insert Unknown record
 	begin try
@@ -461,6 +477,7 @@ begin
 													LaycanCancellingFinal_QBC,
 													LaycanCommencementFinal_QBC,
 													SPIFixtureStatus,
+													Region,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -528,6 +545,7 @@ begin
 							'12/30/1899',	-- LaycanCancellingFinal_QBC
 							'12/30/1899',	-- LaycanCommencementFinal_QBC
 							'Unknown',		-- SPIFixtureStatus
+							'Unknown',		-- Region
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate

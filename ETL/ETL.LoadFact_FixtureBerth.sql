@@ -224,7 +224,7 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update ProductKey for the Post Fixture
+	-- Update ProductType for the Post Fixture
 	begin try
 		with TopProductTypeQuantities	(
 											PostFixtureAlternateKey,
@@ -1357,6 +1357,109 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+	-- Find comparable, averable wait and lay times and aggregate them for comparison
+	begin try
+		with FixtureBerthEventTimeAggregations	(
+													PortBerthKey,
+													ProductType,
+													ParcelQuantityTShirtSize,
+													LoadDischarge,
+													AverageWaitTimeNOR_Berth,
+													AverageWaitTimeBerth_HoseOn,
+													AverageWaitTimeHoseOn_CommenceLoad,
+													AverageWaitTimeHoseOn_CommenceDischarge,
+													AverageWaitTimeBerth_HoseOff,
+													AverageWaitTimeCompleteLoad_HoseOff,
+													AverageWaitTimeCompleteDischarge_HoseOff,
+													AverageLayTimeNOR_Berth,
+													AverageLayTimeBerth_HoseOn,
+													AverageLayTimeHoseOn_CommenceLoad,
+													AverageLayTimeHoseOn_CommenceDischarge,
+													AverageLayTimeBerth_HoseOff,
+													AverageLayTimeCompleteLoad_HoseOff,
+													AverageLayTimeCompleteDischarge_HoseOff,
+													AverageLayTimePumpingTime,
+													AverageLayTimePumpingRate,
+													AverageLaytimeActual,
+													AverageLaytimeAllowed,
+													AveragePumpTime
+												)
+		as
+		(
+			select
+					fb.PortBerthKey,
+					fb.ProductType,
+					fb.ParcelQuantityTShirtSize,
+					fb.LoadDischarge,
+					avg(fb.WaitTimeNOR_Berth)							AverageWaitTimeNOR_Berth,
+					avg(fb.WaitTimeBerth_HoseOn)						AverageWaitTimeBerth_HoseOn,
+					avg(fb.WaitTimeHoseOn_CommenceLoad)					AverageWaitTimeHoseOn_CommenceLoad,
+					avg(fb.WaitTimeHoseOn_CommenceDischarge)			AverageWaitTimeHoseOn_CommenceDischarge,
+					avg(fb.WaitTimeBerth_HoseOff)						AverageWaitTimeBerth_HoseOff,
+					avg(fb.WaitTimeCompleteLoad_HoseOff)				AverageWaitTimeCompleteLoad_HoseOff,
+					avg(fb.WaitTimeCompleteDischarge_HoseOff)			AverageWaitTimeCompleteDischarge_HoseOff,
+					avg(fb.LayTimeNOR_Berth)							AverageLayTimeNOR_Berth,
+					avg(fb.LayTimeBerth_HoseOn)							AverageLayTimeBerth_HoseOn,
+					avg(fb.LayTimeHoseOn_CommenceLoad)					AverageLayTimeHoseOn_CommenceLoad,
+					avg(fb.LayTimeHoseOn_CommenceDischarge)				AverageLayTimeHoseOn_CommenceDischarge,
+					avg(fb.LayTimeBerth_HoseOff)						AverageLayTimeBerth_HoseOff,
+					avg(fb.LayTimeCompleteLoad_HoseOff)					AverageLayTimeCompleteLoad_HoseOff,
+					avg(fb.LayTimeCompleteDischarge_HoseOff)			AverageLayTimeCompleteDischarge_HoseOff,
+					avg(fb.LayTimePumpingTime)							AverageLayTimePumpingTime,
+					avg(fb.LayTimePumpingRate)							AverageLayTimePumpingRate,
+					avg(fb.LaytimeActual)								AverageLaytimeActual,
+					avg(fb.LaytimeAllowed)								AverageLaytimeAllowed,
+					avg(fb.PumpTime)									AveragePumpTime
+				from
+					Staging.Fact_FixtureBerth fb
+				where
+					PortBerthKey = fb.PortBerthKey
+					and ProductType = fb.ProductType
+					and ParcelQuantityTShirtSize = fb.ParcelQuantityTShirtSize
+					and LoadDischarge = fb.LoadDischarge
+				group by
+					fb.PortBerthKey,
+					fb.ProductType,
+					fb.ParcelQuantityTShirtSize,
+					fb.LoadDischarge
+		)
+		
+		update
+				Staging.Fact_FixtureBerth
+			set
+				AverageWaitTimeNOR_Berth = fba.AverageWaitTimeNOR_Berth,
+				AverageWaitTimeBerth_HoseOn = fba.AverageWaitTimeBerth_HoseOn,
+				AverageWaitTimeHoseOn_CommenceLoad = fba.AverageWaitTimeHoseOn_CommenceLoad,
+				AverageWaitTimeHoseOn_CommenceDischarge = fba.AverageWaitTimeHoseOn_CommenceDischarge,
+				AverageWaitTimeBerth_HoseOff = fba.AverageWaitTimeBerth_HoseOff,
+				AverageWaitTimeCompleteLoad_HoseOff = fba.AverageWaitTimeCompleteLoad_HoseOff,
+				AverageWaitTimeCompleteDischarge_HoseOff = fba.AverageWaitTimeCompleteDischarge_HoseOff,
+				AverageLayTimeNOR_Berth = fba.AverageLayTimeNOR_Berth,
+				AverageLayTimeBerth_HoseOn = fba.AverageLayTimeBerth_HoseOn,
+				AverageLayTimeHoseOn_CommenceLoad = fba.AverageLayTimeHoseOn_CommenceLoad,
+				AverageLayTimeHoseOn_CommenceDischarge = fba.AverageLayTimeHoseOn_CommenceDischarge,
+				AverageLayTimeBerth_HoseOff = fba.AverageLayTimeBerth_HoseOff,
+				AverageLayTimeCompleteLoad_HoseOff = fba.AverageLayTimeCompleteLoad_HoseOff,
+				AverageLayTimeCompleteDischarge_HoseOff = fba.AverageLayTimeCompleteDischarge_HoseOff,
+				AverageLayTimePumpingTime = fba.AverageLayTimePumpingTime,
+				AverageLayTimePumpingRate = fba.AverageLayTimePumpingRate,
+				AverageLaytimeActual = fba.AverageLaytimeActual,
+				AverageLaytimeAllowed = fba.AverageLaytimeAllowed,
+				AveragePumpTime = fba.AveragePumpTime
+			from
+				FixtureBerthEventTimeAggregations fba
+			where
+				Staging.Fact_FixtureBerth.PortBerthKey = fba.PortBerthKey
+				and Staging.Fact_FixtureBerth.ProductType = fba.ProductType
+				and Staging.Fact_FixtureBerth.ParcelQuantityTShirtSize = fba.ParcelQuantityTShirtSize
+				and Staging.Fact_FixtureBerth.LoadDischarge = fba.LoadDischarge;
+				
+	end try
+	begin catch
+		select @ErrorMsg = 'Loading Warehouse - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+
 	-- Truncate Warehouse table before insert to capture changes
 	if object_id(N'Warehouse.Fact_FixtureBerth', 'U') is not null
 		truncate table Warehouse.Fact_FixtureBerth;
@@ -1379,25 +1482,44 @@ begin
 					sfb.ProductType,
 					sfb.ParcelQuantityTShirtSize,
 					sfb.WaitTimeNOR_Berth,
+					sfb.AverageWaitTimeNOR_Berth,
 					sfb.WaitTimeBerth_HoseOn,
+					sfb.AverageWaitTimeBerth_HoseOn,
 					sfb.WaitTimeHoseOn_CommenceLoad,
+					sfb.AverageWaitTimeHoseOn_CommenceLoad,
 					sfb.WaitTimeHoseOn_CommenceDischarge,
+					sfb.AverageWaitTimeHoseOn_CommenceDischarge,
 					sfb.WaitTimeBerth_HoseOff,
+					sfb.AverageWaitTimeBerth_HoseOff,
 					sfb.WaitTimeCompleteLoad_HoseOff,
+					sfb.AverageWaitTimeCompleteLoad_HoseOff,
 					sfb.WaitTimeCompleteDischarge_HoseOff,
+					sfb.AverageWaitTimeCompleteDischarge_HoseOff,
 					sfb.LayTimeNOR_Berth,
+					sfb.AverageLayTimeNOR_Berth,
 					sfb.LayTimeBerth_HoseOn,
+					sfb.AverageLayTimeBerth_HoseOn,
 					sfb.LayTimeHoseOn_CommenceLoad,
+					sfb.AverageLayTimeHoseOn_CommenceLoad,
 					sfb.LayTimeHoseOn_CommenceDischarge,
+					sfb.AverageLayTimeHoseOn_CommenceDischarge,
 					sfb.LayTimeBerth_HoseOff,
+					sfb.AverageLayTimeBerth_HoseOff,
 					sfb.LayTimeCompleteLoad_HoseOff,
+					sfb.AverageLayTimeCompleteLoad_HoseOff,
 					sfb.LayTimeCompleteDischarge_HoseOff,
+					sfb.AverageLayTimeCompleteDischarge_HoseOff,
 					sfb.LayTimePumpingTime,
+					sfb.AverageLayTimePumpingTime,
 					sfb.LayTimePumpingRate,
+					sfb.AverageLayTimePumpingRate,
 					sfb.ParcelQuantity,
 					sfb.LaytimeActual,
+					sfb.AverageLaytimeActual,
 					sfb.LaytimeAllowed,
+					sfb.AverageLaytimeAllowed,
 					sfb.PumpTime,
+					sfb.AveragePumpTime,
 					sfb.WithinLaycanOriginal,
 					sfb.LaycanOverUnderOriginal,
 					sfb.WithinLaycanFinal,
