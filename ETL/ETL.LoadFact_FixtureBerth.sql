@@ -14,6 +14,9 @@ Description:	Creates the LoadFact_FixtureBerth stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	06/26/2019	Added LaytimeCommenceLoad_CompleteLoad, LaytimeCommenceDischarge_CompleteDischarge,
+							AverageLaytimeCommenceLoad_CompleteLoad and 
+							AverageLaytimeCommenceDischarge_CompleteDischarge metrics
 ==========================================================================================================	
 */
 
@@ -1064,6 +1067,104 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+	-- Update LaytimeCommenceLoad_CompleteLoad
+	begin try
+		update
+				fb with (tablock)
+			set
+				LaytimeCommenceLoad_CompleteLoad = isnull(fbed.LaytimeCommenceLoad_CompleteLoad, 0)
+			from
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				LaytimeCommenceLoad_CompleteLoad,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 262	-- Commence Loading
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)							
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 265	-- Completed Loading
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+											and fbe.IsLayTime = 'Y'
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating LaytimeCommenceLoad_CompleteLoad - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update LaytimeCommenceDischarge_CompleteDischarge
+	begin try
+		update
+				fb with (tablock)
+			set
+				LaytimeCommenceDischarge_CompleteDischarge = isnull(fbed.LaytimeCommenceDischarge_CompleteDischarge, 0)
+			from
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				LaytimeCommenceDischarge_CompleteDischarge,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 268	-- Commence Discharge
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)							
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en
+																		where
+																			en.EventTypeId = 271	-- Complete Discharge
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+											and fbe.IsLayTime = 'Y'
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating LaytimeCommenceDischarge_CompleteDischarge - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
 	-- Update LayTimePumpingTime
 	begin try
 		update
@@ -1378,6 +1479,8 @@ begin
 													AverageLayTimeBerth_HoseOff,
 													AverageLayTimeCompleteLoad_HoseOff,
 													AverageLayTimeCompleteDischarge_HoseOff,
+													AverageLaytimeCommenceLoad_CompleteLoad,
+													AverageLaytimeCommenceDischarge_CompleteDischarge,
 													AverageLayTimePumpingTime,
 													AverageLayTimePumpingRate,
 													AverageLaytimeActual,
@@ -1405,6 +1508,8 @@ begin
 					avg(fb.LayTimeBerth_HoseOff)						AverageLayTimeBerth_HoseOff,
 					avg(fb.LayTimeCompleteLoad_HoseOff)					AverageLayTimeCompleteLoad_HoseOff,
 					avg(fb.LayTimeCompleteDischarge_HoseOff)			AverageLayTimeCompleteDischarge_HoseOff,
+					avg(fb.LaytimeCommenceLoad_CompleteLoad)			AverageLaytimeCommenceLoad_CompleteLoad,
+					avg(fb.LaytimeCommenceDischarge_CompleteDischarge)	AverageLaytimeCommenceDischarge_CompleteDischarge,
 					avg(fb.LayTimePumpingTime)							AverageLayTimePumpingTime,
 					avg(fb.LayTimePumpingRate)							AverageLayTimePumpingRate,
 					avg(fb.LaytimeActual)								AverageLaytimeActual,
@@ -1441,6 +1546,8 @@ begin
 				AverageLayTimeBerth_HoseOff = fba.AverageLayTimeBerth_HoseOff,
 				AverageLayTimeCompleteLoad_HoseOff = fba.AverageLayTimeCompleteLoad_HoseOff,
 				AverageLayTimeCompleteDischarge_HoseOff = fba.AverageLayTimeCompleteDischarge_HoseOff,
+				AverageLaytimeCommenceLoad_CompleteLoad = fba.AverageLaytimeCommenceLoad_CompleteLoad,
+				AverageLaytimeCommenceDischarge_CompleteDischarge = fba.AverageLaytimeCommenceDischarge_CompleteDischarge,
 				AverageLayTimePumpingTime = fba.AverageLayTimePumpingTime,
 				AverageLayTimePumpingRate = fba.AverageLayTimePumpingRate,
 				AverageLaytimeActual = fba.AverageLaytimeActual,
@@ -1509,6 +1616,10 @@ begin
 					sfb.AverageLayTimeCompleteLoad_HoseOff,
 					sfb.LayTimeCompleteDischarge_HoseOff,
 					sfb.AverageLayTimeCompleteDischarge_HoseOff,
+					sfb.LaytimeCommenceLoad_CompleteLoad,
+					sfb.AverageLaytimeCommenceLoad_CompleteLoad,
+					sfb.LaytimeCommenceDischarge_CompleteDischarge,
+					sfb.AverageLaytimeCommenceDischarge_CompleteDischarge,
 					sfb.LayTimePumpingTime,
 					sfb.AverageLayTimePumpingTime,
 					sfb.LayTimePumpingRate,
@@ -1535,3 +1646,4 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch
 end
+go
