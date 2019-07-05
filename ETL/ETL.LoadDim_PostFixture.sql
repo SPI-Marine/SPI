@@ -9,7 +9,7 @@ Developer		Date		Change
 Brian Boswick	04/20/2019	Added ETL for COA related information
 Brian Boswick	04/25/2019	Added LaycanCancellingOriginal, LaycanCancellingFinal_QBC,
 							LaycanCommencementFinal_QBC,
-Brian Boswick	05/20/2019	Remove deleted records from Warehouse
+Brian Boswick	07/01/2019	Added four new fields from QB
 ==========================================================================================================	
 */
 
@@ -103,6 +103,10 @@ begin
 				fixture.Laycan_Commencement_Final_QBC,
 				fixture.SPI_Fixture_Status,
 				region.RegionName,
+				fixture.LAF_Disch_Mtph_QBC,
+				fixture.LAF_Load_Mtph_QBC,
+				fixture.LAF_Total_hrs_QBC,
+				fixture.LaytimeAllowedTypeFixture_QBC,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -208,7 +212,11 @@ begin
 																LaycanCancellingFinal_QBC,
 																LaycanCommencementFinal_QBC,
 																SPIFixtureStatus,
-																Region
+																Region,
+																LAF_Disch_Mtph_QBC,
+																LAF_Load_Mtph_QBC,
+																LAF_Total_hrs_QBC,
+																LaytimeAllowedTypeFixture_QBC
 															)
 												);
 		
@@ -292,6 +300,10 @@ begin
 					fixture.LaycanCommencementFinal_QBC,
 					fixture.SPIFixtureStatus,
 					fixture.Region,
+					fixture.LAF_Disch_Mtph_QBC,
+					fixture.LAF_Load_Mtph_QBC,
+					fixture.LAF_Total_hrs_QBC,
+					fixture.LaytimeAllowedTypeFixture_QBC,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -370,6 +382,10 @@ begin
 				LaycanCommencementFinal_QBC = fixture.LaycanCommencementFinal_QBC,
 				SPIFixtureStatus = fixture.SPIFixtureStatus,
 				Region = fixture.Region,
+				LAF_Disch_Mtph_QBC = fixture.LAF_Disch_Mtph_QBC,
+				LAF_Load_Mtph_QBC = fixture.LAF_Load_Mtph_QBC,
+				LAF_Total_hrs_QBC = fixture.LAF_Total_hrs_QBC,
+				LaytimeAllowedTypeFixture_QBC = fixture.LaytimeAllowedTypeFixture_QBC,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -478,6 +494,10 @@ begin
 													LaycanCommencementFinal_QBC,
 													SPIFixtureStatus,
 													Region,
+													LAF_Disch_Mtph_QBC,
+													LAF_Load_Mtph_QBC,
+													LAF_Total_hrs_QBC,
+													LaytimeAllowedTypeFixture_QBC,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -546,6 +566,10 @@ begin
 							'12/30/1899',	-- LaycanCommencementFinal_QBC
 							'Unknown',		-- SPIFixtureStatus
 							'Unknown',		-- Region
+							0.0,			-- LAF_Disch_Mtph_QBC
+							0.0,			-- LAF_Load_Mtph_QBC
+							0.0,			-- LAF_Total_hrs_QBC
+							0.0,			-- LaytimeAllowedTypeFixture_QBC
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
