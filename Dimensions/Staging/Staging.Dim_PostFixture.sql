@@ -12,6 +12,7 @@ Brian Boswick	04/25/2019	Added LaycanCancellingOriginal, LaycanCancellingFinal_Q
 							LaycanCommencementFinal_QBC,
 Brian Boswick	06/13/2019	Added Region
 Brian Boswick	07/01/2019	Added four new fields from QB
+Brian Boswick	07/17/2019	Added OwnerParent and ChartererParent fields
 ==========================================================================================================	
 */
 
@@ -27,6 +28,8 @@ create table Staging.Dim_PostFixture
 		BrokerFullName					nvarchar(250)		null,
 		OwnerFullStyle					nvarchar(250)		null,
 		ChartererFullStyle				nvarchar(250)		null,
+		OwnerParent						nvarchar(250)		null,
+		ChartererParent					nvarchar(250)		null,
 		RelatedOpsPrimary				nvarchar(250)		null,
 		RelatedOpsBackup				nvarchar(250)		null,
 		CPDate							date				null,

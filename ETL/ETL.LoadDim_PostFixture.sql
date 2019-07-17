@@ -10,6 +10,7 @@ Brian Boswick	04/20/2019	Added ETL for COA related information
 Brian Boswick	04/25/2019	Added LaycanCancellingOriginal, LaycanCancellingFinal_QBC,
 							LaycanCommencementFinal_QBC,
 Brian Boswick	07/01/2019	Added four new fields from QB
+Brian Boswick	07/17/2019	Added OwnerParent and ChartererParent fields
 ==========================================================================================================	
 */
 
@@ -50,6 +51,8 @@ begin
 						)									BrokerFullName,
 				ownerfullstyle.FullStyleName				OwnerFullStyle,
 				chartererfullstyle.FullStyleName			ChartererFullStyle,
+				ownerparent.OwnerParentName					OwnerParentName,
+				chartererparent.ChartererParentName			ChartererParentName,
 				fixture.RelatedOpsPrimary,
 				fixture.RelatedOpsBackup,
 				fixture.CPDate,
@@ -113,8 +116,12 @@ begin
 				PostFixtures fixture
 					left join FullStyles ownerfullstyle
 						on fixture.RelatedOwnerFullStyle = ownerfullstyle.QBRecId
+					left join OwnerParents ownerparent
+						on ownerparent.QBRecId = ownerfullstyle.RelatedOwnerParentId
 					left join FullStyles chartererfullstyle
 						on chartererfullstyle.QBRecId = fixture.RelatedChartererFullStyle
+					left join ChartererParents chartererparent
+						on chartererparent.QBRecId = chartererfullstyle.RelatedChartererParentId
 					left join TeamMembers brokername
 						on rtrim(ltrim(brokername.EmailAddress)) = rtrim(ltrim(fixture.RelatedBroker))
 					left join SPICOA coa
@@ -160,6 +167,8 @@ begin
 																BrokerFullName,
 																OwnerFullStyle,
 																ChartererFullStyle,
+																OwnerParent,
+																ChartererParent,
 																RelatedOpsPrimary,
 																RelatedOpsBackup,
 																convert(nvarchar(30), CPDate),
@@ -247,6 +256,8 @@ begin
 					fixture.BrokerFullName,
 					fixture.OwnerFullStyle,
 					fixture.ChartererFullStyle,
+					fixture.OwnerParent,
+					fixture.ChartererParent,
 					fixture.RelatedOpsPrimary,
 					fixture.RelatedOpsBackup,
 					fixture.CPDate,
@@ -329,6 +340,8 @@ begin
 				BrokerFullName = fixture.BrokerFullName,
 				OwnerFullStyle = fixture.OwnerFullStyle,
 				ChartererFullStyle = fixture.ChartererFullStyle,
+				OwnerParent = fixture.OwnerParent,
+				ChartererParent = fixture.ChartererParent,
 				RelatedOpsPrimary = fixture.RelatedOpsPrimary,
 				RelatedOpsBackup = fixture.RelatedOpsBackup,
 				CPDate = fixture.CPDate,
@@ -441,6 +454,8 @@ begin
 													BrokerFullName,
 													OwnerFullStyle,
 													ChartererFullStyle,
+													OwnerParent,
+													ChartererParent,
 													RelatedOpsPrimary,
 													RelatedOpsBackup,
 													CPDate,
@@ -513,6 +528,8 @@ begin
 							'Unknown',		-- BrokerFullName
 							'Unknown',		-- OwnerFullStyle
 							'Unknown',		-- ChartererFullStyle
+							'Unknown',		-- OwnerParent
+							'Unknown',		-- ChartererParent
 							'Unknown',		-- RelatedOpsPrimary
 							'Unknown',		-- RelatedOpsBackup
 							'12/30/1899',	-- CPDate
