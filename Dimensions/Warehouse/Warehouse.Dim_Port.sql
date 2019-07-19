@@ -24,6 +24,8 @@ create table Warehouse.Dim_Port
 		Latitude				numeric(10, 4)		null,
 		Longitude				numeric(10, 4)		null,
 		PortCosts				nvarchar(250)		null,
+		Area					varchar(150)		null,
+		Region					varchar(150)		null,
 		Type1HashValue			varbinary(16)		not null,
 		RowCreatedDate			date				not null,
 		RowUpdatedDate			date				not null,

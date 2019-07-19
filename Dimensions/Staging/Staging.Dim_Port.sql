@@ -6,6 +6,7 @@ Description:	Creates the Staging.Dim_Port table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	07/19/2019	Added Area, Region
 ==========================================================================================================	
 */
 
@@ -23,6 +24,8 @@ create table Staging.Dim_Port
 		Latitude				numeric(10, 4)		null,
 		Longitude				numeric(10, 4)		null,
 		PortCosts				nvarchar(250)		null,
+		Area					varchar(150)		null,
+		Region					varchar(150)		null,
 		Type1HashValue			varbinary(16)		not null,
 		RecordStatus			int					not null
 		constraint [PK_Staging_Dim_Port_QBRecId] primary key clustered 

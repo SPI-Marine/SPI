@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	05/20/2019	Remove deleted records from Warehouse
+Brian Boswick	07/19/2019	Added Area, Region
 ==========================================================================================================	
 */
 
@@ -56,10 +57,16 @@ begin
 					else null
 				end	Longitude,
 				[port].PortCosts,
+				area.[Name]							Area,
+				region.RegionName					Region,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
 				[Ports] [port]
+					left join ShippingAreas area
+						on area.QBRecId = [port].RelatedShippingAreaId
+					left join ShippingRegions region
+						on region.QBRecId = area.RelatedSARegionID
 					left join	(
 									select
 											@ExistingRecord RecordStatus,
@@ -90,7 +97,9 @@ begin
 																Comments,
 																Latitude,
 																Longitude,
-																PortCosts
+																PortCosts,
+																Area,
+																Region
 															)
 												);
 		
@@ -123,6 +132,8 @@ begin
 					[port].Latitude,
 					[port].Longitude,
 					[port].PortCosts,
+					[port].Area,
+					[port].Region,
 					[port].Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -150,6 +161,8 @@ begin
 				Latitude = [port].Latitude,
 				Longitude = [port].Longitude,
 				PortCosts = [port].PortCosts,
+				Area = [port].Area,
+				Region = [port].Region,
 				Type1HashValue = [port].Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -207,6 +220,8 @@ begin
 														Latitude,
 														Longitude,
 														PortCosts,
+														Area,
+														Region,
 														Type1HashValue,
 														RowCreatedDate,
 														RowUpdatedDate,
@@ -224,6 +239,8 @@ begin
 							0,				-- Latitude
 							0,				-- Longitude
 							'Unknown',		-- PortCosts
+							'Unknown',		-- Area
+							'Unknown',		-- Region
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
