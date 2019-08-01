@@ -377,7 +377,8 @@ begin
 						left join Warehouse.Dim_Vessel vessel
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
 				where
-					charge.RelatedSPIFixtureId is not null;
+					charge.RelatedSPIFixtureId is not null
+					and charge.DoNotIncludeInAdditionalChargeCalculation = 0;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging AdditionalCharge records - ' + error_message();
