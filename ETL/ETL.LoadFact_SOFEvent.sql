@@ -80,7 +80,11 @@ begin
 							)								StartDateTimeSort,
 				null										Duration,
 				null										LaytimeActual,
-				parcel.LaytimeAllowed						LaytimeAllowed,
+				case
+					when epostfixture.Disch_FAC = 1 and parcel.LoadDischarge = 'Discharge'
+						then 0
+					else parcel.LaytimeAllowed
+				end											LaytimeAllowed,
 				null										LaytimeAllowedProrated,
 				null										ProrationPercentage,
 				case
