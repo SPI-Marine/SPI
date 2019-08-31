@@ -176,7 +176,9 @@ begin
 										group by
 											qty.RelatedSpiFixtureId
 								) totqty
-						on totqty.PostFixtureAlternateKey = parcel.PostFixtureAlternateKey;
+						on totqty.PostFixtureAlternateKey = parcel.PostFixtureAlternateKey
+			where
+				sof.StartDate is not null;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging SOFEvent records - ' + error_message();
