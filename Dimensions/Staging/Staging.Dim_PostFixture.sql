@@ -13,6 +13,7 @@ Brian Boswick	04/25/2019	Added LaycanCancellingOriginal, LaycanCancellingFinal_Q
 Brian Boswick	06/13/2019	Added Region
 Brian Boswick	07/01/2019	Added four new fields from QB
 Brian Boswick	07/17/2019	Added OwnerParent and ChartererParent fields
+Brian Boswick	09/23/2019	Added FixtureType
 ==========================================================================================================	
 */
 
@@ -87,6 +88,7 @@ create table Staging.Dim_PostFixture
 		LAF_Load_Mtph_QBC				decimal(18, 2)		null,
 		LAF_Total_hrs_QBC				decimal(18, 2)		null,
 		LaytimeAllowedTypeFixture_QBC	varchar(100)		null,
+		FixtureType						varchar(500)		null,
 		Type1HashValue					varbinary(16)		not null,
 		RecordStatus					int					not null
 		constraint [PK_Staging_Dim_PostFixture_QBRecId] primary key clustered 

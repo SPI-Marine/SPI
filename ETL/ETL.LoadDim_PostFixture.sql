@@ -110,6 +110,7 @@ begin
 				fixture.LAF_Load_Mtph_QBC,
 				fixture.LAF_Total_hrs_QBC,
 				fixture.LaytimeAllowedTypeFixture_QBC,
+				fixture.FixtureType,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -225,7 +226,8 @@ begin
 																LAF_Disch_Mtph_QBC,
 																LAF_Load_Mtph_QBC,
 																LAF_Total_hrs_QBC,
-																LaytimeAllowedTypeFixture_QBC
+																LaytimeAllowedTypeFixture_QBC,
+																FixtureType
 															)
 												);
 		
@@ -315,6 +317,7 @@ begin
 					fixture.LAF_Load_Mtph_QBC,
 					fixture.LAF_Total_hrs_QBC,
 					fixture.LaytimeAllowedTypeFixture_QBC,
+					fixture.FixtureType,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -399,6 +402,7 @@ begin
 				LAF_Load_Mtph_QBC = fixture.LAF_Load_Mtph_QBC,
 				LAF_Total_hrs_QBC = fixture.LAF_Total_hrs_QBC,
 				LaytimeAllowedTypeFixture_QBC = fixture.LaytimeAllowedTypeFixture_QBC,
+				FixtureType = fixture.FixtureType,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -513,6 +517,7 @@ begin
 													LAF_Load_Mtph_QBC,
 													LAF_Total_hrs_QBC,
 													LaytimeAllowedTypeFixture_QBC,
+													FixtureType,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -587,6 +592,7 @@ begin
 							0.0,			-- LAF_Load_Mtph_QBC
 							0.0,			-- LAF_Total_hrs_QBC
 							0.0,			-- LaytimeAllowedTypeFixture_QBC
+							'Unknown',		-- FixtureType
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
