@@ -6,6 +6,7 @@ Description:	Creates the Staging.Fact_VesselItinerary table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	10/10/2019	Added DateModifiedKey column
 ==========================================================================================================	
 */
 
@@ -17,8 +18,9 @@ create table Staging.Fact_VesselItinerary
 		VesselItineraryAlternateKey				int					not null,
 		PostFixtureKey							int					not null,
 		PortKey									int					not null,
-		ETAStartDateKey							int					null,		-- Degenerate Dimension Attributes
-		ETAEndDateKey							int					null,
+		ETAStartDateKey							int					not null,		-- Degenerate Dimension Attributes
+		ETAEndDateKey							int					not null,
+		DateModifiedKey							int					not null,
 		ItineraryPortType						varchar(50)			null,
 		Comments								varchar(500)		null,
 		RelatedParcelPortID						int					null,	-- ETL fields

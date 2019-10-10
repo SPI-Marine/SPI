@@ -38,6 +38,7 @@ begin
 				-1											PortKey,
 				isnull(sd.DateKey, 18991230)				ETAStartDateKey,
 				coalesce(ed.DateKey, sd.DateKey, 18991230)	ETAEndDateKey,
+				isnull(dm.DateKey, 47001231)				DateModifiedKey,
 				vi.ItineraryPortType						ItineraryPortType,
 				vi.Comments									Remarks,
 				vi.RelatedParcelPortID						RelatedParcelPortID,
@@ -49,7 +50,41 @@ begin
 					left join Warehouse.Dim_Calendar sd with (nolock)
 						on sd.FullDate = try_convert(date, vi.ETAStart)
 					left join Warehouse.Dim_Calendar ed with (nolock)
-						on ed.FullDate = try_convert(date, vi.ETAEnd);
+						on ed.FullDate = try_convert(date, vi.ETAEnd)
+					left join Warehouse.Dim_Calendar dm
+						on dm.FullDate = try_convert(date, vi.DateModified);
+
+		-- Insert NOR Tendered records
+		insert
+				Staging.Fact_VesselItinerary with (tablock)
+		select
+			distinct
+				(e.QBRecId * -1)							VesselItineraryAlternateKey,
+				isnull(fixture.PostFixtureKey, -1)			PostFixtureKey,
+				-1											PortKey,
+				isnull(sd.DateKey, 18991230)				ETAStartDateKey,
+				isnull(sd.DateKey, 18991230)				ETAEndDateKey,
+				isnull(dm.DateKey, 47001231)				DateModifiedKey,
+				'NOR Tendered'								ItineraryPortType,
+				null										Remarks,
+				null										RelatedParcelPortID,
+				eventport.RelatedPortId						RelatedPortID
+			from
+				SOFEvents e with (nolock)
+					left join PortEventTimes eventtype with (nolock)
+						on eventtype.QBRecId = e.RelatedPortTimeEventId
+					left join ParcelBerths pb with (nolock)
+						on e.RelatedParcelBerthId = pb.QBRecId
+					join ParcelPorts eventport with (nolock)
+						on eventport.QBRecId = pb.RelatedLDPId
+					left join Warehouse.Dim_PostFixture fixture with (nolock)
+						on pb.RelatedSpiFixtureId = fixture.PostFixtureAlternateKey
+					left join Warehouse.Dim_Calendar sd with (nolock)
+						on sd.FullDate = try_convert(date, e.StartDate)
+					left join Warehouse.Dim_Calendar dm
+						on dm.FullDate = try_convert(date, e.DateModified)
+			where
+				eventtype.EventNameReports like 'NOR Tendered';
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging VesselItinerary records - ' + error_message();
@@ -64,7 +99,9 @@ begin
 				PortKey =	case
 								when vi.ItineraryPortType like 'Fixture%'
 									then isnull(fpt.PortKey, -1)
-								when vi.ItineraryPortType like 'Itinerary%'
+								--when vi.ItineraryPortType like 'NOR%'
+								--	then 1
+								when vi.ItineraryPortType like 'Itinerary%' or vi.ItineraryPortType like 'NOR%'
 									then isnull(ipt.PortKey, -1)
 								else -1
 							end
@@ -76,6 +113,8 @@ begin
 						on pp.QBRecId = vi.RelatedParcelPortID
 					left join Warehouse.Dim_Port fpt with (nolock)
 						on fpt.PortAlternateKey = pp.RelatedPortId
+					--left join Warehouse.Dim_Port npt
+					--	on npt.PortAlternateKey = vi.RelatedPortID
 			where
 				vi.VesselItineraryAlternateKey = VesselItineraryAlternateKey;
 	end try
@@ -98,6 +137,7 @@ begin
 					fvi.PortKey,
 					fvi.ETAStartDateKey,
 					fvi.ETAEndDateKey,
+					fvi.DateModifiedKey,
 					fvi.ItineraryPortType,
 					fvi.Comments,
 					getdate() RowStartDate
