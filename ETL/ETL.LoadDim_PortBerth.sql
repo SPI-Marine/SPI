@@ -37,12 +37,14 @@ begin
 		(
 			select
 				distinct	
-					pb.RelatedPortId,
+					pp.RelatedPortId,
 					pb.RelatedBerthId
 				from
 					ParcelBerths pb
+						join ParcelPorts pp
+							on pp.QBRecId = pb.RelatedLDPId
 				where
-					pb.RelatedPortId is not null
+					pp.RelatedPortId is not null
 					and pb.RelatedBerthId is not null
 		)
 
