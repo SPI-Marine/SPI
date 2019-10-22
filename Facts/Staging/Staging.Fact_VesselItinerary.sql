@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	10/10/2019	Added DateModifiedKey column
+Brian Boswick	10/20/2019	Added Original ETA benchmark metrics
 ==========================================================================================================	
 */
 
@@ -23,8 +24,23 @@ create table Staging.Fact_VesselItinerary
 		DateModifiedKey							int					not null,
 		ItineraryPortType						varchar(50)			null,
 		Comments								varchar(500)		null,
-		RelatedParcelPortID						int					null,	-- ETL fields
+		NORStartDate							date				null,
+		ETAOriginalDate							date				null,
+		ETAOriginalCreateDate					date				null,
+		TwoWeekETA								date				null,
+		OneWeekETA								date				null,
+		MostRecentETADate						date				null,
+		ETALastModifiedDate						date				null,
+		LoadDischarge							varchar(50)			null,
+		BenchmarkDays							int					null,
+		DaysOutOriginalETASent					int					null,			-- Metrics
+		DaysBetweenRecentETALastModified		int					null,
+		IsLessThanThreeDays						tinyint				null,
+		RelatedParcelPortID						int					null,			-- ETL fields
 		RelatedPortID							int					null,
+		ETAChanged								bit					null,
+		DateModified							date				null,
+		RecordStatus							tinyint				null,
 		constraint [PK_Staging_Fact_VesselItinerary_AltKey] primary key clustered 
 		(
 			VesselItineraryAlternateKey asc
