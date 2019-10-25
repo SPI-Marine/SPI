@@ -149,7 +149,7 @@ begin
 
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating MostRecentETADate, ETALastModifiedDate - ' + error_message();
+		select @ErrorMsg = 'Updating ETALastModifiedDate/MostRecentETADate - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 		
@@ -158,13 +158,13 @@ begin
 		update
 				Staging.Fact_VesselItinerary
 			set
-				DaysBetweenRecentETALastModified = abs(datediff(day, vi.MostRecentETADate, vi.ETALastModifiedDate))
+				DaysBetweenRecentETALastModified = try_convert(smallint, abs(datediff(day, vi.MostRecentETADate, vi.ETALastModifiedDate)))
 			from
 				Staging.Fact_VesselItinerary vi;
 
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating MostRecentETADate, ETALastModifiedDate - ' + error_message();
+		select @ErrorMsg = 'Updating DaysBetweenRecentETALastModified - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 		
@@ -190,16 +190,19 @@ begin
 
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating MostRecentETADate, ETALastModifiedDate - ' + error_message();
+		select @ErrorMsg = 'Updating One and Two Week ETAs - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 		
-	-- Update DaysOutOriginalETASent
+	-- Update Days Out bucket metrics
 	begin try
 		update
 				Staging.Fact_VesselItinerary
 			set
-				DaysOutOriginalETASent =	datediff(day, NORStartDate, ETAOriginalCreateDate)
+				DaysOutOriginalETASent = try_convert(smallint, abs(datediff(day, NORStartDate, ETAOriginalCreateDate))),
+				DaysOutOriginalETA = try_convert(smallint, abs(datediff(day, NORStartDate, ETAOriginalDate))),
+				DaysOutTwoWeekETA = try_convert(smallint, abs(datediff(day, NORStartDate, TwoWeekETA))),
+				DaysOutOneWeekETA = try_convert(smallint, abs(datediff(day, NORStartDate, OneWeekETA)))
 			from
 				Staging.Fact_VesselItinerary vi
 			where
@@ -207,59 +210,33 @@ begin
 
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating MostRecentETADate, ETALastModifiedDate - ' + error_message();
+		select @ErrorMsg = 'Updating DaysOut bucket metrics - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 		
-	-- Insert NOR Tendered records
+	-- Update Days Out buckets flags
 	begin try
-		insert
-				Staging.Fact_VesselItinerary with (tablock)	(
-																VesselItineraryAlternateKey,
-																PostFixtureKey,
-																PortKey,
-																ETAStartDateKey,
-																ETAEndDateKey,
-																DateModifiedKey,
-																ItineraryPortType,
-																Comments,
-																RelatedParcelPortID,
-																RelatedPortID
-															)
-		select
-			distinct
-				(e.QBRecId * -1)							VesselItineraryAlternateKey,
-				isnull(fixture.PostFixtureKey, -1)			PostFixtureKey,
-				-1											PortKey,
-				isnull(sd.DateKey, 18991230)				ETAStartDateKey,
-				isnull(sd.DateKey, 18991230)				ETAEndDateKey,
-				isnull(dm.DateKey, 47001231)				DateModifiedKey,
-				'NOR Tendered'								ItineraryPortType,
-				null										Comments,
-				null										RelatedParcelPortID,
-				eventport.RelatedPortId						RelatedPortID
+		update
+				Staging.Fact_VesselItinerary
+			set
+				ArrivedLessThanThreeDaysOriginal	=	case when DaysOutOriginalETA < 3 then 1 else null end,
+				ArrivedThreeToSevenDaysOriginal		=	case when DaysOutOriginalETA between 3 and 7 then 1 else null end,
+				ArrivedGreaterThanSevenDaysOriginal	=	case when DaysOutOriginalETA > 7 then 1 else null end,
+				ArrivedLessThanThreeDaysTwoWeek		=	case when DaysOutTwoWeekETA < 3 then 1 else null end,
+				ArrivedThreeToSevenDaysTwoWeek		=	case when DaysOutTwoWeekETA between 3 and 7 then 1 else null end,
+				ArrivedGreaterThanSevenDaysTwoWeek	=	case when DaysOutTwoWeekETA > 7 then 1 else null end,
+				ArrivedLessThanThreeDaysOneWeek		=	case when DaysOutOneWeekETA < 3 then 1 else null end,
+				ArrivedThreeToSevenDaysOneWeek		=	case when DaysOutOneWeekETA between 3 and 7 then 1 else null end,
+				ArrivedGreaterThanSevenDaysOneWeek	=	case when DaysOutOneWeekETA > 7 then 1 else null end
 			from
-				SOFEvents e with (nolock)
-					left join PortEventTimes eventtype with (nolock)
-						on eventtype.QBRecId = e.RelatedPortTimeEventId
-					left join ParcelBerths pb with (nolock)
-						on e.RelatedParcelBerthId = pb.QBRecId
-					join ParcelPorts eventport with (nolock)
-						on eventport.QBRecId = pb.RelatedLDPId
-					left join Warehouse.Dim_PostFixture fixture with (nolock)
-						on pb.RelatedSpiFixtureId = fixture.PostFixtureAlternateKey
-					left join Warehouse.Dim_Calendar sd with (nolock)
-						on sd.FullDate = try_convert(date, e.StartDate)
-					left join Warehouse.Dim_Calendar dm
-						on dm.FullDate = try_convert(date, e.DateModified)
-			where
-				eventtype.EventNameReports like 'NOR Tendered';
+				Staging.Fact_VesselItinerary vi;
+
 	end try
 	begin catch
-		select @ErrorMsg = 'Inserting NOR Tendered records - ' + error_message();
+		select @ErrorMsg = 'Updating DaysOut bucket flags - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
-	
+		
 	-- Update PortKey
 	begin try
 		update
@@ -308,8 +285,20 @@ begin
 																	MostRecentETADate,
 																	ETALastModifiedDate,
 																	LoadDischarge,
-																	DaysOutOriginalETASent,
 																	DaysBetweenRecentETALastModified,
+																	DaysOutOriginalETASent,
+																	DaysOutOriginalETA,
+																	DaysOutTwoWeekETA,
+																	DaysOutOneWeekETA,
+																	ArrivedLessThanThreeDaysOriginal,
+																	ArrivedThreeToSevenDaysOriginal,
+																	ArrivedGreaterThanSevenDaysOriginal,
+																	ArrivedLessThanThreeDaysTwoWeek,
+																	ArrivedThreeToSevenDaysTwoWeek,
+																	ArrivedGreaterThanSevenDaysTwoWeek,
+																	ArrivedLessThanThreeDaysOneWeek,
+																	ArrivedThreeToSevenDaysOneWeek,
+																	ArrivedGreaterThanSevenDaysOneWeek,
 																	RowCreatedDate,
 																	RowUpdatedDate
 																)
@@ -330,8 +319,20 @@ begin
 					fvi.MostRecentETADate,
 					fvi.ETALastModifiedDate,
 					fvi.LoadDischarge,
-					fvi.DaysOutOriginalETASent,
 					fvi.DaysBetweenRecentETALastModified,
+					fvi.DaysOutOriginalETASent,
+					fvi.DaysOutOriginalETA,
+					fvi.DaysOutTwoWeekETA,
+					fvi.DaysOutOneWeekETA,
+					fvi.ArrivedLessThanThreeDaysOriginal,
+					fvi.ArrivedThreeToSevenDaysOriginal,
+					fvi.ArrivedGreaterThanSevenDaysOriginal,
+					fvi.ArrivedLessThanThreeDaysTwoWeek,
+					fvi.ArrivedThreeToSevenDaysTwoWeek,
+					fvi.ArrivedGreaterThanSevenDaysTwoWeek,
+					fvi.ArrivedLessThanThreeDaysOneWeek,
+					fvi.ArrivedThreeToSevenDaysOneWeek,
+					fvi.ArrivedGreaterThanSevenDaysOneWeek,
 					getdate() RowCreatedDate,
 					getdate() RowUpdatedDate
 				from
@@ -364,8 +365,20 @@ begin
 				MostRecentETADate = fvi.MostRecentETADate,
 				ETALastModifiedDate = fvi.ETALastModifiedDate,
 				LoadDischarge = fvi.LoadDischarge,
-				DaysOutOriginalETASent = fvi.DaysOutOriginalETASent,
 				DaysBetweenRecentETALastModified = fvi.DaysBetweenRecentETALastModified,
+				DaysOutOriginalETASent = fvi.DaysOutOriginalETASent,
+				DaysOutOriginalETA = fvi.DaysOutOriginalETA,
+				DaysOutTwoWeekETA = fvi.DaysOutTwoWeekETA,
+				DaysOutOneWeekETA = fvi.DaysOutOneWeekETA,
+				ArrivedLessThanThreeDaysOriginal = fvi.ArrivedLessThanThreeDaysOriginal,
+				ArrivedThreeToSevenDaysOriginal = fvi.ArrivedThreeToSevenDaysOriginal,
+				ArrivedGreaterThanSevenDaysOriginal = fvi.ArrivedGreaterThanSevenDaysOriginal,
+				ArrivedLessThanThreeDaysTwoWeek = fvi.ArrivedLessThanThreeDaysTwoWeek,
+				ArrivedThreeToSevenDaysTwoWeek = fvi.ArrivedThreeToSevenDaysTwoWeek,
+				ArrivedGreaterThanSevenDaysTwoWeek = fvi.ArrivedGreaterThanSevenDaysTwoWeek,
+				ArrivedLessThanThreeDaysOneWeek = fvi.ArrivedLessThanThreeDaysOneWeek,
+				ArrivedThreeToSevenDaysOneWeek = fvi.ArrivedThreeToSevenDaysOneWeek,
+				ArrivedGreaterThanSevenDaysOneWeek = fvi.ArrivedGreaterThanSevenDaysOneWeek,
 				RowUpdatedDate = getdate()
 			from
 				Staging.Fact_VesselItinerary fvi with (nolock)
