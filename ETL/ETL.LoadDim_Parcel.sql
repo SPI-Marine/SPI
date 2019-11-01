@@ -51,7 +51,7 @@ begin
 				parcel.DemurrageClaimAmount_QBC				ClaimDemurrage,
 				parcel.DemurrageVaultEstimateAmount_QBC		VaultDemurrage,
 				parcel.[DemurrageAgreedPro-ration_QBC]		IsAgreedProRated,
-				null										ParcelNumber,
+				parcel.ParcelNumber							ParcelNumber,
 				parcel.DeadfreightQty						DeadfreightQty,
 				0 											Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord)			RecordStatus
@@ -72,34 +72,34 @@ begin
 	end catch	
 
 	-- Update ParcelNumber
-	begin try
-		update
-				Staging.Dim_Parcel with (tablock)
-			set
-				ParcelNumber = parcelnumber.ParcelNumber
-			from
-				Parcels parcel
-					left join	(
-									select
-											p.QbRecId					ParcelAltKey,
-											p.RelatedSpiFixtureId,
-											row_number() over	(
-																	partition by p.RelatedSpiFixtureId
-																	order by p.QbRecId
-																)		ParcelNumber
-										from
-											Parcels p
-										where
-											p.RelatedSpiFixtureId is not null
-								) parcelnumber
-						on parcelnumber.ParcelAltKey = parcel.QbRecId
-			where
-				parcel.QbRecId = Staging.Dim_Parcel.ParcelAlternateKey;
-	end try
-	begin catch
-		select @ErrorMsg = 'Updating hash values - ' + error_message();
-		throw 51000, @ErrorMsg, 1;
-	end catch
+	--begin try
+	--	update
+	--			Staging.Dim_Parcel with (tablock)
+	--		set
+	--			ParcelNumber = parcelnumber.ParcelNumber
+	--		from
+	--			Parcels parcel
+	--				left join	(
+	--								select
+	--										p.QbRecId					ParcelAltKey,
+	--										p.RelatedSpiFixtureId,
+	--										row_number() over	(
+	--																partition by p.RelatedSpiFixtureId
+	--																order by p.QbRecId
+	--															)		ParcelNumber
+	--									from
+	--										Parcels p
+	--									where
+	--										p.RelatedSpiFixtureId is not null
+	--							) parcelnumber
+	--					on parcelnumber.ParcelAltKey = parcel.QbRecId
+	--		where
+	--			parcel.QbRecId = Staging.Dim_Parcel.ParcelAlternateKey;
+	--end try
+	--begin catch
+	--	select @ErrorMsg = 'Updating hash values - ' + error_message();
+	--	throw 51000, @ErrorMsg, 1;
+	--end catch
 
 	-- Generate hash values for Type 1 changes. Only Type 1 SCDs
 	begin try
@@ -143,7 +143,7 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch
 
-	-- Insert new berths into Warehouse table
+	-- Insert new parcels into Warehouse table
 	begin try
 		insert
 				Warehouse.Dim_Parcel with (tablock)
