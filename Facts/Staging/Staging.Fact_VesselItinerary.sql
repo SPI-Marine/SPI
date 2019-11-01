@@ -8,6 +8,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	10/10/2019	Added DateModifiedKey column
 Brian Boswick	10/20/2019	Added Original ETA benchmark metrics
+Brian Boswick	10/30/2019	Added Laycan metric fields
 ==========================================================================================================	
 */
 
@@ -32,7 +33,15 @@ create table Staging.Fact_VesselItinerary
 		MostRecentETADate						date				null,
 		ETALastModifiedDate						date				null,
 		LoadDischarge							varchar(50)			null,
-		DaysBetweenRecentETALastModified		smallint			null,			-- Metrics
+		NORWithinLaycanOriginal					tinyint				null,
+		NORWithinLaycanFinal					tinyint				null,
+		ETAWithinLaycanOriginal					tinyint				null,
+		ETAWithinLaycanFinal					tinyint				null,
+		NORLaycanOverUnderOriginal				int					null,			-- Metrics
+		NORLaycanOverUnderFinal					int					null,
+		ETALaycanOverUnderOriginal				int					null,
+		ETALaycanOverUnderFinal					int					null,
+		DaysBetweenRecentETALastModified		smallint			null,
 		DaysOutOriginalETASent					smallint			null,
 		DaysOutOriginalETA						smallint			null,
 		DaysOutTwoWeekETA						smallint			null,
@@ -46,6 +55,7 @@ create table Staging.Fact_VesselItinerary
 		ArrivedLessThanThreeDaysOneWeek			tinyint				null,
 		ArrivedThreeToSevenDaysOneWeek			tinyint				null,
 		ArrivedGreaterThanSevenDaysOneWeek		tinyint				null,
+		NominatedQuantity						decimal(18, 2)		null,
 		RelatedParcelPortID						int					null,			-- ETL fields
 		RelatedPortID							int					null,
 		ETAChanged								bit					null,

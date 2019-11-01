@@ -15,6 +15,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	10/20/2019	Added Original ETA benchmark metrics
+Brian Boswick	10/30/2019	Added Within Laycan metrics
 ==========================================================================================================	
 */
 
@@ -130,7 +131,7 @@ begin
 	-- Update ETALastModifiedDate/MostRecentETADate changed
 	begin try
 		update
-				Staging.Fact_VesselItinerary
+				Staging.Fact_VesselItinerary with (tablock)
 			set
 				ETALastModifiedDate =	case
 											when ETAChanged = 1
@@ -156,7 +157,7 @@ begin
 	-- Update DaysBetweenRecentETALastModified
 	begin try
 		update
-				Staging.Fact_VesselItinerary
+				Staging.Fact_VesselItinerary with (tablock)
 			set
 				DaysBetweenRecentETALastModified = try_convert(smallint, abs(datediff(day, vi.MostRecentETADate, vi.ETALastModifiedDate)))
 			from
@@ -171,7 +172,7 @@ begin
 	-- Update One and Two Week ETAs
 	begin try
 		update
-				Staging.Fact_VesselItinerary
+				Staging.Fact_VesselItinerary with (tablock)
 			set
 				OneWeekETA =	case
 									when isnull(OneWeekETA, '12/30/1899') = '12/30/1899'
@@ -197,7 +198,7 @@ begin
 	-- Update Days Out bucket metrics
 	begin try
 		update
-				Staging.Fact_VesselItinerary
+				Staging.Fact_VesselItinerary with (tablock)
 			set
 				DaysOutOriginalETASent = try_convert(smallint, abs(datediff(day, NORStartDate, ETAOriginalCreateDate))),
 				DaysOutOriginalETA = try_convert(smallint, abs(datediff(day, NORStartDate, ETAOriginalDate))),
@@ -217,7 +218,7 @@ begin
 	-- Update Days Out buckets flags
 	begin try
 		update
-				Staging.Fact_VesselItinerary
+				Staging.Fact_VesselItinerary with (tablock)
 			set
 				ArrivedLessThanThreeDaysOriginal	=	case when DaysOutOriginalETA < 3 then 1 else null end,
 				ArrivedThreeToSevenDaysOriginal		=	case when DaysOutOriginalETA between 3 and 7 then 1 else null end,
@@ -265,6 +266,222 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 	
+	-- Calculate aggregate NominatedQuantity
+	begin try
+		with
+			LoadPortQuantities(PostFixtureKey, PortKey, NominatedQuantity)
+			as
+				(
+					select
+							wpf.PostFixtureKey,
+							wlp.PortKey,
+							sum(p.NominatedQty) NominatedQuantity
+						from
+							Parcels p with (nolock)
+								join ParcelPorts loadport with (nolock)
+									on p.RelatedLoadPortID = loadport.QBRecId
+								join Warehouse.Dim_Port wlp with (nolock)
+									on loadport.RelatedPortId = wlp.PortAlternateKey
+								join Warehouse.Dim_PostFixture wpf with (nolock)
+									on p.RelatedSpiFixtureId = wpf.PostFixtureAlternateKey
+						group by
+							wpf.PostFixtureKey,
+							wlp.PortKey
+				),
+			DischargePortQuantities(PostFixtureKey, PortKey, NominatedQuantity)
+			as
+				(
+					select
+							wpf.PostFixtureKey,
+							wdp.PortKey,
+							sum(p.NominatedQty) NominatedQuantity
+						from
+							Parcels p with (nolock)
+								join ParcelPorts dischargeport with (nolock)
+									on p.RelatedDischPortId = dischargeport.QBRecId
+								join Warehouse.Dim_Port wdp with (nolock)
+									on dischargeport.RelatedPortId = wdp.PortAlternateKey
+								join Warehouse.Dim_PostFixture wpf with (nolock)
+									on p.RelatedSpiFixtureId = wpf.PostFixtureAlternateKey
+						group by
+							wpf.PostFixtureKey,
+							wdp.PortKey
+				)
+
+		update
+				Staging.Fact_VesselItinerary with (tablock)
+			set
+				NominatedQuantity = coalesce(lpq.NominatedQuantity, dpq.NominatedQuantity)
+			from
+				Staging.Fact_VesselItinerary vi
+					left join LoadPortQuantities lpq with (nolock)
+						on lpq.PostFixtureKey = vi.PostFixtureKey
+							and lpq.PortKey = vi.PortKey
+							and vi.LoadDischarge = 'Load'
+					left join DischargePortQuantities dpq with (nolock)
+						on dpq.PostFixtureKey = vi.PostFixtureKey
+							and dpq.PortKey = vi.PortKey
+							and vi.LoadDischarge = 'Discharge';
+
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating aggregate NominatedQuantity - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+		
+	-- Find first load port NORs
+	begin try
+		drop table if exists Staging.FirstLoadPortNORDates;
+		create table Staging.FirstLoadPortNORDates	(
+														PostFixtureKey	int,
+														PortKey			int,
+														FirstNOR		date
+													);
+	
+		insert
+				Staging.FirstLoadPortNORDates
+			select
+					wpf.PostFixtureKey,
+					wlp.PortKey,
+					min(convert(date, evt.StartDate)) FirstNOR
+				from
+					SOFEvents evt with (nolock)
+						join ParcelBerths pb with (nolock)
+							on pb.QBRecId = evt.RelatedParcelBerthId
+						join ParcelPorts loadport with (nolock)
+							on pb.RelatedLDPId = loadport.QBRecId
+						join Warehouse.Dim_Port wlp with (nolock)
+							on loadport.RelatedPortId = wlp.PortAlternateKey
+						join Warehouse.Dim_PostFixture wpf with (nolock)
+							on pb.RelatedSpiFixtureId = wpf.PostFixtureAlternateKey
+				where
+					evt.RelatedPortTimeEventId = 219 -- NOR Tendered
+					and loadport.[Type] = 'Load'
+				group by
+					wpf.PostFixtureKey,
+					wlp.PortKey
+				having
+					count(wpf.PostFixtureKey) = 1;		-- Avoid post fixtures that have duplicate NOR Start Dates
+	end try
+	begin catch
+		select @ErrorMsg = 'Finding first load port NORs - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update NORWithinLaycan flags
+	begin try
+		update
+				Staging.Fact_VesselItinerary with (tablock)
+			set
+				NORWithinLaycanOriginal =	case
+												when nd.FirstNOR between convert(date, pf.LaycanCommencementOriginal)
+														and convert(date, pf.LaycanCancellingOriginal)
+													then 1
+												else null
+											end,
+				NORWithinLaycanFinal =	case
+											when nd.FirstNOR between convert(date, pf.LaycanCommencementFinal_QBC)
+													and convert(date, pf.LaycanCancellingFinal_QBC)
+												then 1
+											else null
+										end
+			from
+				Staging.FirstLoadPortNORDates nd with (nolock)
+					join Warehouse.Dim_PostFixture pf with (nolock)
+						on pf.PostFixtureKey = nd.PostFixtureKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'NORWithinLaycan flags - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+		
+	-- Update ETAWithinLaycan flags
+	begin try
+		update
+				Staging.Fact_VesselItinerary with (tablock)
+			set
+				ETAWithinLaycanOriginal =	case
+											when MostRecentETADate between convert(date, pf.LaycanCommencementOriginal)
+													and convert(date, pf.LaycanCancellingOriginal)
+												then 1
+											else null
+										end,
+				ETAWithinLaycanFinal =	case
+											when MostRecentETADate between convert(date, pf.LaycanCommencementFinal_QBC)
+													and convert(date, pf.LaycanCancellingFinal_QBC)
+												then 1
+											else null
+										end
+			from
+				Warehouse.Dim_PostFixture pf with (nolock)
+			where
+				pf.PostFixtureKey = Staging.Fact_VesselItinerary.PostFixtureKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'ETAWithinLaycan flags - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+		
+	-- Update NORLaycanOverUnder metrics
+	begin try
+		update
+				Staging.Fact_VesselItinerary with (tablock)
+			set
+				NORLaycanOverUnderOriginal =	case
+													when nd.FirstNOR <= convert(date, pf.LaycanCommencementOriginal)
+														then datediff(day, convert(date, pf.LaycanCommencementOriginal), nd.FirstNOR)
+													when nd.FirstNOR > convert(date, pf.LaycanCancellingOriginal)
+														then datediff(day, convert(date, pf.LaycanCancellingOriginal), nd.FirstNOR)
+													else null
+												end,
+				NORLaycanOverUnderFinal =	case
+												when nd.FirstNOR <= convert(date, pf.LaycanCommencementFinal_QBC)
+													then datediff(day, convert(date, pf.LaycanCommencementFinal_QBC), nd.FirstNOR)
+												when nd.FirstNOR > convert(date, pf.LaycanCancellingFinal_QBC)
+													then datediff(day, convert(date, pf.LaycanCancellingFinal_QBC), nd.FirstNOR)
+												else null
+											end
+			from
+				Staging.FirstLoadPortNORDates nd with (nolock)
+					join Warehouse.Dim_PostFixture pf with (nolock)
+						on pf.PostFixtureKey = nd.PostFixtureKey
+			where
+				nd.PostFixtureKey = Staging.Fact_VesselItinerary.PostFixtureKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'NORLaycanOverUnder metrics - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+		
+	-- Update ETALaycanOverUnder metrics
+	begin try
+		update
+				Staging.Fact_VesselItinerary with (tablock)
+			set
+				ETALaycanOverUnderOriginal =	case
+													when MostRecentETADate <= convert(date, pf.LaycanCommencementOriginal)
+														then datediff(day, convert(date, pf.LaycanCommencementOriginal), MostRecentETADate)
+													when MostRecentETADate > convert(date, pf.LaycanCancellingOriginal)
+														then datediff(day, convert(date, pf.LaycanCancellingOriginal), MostRecentETADate)
+													else null
+												end,
+				ETALaycanOverUnderFinal =	case
+												when MostRecentETADate <= convert(date, pf.LaycanCommencementFinal_QBC)
+													then datediff(day, convert(date, pf.LaycanCommencementFinal_QBC), MostRecentETADate)
+												when MostRecentETADate > convert(date, pf.LaycanCancellingFinal_QBC)
+													then datediff(day, convert(date, pf.LaycanCancellingFinal_QBC), MostRecentETADate)
+												else null
+											end
+			from
+				Warehouse.Dim_PostFixture pf with (nolock)
+			where
+				pf.PostFixtureKey = Staging.Fact_VesselItinerary.PostFixtureKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'ETALaycanOverUnder metrics - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+		
 	-- Insert new events into Warehouse table
 	begin try
 		insert
@@ -285,6 +502,14 @@ begin
 																	MostRecentETADate,
 																	ETALastModifiedDate,
 																	LoadDischarge,
+																	NORWithinLaycanOriginal,
+																	NORWithinLaycanFinal,
+																	ETAWithinLaycanOriginal,
+																	ETAWithinLaycanFinal,
+																	NORLaycanOverUnderOriginal,
+																	NORLaycanOverUnderFinal,
+																	ETALaycanOverUnderOriginal,
+																	ETALaycanOverUnderFinal,
 																	DaysBetweenRecentETALastModified,
 																	DaysOutOriginalETASent,
 																	DaysOutOriginalETA,
@@ -299,6 +524,7 @@ begin
 																	ArrivedLessThanThreeDaysOneWeek,
 																	ArrivedThreeToSevenDaysOneWeek,
 																	ArrivedGreaterThanSevenDaysOneWeek,
+																	NominatedQuantity,
 																	RowCreatedDate,
 																	RowUpdatedDate
 																)
@@ -319,6 +545,14 @@ begin
 					fvi.MostRecentETADate,
 					fvi.ETALastModifiedDate,
 					fvi.LoadDischarge,
+					fvi.NORWithinLaycanOriginal,
+					fvi.NORWithinLaycanFinal,
+					fvi.ETAWithinLaycanOriginal,
+					fvi.ETAWithinLaycanFinal,
+					fvi.NORLaycanOverUnderOriginal,
+					fvi.NORLaycanOverUnderFinal,
+					fvi.ETALaycanOverUnderOriginal,
+					fvi.ETALaycanOverUnderFinal,
 					fvi.DaysBetweenRecentETALastModified,
 					fvi.DaysOutOriginalETASent,
 					fvi.DaysOutOriginalETA,
@@ -333,6 +567,7 @@ begin
 					fvi.ArrivedLessThanThreeDaysOneWeek,
 					fvi.ArrivedThreeToSevenDaysOneWeek,
 					fvi.ArrivedGreaterThanSevenDaysOneWeek,
+					fvi.NominatedQuantity,
 					getdate() RowCreatedDate,
 					getdate() RowUpdatedDate
 				from
@@ -379,6 +614,7 @@ begin
 				ArrivedLessThanThreeDaysOneWeek = fvi.ArrivedLessThanThreeDaysOneWeek,
 				ArrivedThreeToSevenDaysOneWeek = fvi.ArrivedThreeToSevenDaysOneWeek,
 				ArrivedGreaterThanSevenDaysOneWeek = fvi.ArrivedGreaterThanSevenDaysOneWeek,
+				NominatedQuantity = fvi.NominatedQuantity,
 				RowUpdatedDate = getdate()
 			from
 				Staging.Fact_VesselItinerary fvi with (nolock)
