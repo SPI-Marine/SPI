@@ -324,23 +324,4 @@ begin
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch
-
-	-- Remove deleted source records
-	--begin try
-	--	delete
-	--			Warehouse.Fact_SOFEvent with (tablock)
-	--		where
-	--			not exists	(
-	--							select
-	--									1
-	--								from
-	--									SOFEvents se
-	--								where
-	--									se.QBRecId = Warehouse.Fact_SOFEvent.EventAlternateKey
-	--						);
-	--end try
-	--begin catch
-	--	select @ErrorMsg = 'Deleting removed records from Warehouse - ' + error_message();
-	--	throw 51000, @ErrorMsg, 1;
-	--end catch
 end

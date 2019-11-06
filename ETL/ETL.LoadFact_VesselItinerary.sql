@@ -626,4 +626,23 @@ begin
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch
+
+	-- Remove deleted source records
+	begin try
+		delete
+				Warehouse.Fact_VesselItinerary with (tablock)
+			where
+				not exists	(
+								select
+										1
+									from
+										VesselItinerary vi
+									where
+										vi.RecordID = Warehouse.Fact_VesselItinerary.VesselItineraryAlternateKey
+							);
+	end try
+	begin catch
+		select @ErrorMsg = 'Deleting removed records from Warehouse - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
 end

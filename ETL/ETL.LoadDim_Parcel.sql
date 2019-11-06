@@ -213,23 +213,23 @@ begin
 	end catch
 
 	-- Delete rows removed from source system
-	--begin try
-	--	delete
-	--			Warehouse.Dim_Parcel
-	--		where
-	--			not exists	(
-	--							select
-	--									1
-	--								from
-	--									Parcels p
-	--								where
-	--									p.QBRecId = ParcelAlternateKey
-	--						);
-	--end try
-	--begin catch
-	--	select @ErrorMsg = 'Deleting removed records from Warehouse - ' + error_message();
-	--	throw 51000, @ErrorMsg, 1;
-	--end catch
+	begin try
+		delete
+				Warehouse.Dim_Parcel
+			where
+				not exists	(
+								select
+										1
+									from
+										Parcels p
+									where
+										p.QBRecId = ParcelAlternateKey
+							);
+	end try
+	begin catch
+		select @ErrorMsg = 'Deleting removed records from Warehouse - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
 
 	-- Insert Unknown record
 	begin try

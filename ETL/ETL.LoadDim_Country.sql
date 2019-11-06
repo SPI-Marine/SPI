@@ -118,6 +118,25 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch
 
+	-- Delete rows removed from source system
+	begin try
+		delete
+				Warehouse.Dim_Country
+			where
+				not exists	(
+								select
+										1
+									from
+										Country b
+									where
+										b.QBRecId = CountryAlternateKey
+							);
+	end try
+	begin catch
+		select @ErrorMsg = 'Deleting removed records from Warehouse - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+
 	-- Insert Unknown record
 	begin try
 		if exists (select 1 from Warehouse.Dim_Country where CountryKey = -1)
