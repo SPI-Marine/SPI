@@ -37,7 +37,7 @@ begin
 			distinct
 				vessel.QBRecId,
 				vessel.VesselName,
-				vessel.Draft,
+				try_convert(decimal(18, 2), vessel.Draft),
 				vessel.YearBuilt,
 				vessel.Coils,
 				vessel.DeadWeight,
@@ -76,7 +76,6 @@ begin
 				vessel.IMO2CBM,
 				vessel.IMO3CBM,
 				vessel.YdNo,
-				vessel.BuildDate,
 				vessel.NBContractDate,
 				vessel.RetiredDate,
 				vessel.KTRChangeDate,
@@ -149,7 +148,6 @@ begin
 																IMO2CBM,
 																IMO3CBM,
 																YdNo,
-																BuildDate,
 																NBContractDate,
 																RetiredDate,
 																KTRChangeDate,
@@ -219,7 +217,6 @@ begin
 					vessel.IMO2CBM,
 					vessel.IMO3CBM,
 					vessel.YdNo,
-					vessel.BuildDate,
 					vessel.NBContractDate,
 					vessel.RetiredDate,
 					vessel.KTRChangeDate,
@@ -284,7 +281,6 @@ begin
 				IMO2CBM = vessel.IMO2CBM,
 				IMO3CBM = vessel.IMO3CBM,
 				YdNo = vessel.YdNo,
-				BuildDate = vessel.BuildDate,
 				NBContractDate = vessel.NBContractDate,
 				RetiredDate = vessel.RetiredDate,
 				KTRChangeDate = vessel.KTRChangeDate,
@@ -379,7 +375,6 @@ begin
 													IMO2CBM,
 													IMO3CBM,
 													YdNo,
-													BuildDate,
 													NBContractDate,
 													RetiredDate,
 													KTRChangeDate,
@@ -434,7 +429,6 @@ begin
 							0.0,			-- IMO2CBM
 							0.0,			-- IMO3CBM
 							'Unknown',		-- YdNo
-							'12/30/1899',	-- BuildDate
 							'12/30/1899',	-- NBContractDate
 							'12/30/1899',	-- RetiredDate
 							'12/30/1899',	-- KTRChangeDate

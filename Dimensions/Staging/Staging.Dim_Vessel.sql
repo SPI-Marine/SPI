@@ -55,7 +55,6 @@ create table Staging.Dim_Vessel
 		IMO2CBM					decimal(18, 2)		null,
 		IMO3CBM					decimal(18, 2)		null,
 		YdNo					nvarchar(max)		null,
-		BuildDate				date				null,
 		NBContractDate			date				null,
 		RetiredDate				date				null,
 		KTRChangeDate			date				null,
