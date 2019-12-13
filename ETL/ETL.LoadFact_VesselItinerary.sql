@@ -16,6 +16,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	10/20/2019	Added Original ETA benchmark metrics
 Brian Boswick	10/30/2019	Added Within Laycan metrics
+Brian Boswick	12/13/2019	Changed DateModified field to point to new DateETAWasUpdatedByOperator_BETA field
 ==========================================================================================================	
 */
 
@@ -76,7 +77,7 @@ begin
 						then 1
 					else 0
 				end											ETAChanged,
-				vi.DateModified								DateModified,
+				vi.DateETAWasUpdatedByOperator_BETA			DateModified,
 				isnull(rs.RecordStatus, @NewRecord)			RecordStatus
 			from
 				VesselItinerary vi with (nolock)
@@ -87,7 +88,7 @@ begin
 					left join Warehouse.Dim_Calendar ed with (nolock)
 						on ed.FullDate = try_convert(date, vi.ETAEnd)
 					left join Warehouse.Dim_Calendar dm with (nolock)
-						on dm.FullDate = try_convert(date, vi.DateModified)
+						on dm.FullDate = try_convert(date, vi.DateETAWasUpdatedByOperator_BETA)
 					left join ParcelPorts loaddischarge with (nolock)
 						on loaddischarge.QBRecId = vi.RelatedParcelPortID
 					left join	(
