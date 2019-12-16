@@ -49,6 +49,7 @@ begin
 																ETAOriginalCreateDate,
 																MostRecentETADate,
 																LoadDischarge,
+																VesselPortStatus_Override,
 																RelatedParcelPortID,
 																RelatedPortID,
 																ETAChanged,
@@ -70,6 +71,7 @@ begin
 				vi.OriginalETACreatedOn_ADMIN				ETAOriginalCreateDate,
 				vi.ETAStart									MostRecentETADate,
 				loaddischarge.[Type]						LoadDischarge,
+				isnull(vi.VesselPortStatus_Override, 0)		VesselPortStatus_Override,
 				vi.RelatedParcelPortID						RelatedParcelPortID,
 				vi.RelatedPortID							RelatedPortID,
 				case
@@ -526,6 +528,7 @@ begin
 																	ArrivedThreeToSevenDaysOneWeek,
 																	ArrivedGreaterThanSevenDaysOneWeek,
 																	NominatedQuantity,
+																	VesselPortStatus_Override,
 																	RowCreatedDate,
 																	RowUpdatedDate
 																)
@@ -569,6 +572,7 @@ begin
 					fvi.ArrivedThreeToSevenDaysOneWeek,
 					fvi.ArrivedGreaterThanSevenDaysOneWeek,
 					fvi.NominatedQuantity,
+					fvi.VesselPortStatus_Override,
 					getdate() RowCreatedDate,
 					getdate() RowUpdatedDate
 				from
@@ -616,6 +620,7 @@ begin
 				ArrivedThreeToSevenDaysOneWeek = fvi.ArrivedThreeToSevenDaysOneWeek,
 				ArrivedGreaterThanSevenDaysOneWeek = fvi.ArrivedGreaterThanSevenDaysOneWeek,
 				NominatedQuantity = fvi.NominatedQuantity,
+				VesselPortStatus_Override = fvi.VesselPortStatus_Override,
 				RowUpdatedDate = getdate()
 			from
 				Staging.Fact_VesselItinerary fvi with (nolock)

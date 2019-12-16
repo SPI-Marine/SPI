@@ -57,6 +57,7 @@ create table Warehouse.Fact_VesselItinerary
 		ArrivedThreeToSevenDaysOneWeek			tinyint				null,
 		ArrivedGreaterThanSevenDaysOneWeek		tinyint				null,
 		NominatedQuantity						decimal(18, 2)		null,
+		VesselPortStatus_Override				bit					null,
 		RowCreatedDate							datetime			not null,
 		RowUpdatedDate							datetime			not null,
 		constraint [PK_Warehouse_Fact_VesselItinerary_Key] primary key clustered 

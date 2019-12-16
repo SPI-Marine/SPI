@@ -56,6 +56,7 @@ create table Staging.Fact_VesselItinerary
 		ArrivedThreeToSevenDaysOneWeek			tinyint				null,
 		ArrivedGreaterThanSevenDaysOneWeek		tinyint				null,
 		NominatedQuantity						decimal(18, 2)		null,
+		VesselPortStatus_Override				bit					null,
 		RelatedParcelPortID						int					null,			-- ETL fields
 		RelatedPortID							int					null,
 		ETAChanged								bit					null,
