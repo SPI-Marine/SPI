@@ -58,29 +58,29 @@ begin
 															)
 		select
 			distinct
-				vi.RecordID									VesselItineraryAlternateKey,
-				isnull(fixture.PostFixtureKey, -1)			PostFixtureKey,
-				-1											PortKey,
-				isnull(sd.DateKey, 18991230)				ETAStartDateKey,
-				coalesce(ed.DateKey, sd.DateKey, 18991230)	ETAEndDateKey,
-				isnull(dm.DateKey, 47001231)				DateModifiedKey,	--- REMOVE THIS FIELD AFTER LETTING RACHEL KNOW ---
-				vi.ItineraryPortType						ItineraryPortType,
-				vi.Comments									Comments,
-				firstnorevent.FirstNOREventDate				NORStartDate,
-				vi.ETAStartOriginal_ADMIN					ETAOriginalDate,
-				vi.OriginalETACreatedOn_ADMIN				ETAOriginalCreateDate,
-				vi.ETAStart									MostRecentETADate,
-				loaddischarge.[Type]						LoadDischarge,
-				isnull(vi.VesselPortStatus_Override, 0)		VesselPortStatus_Override,
-				vi.RelatedParcelPortID						RelatedParcelPortID,
-				vi.RelatedPortID							RelatedPortID,
+				vi.RecordID										VesselItineraryAlternateKey,
+				isnull(fixture.PostFixtureKey, -1)				PostFixtureKey,
+				-1												PortKey,
+				isnull(sd.DateKey, 18991230)					ETAStartDateKey,
+				coalesce(ed.DateKey, sd.DateKey, 18991230)		ETAEndDateKey,
+				isnull(dm.DateKey, 47001231)					DateModifiedKey,	--- REMOVE THIS FIELD AFTER LETTING RACHEL KNOW ---
+				vi.ItineraryPortType							ItineraryPortType,
+				vi.Comments										Comments,
+				firstnorevent.FirstNOREventDate					NORStartDate,
+				vi.ETAStartOriginal_ADMIN						ETAOriginalDate,
+				vi.OriginalETACreatedOn_ADMIN					ETAOriginalCreateDate,
+				coalesce(vi.ETAStart, wvi.MostRecentETADate)	MostRecentETADate,
+				loaddischarge.[Type]							LoadDischarge,
+				isnull(vi.VesselPortStatus_Override, 0)			VesselPortStatus_Override,
+				vi.RelatedParcelPortID							RelatedParcelPortID,
+				vi.RelatedPortID								RelatedPortID,
 				case
 					when convert(date, isnull(vi.ETAStart, '12/30/1899')) <> isnull(wvi.MostRecentETADate, '12/30/1899')
 						then 1
 					else 0
-				end											ETAChanged,
-				vi.DateETAWasUpdatedByOperator_BETA			DateModified,
-				isnull(rs.RecordStatus, @NewRecord)			RecordStatus
+				end												ETAChanged,
+				vi.DateETAWasUpdatedByOperator_BETA				DateModified,
+				isnull(rs.RecordStatus, @NewRecord)				RecordStatus
 			from
 				VesselItinerary vi with (nolock)
 					left join Warehouse.Dim_PostFixture fixture with (nolock)
