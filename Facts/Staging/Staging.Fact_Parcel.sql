@@ -6,6 +6,7 @@ Description:	Creates the Staging.Fact_Parcel table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	01/02/2020	Added LoadNORStartDate, DischargeNORStartDate
 ==========================================================================================================	
 */
 
@@ -39,8 +40,13 @@ create table Staging.Fact_Parcel
 		LoadLaytimeUsed							decimal(18, 6)		null,
 		DischargeLaytimeAllowed					decimal(18, 6)		null,
 		DischargeLaytimeUsed					decimal(18, 6)		null,
+		LoadNORStartDate						date				null,
+		DischargeNORStartDate					date				null,
 		TotalLoadBerthBLQty						decimal(18, 6)		null,			-- ETL fields
 		TotalDischargeBerthBLQty				decimal(18, 6)		null,
+		LoadPortAlternateKey					int					null,
+		DischargePortAlternateKey				int					null,
+		PostFixtureAlternateKey					int					null,
 		constraint [PK_Staging_Fact_Parcel_AltKey] primary key clustered 
 		(
 			ParcelAlternateKey asc

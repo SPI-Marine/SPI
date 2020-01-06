@@ -6,6 +6,7 @@ Description:	Creates the Warehouse.Fact_Parcel table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	01/02/2020	Added LoadNORStartDate, DischargeNORStartDate
 ==========================================================================================================	
 */
 
@@ -40,6 +41,8 @@ create table Warehouse.Fact_Parcel
 		LoadLaytimeUsed							decimal(18, 6)		null,
 		DischargeLaytimeAllowed					decimal(18, 6)		null,
 		DischargeLaytimeUsed					decimal(18, 6)		null,
+		LoadNORStartDate						date				null,
+		DischargeNORStartDate					date				null,
 		RowCreatedDate							datetime			not null,
 		constraint [PK_Warehouse_Fact_Parcel_Key] primary key clustered 
 		(

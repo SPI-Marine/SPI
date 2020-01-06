@@ -51,7 +51,10 @@ begin
 														DemurrageVaultEstimateAmount_QBC,
 														DemurrageAgreedAmount_QBC,
 														DemurrageClaimAmount_QBC,
-														DeadfreightQty
+														DeadfreightQty,
+														LoadPortAlternateKey,
+														DischargePortAlternateKey,
+														PostFixtureAlternateKey
 													)
 		select
 				p.QbRecId										ParcelAlternateKey,
@@ -74,7 +77,10 @@ begin
 				p.DemurrageVaultEstimateAmount_QBC,
 				p.DemurrageAgreedAmount_QBC,
 				p.DemurrageClaimAmount_QBC,
-				p.DeadfreightQty
+				p.DeadfreightQty,
+				wdloadport.PortAlternateKey						LoadPortAlternateKey,
+				wddischport.PortAlternateKey					DischargePortAlternateKey,
+				wdpostfixture.PostFixtureAlternateKey
 			from
 				Parcels p with (nolock)
 					join Warehouse.Dim_Parcel wdparcel with (nolock)
@@ -144,10 +150,10 @@ begin
 						wloadberth.BerthKey
 			),
 			AggregateDischargeBerthLaytimeUsed	(
-												PostFixtureKey,
-												BerthKey,
-												LaytimeUsed
-											)
+													PostFixtureKey,
+													BerthKey,
+													LaytimeUsed
+												)
 			as
 			(
 				select
@@ -311,20 +317,82 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 	
+	-- Laytime/BLQty Ratio metrics
 	begin try
 		update
 				Staging.Fact_Parcel with (tablock)
 			set
-				LoadLaytimeAllowed = LoadLaytimeAllowed/TotalLoadBerthBLQty,
-				LoadLaytimeUsed = LoadLaytimeUsed/TotalLoadBerthBLQty,
-				DischargeLaytimeAllowed = DischargeLaytimeAllowed/TotalDischargeBerthBLQty,
-				DischargeLaytimeUsed = DischargeLaytimeUsed/TotalDischargeBerthBLQty
+				LoadLaytimeAllowed = (BLQty/TotalLoadBerthBLQty)*LoadLaytimeAllowed,
+				LoadLaytimeUsed = (BLQty/TotalLoadBerthBLQty)*LoadLaytimeUsed,
+				DischargeLaytimeAllowed = (BLQty/TotalDischargeBerthBLQty)*DischargeLaytimeAllowed,
+				DischargeLaytimeUsed = (BLQty/TotalDischargeBerthBLQty)*DischargeLaytimeUsed
 			where
 				isnull(TotalLoadBerthBLQty, 0) > 0
 				and isnull(TotalDischargeBerthBLQty, 0) > 0;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating Laytime/BLQty Ratios metrics - ' + error_message();
+		select @ErrorMsg = 'Updating Laytime/BLQty Ratio metrics - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+	
+	-- Get NOR start dates for load/discharge ports
+	begin try
+		update
+				Staging.Fact_Parcel with (tablock)
+			set
+				LoadNORStartDate = firstloadnorevent.FirstNOREventDate,
+				DischargeNORStartDate = firstdischargenorevent.FirstNOREventDate
+			from
+				Staging.Fact_Parcel sfp
+					left join	(
+									select
+											pf.QBRecId			PostFixtureAlternateKey,
+											pp.RelatedPortId	RelatedPortID,
+											min(e.StartDate)	FirstNOREventDate
+										from
+											SOFEvents e with (nolock)
+												join PortEventTimes pet with (nolock)
+													on pet.QBRecId = e.RelatedPortTimeEventId
+												join ParcelBerths pb with (nolock)
+													on pb.QBRecId = e.RelatedParcelBerthId
+												join ParcelPorts pp with (nolock)
+													on pp.QBRecId = pb.RelatedLDPId
+												join PostFixtures pf with (nolock)
+													on pf.QBRecId = pb.RelatedSpiFixtureId
+												where
+													pet.EventNameReports like 'NOR Tend%'
+													and pp.[Type] = 'Load'
+												group by
+													pf.QBRecId, pp.RelatedPortId
+								) firstloadnorevent
+						on firstloadnorevent.PostFixtureAlternateKey = sfp.PostFixtureAlternateKey
+							and firstloadnorevent.RelatedPortID = sfp.LoadPortAlternateKey
+					left join	(
+									select
+											pf.QBRecId			PostFixtureAlternateKey,
+											pp.RelatedPortId	RelatedPortID,
+											min(e.StartDate)	FirstNOREventDate
+										from
+											SOFEvents e with (nolock)
+												join PortEventTimes pet with (nolock)
+													on pet.QBRecId = e.RelatedPortTimeEventId
+												join ParcelBerths pb with (nolock)
+													on pb.QBRecId = e.RelatedParcelBerthId
+												join ParcelPorts pp with (nolock)
+													on pp.QBRecId = pb.RelatedLDPId
+												join PostFixtures pf with (nolock)
+													on pf.QBRecId = pb.RelatedSpiFixtureId
+												where
+													pet.EventNameReports like 'NOR Tend%'
+													and pp.[Type] = 'Discharge'
+												group by
+													pf.QBRecId, pp.RelatedPortId
+								) firstdischargenorevent
+						on firstdischargenorevent.PostFixtureAlternateKey = sfp.PostFixtureAlternateKey
+							and firstdischargenorevent.RelatedPortID = sfp.DischargePortAlternateKey
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating NOR start dates for load/discharge ports - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 	
@@ -361,6 +429,8 @@ begin
 															LoadLaytimeUsed,
 															DischargeLaytimeAllowed,
 															DischargeLaytimeUsed,
+															LoadNORStartDate,
+															DischargeNORStartDate,
 															RowCreatedDate
 														)
 			select
@@ -389,6 +459,8 @@ begin
 					sfp.LoadLaytimeUsed,
 					sfp.DischargeLaytimeAllowed,
 					sfp.DischargeLaytimeUsed,
+					LoadNORStartDate,
+					sfp.DischargeNORStartDate,
 					getdate()
 				from
 					Staging.Fact_Parcel sfp with (nolock);
