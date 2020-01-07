@@ -111,6 +111,7 @@ begin
 				fixture.LAF_Total_hrs_QBC,
 				fixture.LaytimeAllowedTypeFixture_QBC,
 				fixture.FixtureType,
+				chartererfullstyle.GroupNameFS GroupName,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -227,7 +228,8 @@ begin
 																LAF_Load_Mtph_QBC,
 																LAF_Total_hrs_QBC,
 																LaytimeAllowedTypeFixture_QBC,
-																FixtureType
+																FixtureType,
+																GroupName
 															)
 												);
 		
@@ -318,6 +320,7 @@ begin
 					fixture.LAF_Total_hrs_QBC,
 					fixture.LaytimeAllowedTypeFixture_QBC,
 					fixture.FixtureType,
+					fixture.GroupName,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -403,6 +406,7 @@ begin
 				LAF_Total_hrs_QBC = fixture.LAF_Total_hrs_QBC,
 				LaytimeAllowedTypeFixture_QBC = fixture.LaytimeAllowedTypeFixture_QBC,
 				FixtureType = fixture.FixtureType,
+				GroupName = fixture.GroupName,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -518,6 +522,7 @@ begin
 													LAF_Total_hrs_QBC,
 													LaytimeAllowedTypeFixture_QBC,
 													FixtureType,
+													GroupName,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -593,6 +598,7 @@ begin
 							0.0,			-- LAF_Total_hrs_QBC
 							0.0,			-- LaytimeAllowedTypeFixture_QBC
 							'Unknown',		-- FixtureType
+							'Unknown',		-- GroupName
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
