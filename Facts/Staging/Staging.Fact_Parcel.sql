@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	01/02/2020	Added LoadNORStartDate, DischargeNORStartDate
+Brian Boswick	01/09/2020	Added CPDateKey
 ==========================================================================================================	
 */
 
@@ -26,6 +27,7 @@ create table Staging.Fact_Parcel
 		ProductKey								int					not null,
 		BillLadingDateKey						int					not null,
 		DimParcelKey							int					not null,
+		CPDateKey								int					not null,
 		OutTurnQty								decimal(18, 6)		null,			-- Metrics
 		ShipLoadedQty							decimal(18, 6)		null,
 		ShipDischargeQty						decimal(18, 6)		null,

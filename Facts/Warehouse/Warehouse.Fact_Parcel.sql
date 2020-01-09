@@ -27,6 +27,7 @@ create table Warehouse.Fact_Parcel
 		ProductKey								int					not null,
 		BillLadingDateKey						int					not null,
 		DimParcelKey							int					not null,
+		CPDateKey								int					not null,
 		OutTurnQty								decimal(18, 6)		null,			-- Metrics
 		ShipLoadedQty							decimal(18, 6)		null,
 		ShipDischargeQty						decimal(18, 6)		null,

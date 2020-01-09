@@ -42,6 +42,7 @@ begin
 														ProductKey,
 														BillLadingDateKey,
 														DimParcelKey,
+														CPDateKey,
 														OutTurnQty,
 														ShipLoadedQty,
 														ShipDischargeQty,
@@ -68,6 +69,7 @@ begin
 				isnull(wdproduct.ProductKey , -1)				ProductKey,
 				isnull(bld.DateKey, -1)							BillLadingDateKey,
 				wdparcel.ParcelKey								DimParcelKey,
+				isnull(cpdate.DateKey, -1)						CPDateKey,
 				p.OutTurnQty,
 				p.ShipLoadedQty,
 				p.ShipDischargeQty,
@@ -113,6 +115,8 @@ begin
 						on wdproduct.ProductAlternateKey = parprod.RelatedProductId
 					left join Warehouse.Dim_PostFixture wdpostfixture with (nolock)
 						on p.RelatedSpiFixtureId = wdpostfixture.PostFixtureAlternateKey
+					left join Warehouse.Dim_Calendar cpdate
+						on cpdate.FullDate = wdpostfixture.CPDate
 					left join Warehouse.Dim_Calendar bld with (nolock)
 						on bld.FullDate = convert(date, p.BillLadingDate);
 	end try
@@ -415,6 +419,7 @@ begin
 															ProductKey,
 															BillLadingDateKey,
 															DimParcelKey,
+															CPDateKey,
 															OutTurnQty,
 															ShipLoadedQty,
 															ShipDischargeQty,
@@ -445,6 +450,7 @@ begin
 					sfp.ProductKey,
 					sfp.BillLadingDateKey,
 					sfp.DimParcelKey,
+					sfp.CPDateKey,
 					sfp.OutTurnQty,
 					sfp.ShipLoadedQty,
 					sfp.ShipDischargeQty,
