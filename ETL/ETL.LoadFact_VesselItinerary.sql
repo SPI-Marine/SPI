@@ -17,6 +17,7 @@ Developer		Date		Change
 Brian Boswick	10/20/2019	Added Original ETA benchmark metrics
 Brian Boswick	10/30/2019	Added Within Laycan metrics
 Brian Boswick	12/13/2019	Changed DateModified field to point to new DateETAWasUpdatedByOperator_BETA field
+Brian Boswick	01/24/2020	Removed ETA change logic for ETALastModifiedDate
 ==========================================================================================================	
 */
 
@@ -138,11 +139,6 @@ begin
 		update
 				Staging.Fact_VesselItinerary with (tablock)
 			set
-				--ETALastModifiedDate =	case
-				--							when ETAChanged = 1
-				--								then vi.DateModified
-				--							else wvi.ETALastModifiedDate
-				--						end,
 				MostRecentETADate =	case
 										when ETAChanged = 1
 											then vi.MostRecentETADate
