@@ -9,6 +9,7 @@ Developer		Date		Change
 Brian Boswick	10/10/2019	Added DateModifiedKey column
 Brian Boswick	10/20/2019	Added Original ETA benchmark metrics
 Brian Boswick	10/30/2019	Added Laycan metric fields
+Brian Boswick	01/25/2020	Added PortOrder field
 ==========================================================================================================	
 */
 
@@ -38,6 +39,7 @@ create table Warehouse.Fact_VesselItinerary
 		NORWithinLaycanFinal					tinyint				null,
 		ETAWithinLaycanOriginal					tinyint				null,
 		ETAWithinLaycanFinal					tinyint				null,
+		PortOrder								tinyint				null,
 		NORLaycanOverUnderOriginal				int					null,			-- Metrics
 		NORLaycanOverUnderFinal					int					null,
 		ETALaycanOverUnderOriginal				int					null,

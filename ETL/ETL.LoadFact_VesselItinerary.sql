@@ -18,6 +18,7 @@ Brian Boswick	10/20/2019	Added Original ETA benchmark metrics
 Brian Boswick	10/30/2019	Added Within Laycan metrics
 Brian Boswick	12/13/2019	Changed DateModified field to point to new DateETAWasUpdatedByOperator_BETA field
 Brian Boswick	01/24/2020	Removed ETA change logic for ETALastModifiedDate
+Brian Boswick	01/25/2020	Added PortOrder field logic
 ==========================================================================================================	
 */
 
@@ -56,6 +57,7 @@ begin
 																RelatedPortID,
 																ETAChanged,
 																DateModified,
+																PortOrder,
 																RecordStatus
 															)
 		select
@@ -83,6 +85,7 @@ begin
 					else 0
 				end												ETAChanged,
 				vi.DateETAWasUpdatedByOperator_BETA				DateModified,
+				portorder.PortOrder								PortOrder,
 				isnull(rs.RecordStatus, @NewRecord)				RecordStatus
 			from
 				VesselItinerary vi with (nolock)
@@ -118,6 +121,35 @@ begin
 								) firstnorevent
 						on firstnorevent.PostFixtureAlternateKey = vi.RelatedSPIFixtureID
 							and firstnorevent.RelatedPortID = loaddischarge.RelatedPortId
+					left join	(
+									select
+											pf.QBRecId													PostFixtureAlternateKey,
+											pp.RelatedPortId											RelatedPortID,
+											min(convert(date, e.StartDate))								NOREventDate,
+											pp.[Type]													LoadDischarge,
+											row_number() over	(
+																	partition by pf.QBRecId, pp.[Type]
+																	order by min(convert(date, e.StartDate))
+																)										PortOrder
+										from
+											SOFEvents e with (nolock)
+												join PortEventTimes pet with (nolock)
+													on pet.QBRecId = e.RelatedPortTimeEventId
+												join ParcelBerths pb with (nolock)
+													on pb.QBRecId = e.RelatedParcelBerthId
+												join ParcelPorts pp with (nolock)
+													on pp.QBRecId = pb.RelatedLDPId
+												join PostFixtures pf with (nolock)
+													on pf.QBRecId = pb.RelatedSpiFixtureId
+										where
+											pet.EventNameReports like 'NOR Tend%'
+										group by
+											pf.QBRecId,
+											pp.RelatedPortId,
+											pp.[Type]
+								) portorder
+						on portorder.PostFixtureAlternateKey = vi.RelatedSPIFixtureID
+							and portorder.RelatedPortID = loaddischarge.RelatedPortId
 					left join Warehouse.Fact_VesselItinerary wvi with (nolock)
 						on wvi.VesselItineraryAlternateKey = vi.RecordID
 					left join	(
@@ -507,6 +539,7 @@ begin
 																	NORWithinLaycanFinal,
 																	ETAWithinLaycanOriginal,
 																	ETAWithinLaycanFinal,
+																	PortOrder,
 																	NORLaycanOverUnderOriginal,
 																	NORLaycanOverUnderFinal,
 																	ETALaycanOverUnderOriginal,
@@ -551,6 +584,7 @@ begin
 					fvi.NORWithinLaycanFinal,
 					fvi.ETAWithinLaycanOriginal,
 					fvi.ETAWithinLaycanFinal,
+					fvi.PortOrder,
 					fvi.NORLaycanOverUnderOriginal,
 					fvi.NORLaycanOverUnderFinal,
 					fvi.ETALaycanOverUnderOriginal,
@@ -619,6 +653,7 @@ begin
 				ArrivedGreaterThanSevenDaysOneWeek = fvi.ArrivedGreaterThanSevenDaysOneWeek,
 				NominatedQuantity = fvi.NominatedQuantity,
 				VesselPortStatus_Override = fvi.VesselPortStatus_Override,
+				PortOrder = fvi.PortOrder,
 				RowUpdatedDate = getdate()
 			from
 				Staging.Fact_VesselItinerary fvi with (nolock)
