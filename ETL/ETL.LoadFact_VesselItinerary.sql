@@ -48,6 +48,7 @@ begin
 																ETAOriginalDate,
 																ETAOriginalCreateDate,
 																MostRecentETADate,
+																ETALastModifiedDate,
 																LoadDischarge,
 																VesselPortStatus_Override,
 																RelatedParcelPortID,
@@ -70,6 +71,7 @@ begin
 				vi.ETAStartOriginal_ADMIN						ETAOriginalDate,
 				vi.OriginalETACreatedOn_ADMIN					ETAOriginalCreateDate,
 				coalesce(vi.ETAStart, wvi.MostRecentETADate)	MostRecentETADate,
+				vi.DateETAWasUpdatedByOperator_BETA				ETALastModifiedDate,
 				loaddischarge.[Type]							LoadDischarge,
 				isnull(vi.VesselPortStatus_Override, 0)			VesselPortStatus_Override,
 				vi.RelatedParcelPortID							RelatedParcelPortID,
@@ -136,11 +138,11 @@ begin
 		update
 				Staging.Fact_VesselItinerary with (tablock)
 			set
-				ETALastModifiedDate =	case
-											when ETAChanged = 1
-												then vi.DateModified
-											else wvi.ETALastModifiedDate
-										end,
+				--ETALastModifiedDate =	case
+				--							when ETAChanged = 1
+				--								then vi.DateModified
+				--							else wvi.ETALastModifiedDate
+				--						end,
 				MostRecentETADate =	case
 										when ETAChanged = 1
 											then vi.MostRecentETADate
