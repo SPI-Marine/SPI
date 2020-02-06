@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	05/20/2019	Remove deleted records from Warehouse
+Brian Boswick	01/31/2020	Added Area and Region ETL logic
 ==========================================================================================================	
 */
 
@@ -80,12 +81,18 @@ begin
 					else null
 				end												Longitude,
 				[port].PortCosts								PortCosts,
+				area.[Name]										Area,
+				region.RegionName								Region,
 				0												Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord)				RecordStatus
 			from
 				UniquePortBerths portberth
 					left join [Ports] [port]
 						on [port].QBRecId = portberth.PortAlternateKey
+					left join ShippingAreas area
+						on area.QBRecId = [port].RelatedShippingAreaId
+					left join ShippingRegions region
+						on region.QBRecId = area.RelatedSARegionID
 					left join Berths berth
 						on berth.QBRecId = portberth.BerthAlternateKey
 					left join	(
@@ -122,7 +129,9 @@ begin
 																Comments,
 																Latitude,
 																Longitude,
-																PortCosts
+																PortCosts,
+																Area,
+																Region
 															)
 												);
 		
@@ -159,6 +168,8 @@ begin
 					portberth.Latitude,
 					portberth.Longitude,
 					portberth.PortCosts,
+					portberth.Area,
+					portberth.Region,
 					portberth.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -188,6 +199,8 @@ begin
 				Latitude = portberth.Latitude,
 				Longitude = portberth.Longitude,
 				PortCosts = portberth.PortCosts,
+				Area = portberth.Area,
+				Region = portberth.Region,
 				Type1HashValue = portberth.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -257,6 +270,8 @@ begin
 														Latitude,
 														Longitude,
 														PortCosts,
+														Area,
+														Region,
 														Type1HashValue,
 														RowCreatedDate,
 														RowUpdatedDate,
@@ -277,6 +292,8 @@ begin
 							0,				-- Latitude
 							0,				-- Longitude
 							'Unknown',		-- PortCosts
+							'Unknown',		-- Area
+							'Unknown',		-- Region
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate

@@ -6,6 +6,7 @@ Description:	Creates the Staging.Dim_PortBerth table.  Stores distinct combinati
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	01/31/2020	Added Area and Region
 ==========================================================================================================	
 */
 
@@ -26,6 +27,8 @@ create table Staging.Dim_PortBerth
 		Latitude					numeric(10, 4)		null,
 		Longitude					numeric(10, 4)		null,
 		PortCosts					nvarchar(250)		null,
+		Area						nvarchar(250)		null,
+		Region						nvarchar(250)		null,
 		Type1HashValue				varbinary(16)		not null,
 		RecordStatus				int					not null
 		constraint [PK_Staging_Dim_PortBerth_QBRecId] primary key clustered 

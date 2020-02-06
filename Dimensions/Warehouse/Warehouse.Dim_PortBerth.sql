@@ -6,6 +6,7 @@ Description:	Creates the Warehouse.Dim_PortBerth table.  Stores distinct combina
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	01/31/2020	Added Area and Region
 ==========================================================================================================	
 */
 
@@ -27,6 +28,8 @@ create table Warehouse.Dim_PortBerth
 		Latitude					numeric(10, 4)		null,
 		Longitude					numeric(10, 4)		null,
 		PortCosts					nvarchar(250)		null,
+		Area						nvarchar(250)		null,
+		Region						nvarchar(250)		null,
 		Type1HashValue				varbinary(16)		not null,
 		RowCreatedDate				date				not null,
 		RowUpdatedDate				date				not null,
