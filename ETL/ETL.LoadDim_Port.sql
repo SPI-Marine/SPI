@@ -198,12 +198,12 @@ begin
 
 	-- Insert Unknown record
 	begin try
-		if exists (select 1 from Warehouse.Dim_Port where PortKey = -1)
+		if exists (select 1 from Warehouse.Dim_Port where PortKey < 0)
 		begin
 			delete
 					Warehouse.Dim_Port
 				where
-					PortKey = -1;
+					PortKey < 0;
 		end
 		else
 		begin
@@ -230,7 +230,7 @@ begin
 
 				values	(
 							-1,				-- PortKey
-							0,				-- PortAlternateKey
+							-1,				-- PortAlternateKey
 							'Unknown',		-- PortName
 							'Unknown',		-- City
 							'Unknown',		-- StateRegion
@@ -241,6 +241,24 @@ begin
 							'Unknown',		-- PortCosts
 							'Unknown',		-- Area
 							'Unknown',		-- Region
+							0,				-- Type1HashValue
+							getdate(),		-- RowCreatedDate
+							getdate(),		-- RowUpdatedDate
+							'Y'				-- IsCurrentRow
+						),
+						(
+							-2,				-- PortKey
+							-2,				-- PortAlternateKey
+							'ANY',			-- PortName
+							'ANY',			-- City
+							'ANY',			-- StateRegion
+							'ANY',			-- Country
+							'Unknown',		-- Comments
+							0,				-- Latitude
+							0,				-- Longitude
+							'Unknown',		-- PortCosts
+							'ANY',			-- Area
+							'ANY',			-- Region
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate

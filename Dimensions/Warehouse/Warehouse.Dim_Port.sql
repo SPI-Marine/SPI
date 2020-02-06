@@ -32,7 +32,7 @@ create table Warehouse.Dim_Port
 		IsCurrentRow			char(1)				not null,
 		constraint [PK_Warehouse_Dim_Port_Key] primary key clustered 
 		(
-			PortAlternateKey asc
+			PortKey asc
 		)
 			with 
 				(pad_index = off, statistics_norecompute = off, ignore_dup_key = off, allow_row_locks = on, allow_page_locks = on) 
