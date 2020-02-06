@@ -36,6 +36,7 @@ begin
 															PositionAlternateKey,
 															ProductKey,
 															PortKey,
+															DischargePortKey,
 															VesselKey,
 															OpenDateKey,
 															EndDateKey,
@@ -49,6 +50,7 @@ begin
 				p.RecordID							PositionAlternateKey,
 				isnull(prod.ProductKey, -1)			ProductKey,
 				isnull(wport.PortKey, -1)			PortKey,
+				isnull(dischport.PortKey, -2)		DischargePortKey,
 				isnull(v.VesselKey, -1)				VesselKey,
 				isnull(od.DateKey, -1)				OpenDateKey,
 				isnull(ed.DateKey, -1)				EndDateKey,
@@ -56,19 +58,21 @@ begin
 				p.StatusCalculation_ADMIN			StatusCalculation,
 				p.LastCargo							LastCargo,
 				p.FOFSA_prod						FOFSA,
-				p.PositionType						PositionType
+				p.PositionType						PositionType				
 			from
-				Positions p
-					left join Warehouse.Dim_Calendar od
+				Positions p with (nolock)
+					left join Warehouse.Dim_Calendar od with (nolock)
 						on convert(date, p.DateOpen) = od.FullDate
-					left join Warehouse.Dim_Calendar ed
+					left join Warehouse.Dim_Calendar ed with (nolock)
 						on convert(date, p.EndDate) = ed.FullDate
-					left join Warehouse.Dim_Vessel v
+					left join Warehouse.Dim_Vessel v with (nolock)
 						on v.VesselAlternateKey = p.RelatedVesselID
-					left join Warehouse.Dim_Port wport
+					left join Warehouse.Dim_Port wport with (nolock)
 						on wport.PortAlternateKey = p.RelatedPortID
-					left join Warehouse.Dim_Product prod
-						on prod.ProductAlternateKey = p.RelatedProductID;
+					left join Warehouse.Dim_Product prod with (nolock)
+						on prod.ProductAlternateKey = p.RelatedProductID
+					left join Warehouse.Dim_Port dischport with (nolock)
+						on dischport.PortName = isnull(p.Direction, '');
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging records - ' + error_message();
@@ -86,6 +90,7 @@ begin
 															PositionAlternateKey,
 															ProductKey,
 															PortKey,
+															DischargePortKey,
 															VesselKey,
 															OpenDateKey,
 															EndDateKey,
@@ -100,6 +105,7 @@ begin
 					sp.PositionAlternateKey,
 					sp.ProductKey,
 					sp.PortKey,
+					sp.DischargePortKey,
 					sp.VesselKey,
 					sp.OpenDateKey,
 					sp.EndDateKey,
