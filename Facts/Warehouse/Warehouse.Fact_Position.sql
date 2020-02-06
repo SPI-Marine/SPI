@@ -14,10 +14,11 @@ go
 
 create table Warehouse.Fact_Position
 	(
-		VesselItineraryKey						int					not null identity(1, 1),
+		PositionKey								int					not null identity(1, 1),
 		PositionAlternateKey					int					not null,
 		ProductKey								int					not null,
 		PortKey									int					not null,
+		DischargePortKey						int					not null,
 		VesselKey								int					not null,
 		OpenDateKey								int					not null,
 		EndDateKey								int					not null,
@@ -29,7 +30,7 @@ create table Warehouse.Fact_Position
 		RowCreatedDate							datetime			not null,
 		constraint [PK_Warehouse_Fact_Position_Key] primary key clustered 
 		(
-			VesselItineraryKey asc
+			PositionKey asc
 		)
 			with 
 				(pad_index = off, statistics_norecompute = off, ignore_dup_key = off, allow_row_locks = on, allow_page_locks = on) 

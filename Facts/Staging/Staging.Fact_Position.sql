@@ -17,6 +17,7 @@ create table Staging.Fact_Position
 		PositionAlternateKey					int					not null,
 		ProductKey								int					not null,
 		PortKey									int					not null,
+		DischargePortKey						int					not null,
 		VesselKey								int					not null,
 		OpenDateKey								int					not null,
 		EndDateKey								int					not null,
