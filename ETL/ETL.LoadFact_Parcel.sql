@@ -14,6 +14,7 @@ Description:	Creates the LoadFact_Parcel stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey ETL logic
 ==========================================================================================================	
 */
 
@@ -43,6 +44,8 @@ begin
 														BillLadingDateKey,
 														DimParcelKey,
 														CPDateKey,
+														ChartererKey,
+														OwnerKey,
 														OutTurnQty,
 														ShipLoadedQty,
 														ShipDischargeQty,
@@ -70,6 +73,8 @@ begin
 				isnull(bld.DateKey, -1)							BillLadingDateKey,
 				wdparcel.ParcelKey								DimParcelKey,
 				isnull(cpdate.DateKey, -1)						CPDateKey,
+				isnull(wch.ChartererKey, -1)					ChartererKey,
+				isnull(wo.OwnerKey, -1)							OwnerKey,
 				p.OutTurnQty,
 				p.ShipLoadedQty,
 				p.ShipDischargeQty,
@@ -115,10 +120,18 @@ begin
 						on wdproduct.ProductAlternateKey = parprod.RelatedProductId
 					left join Warehouse.Dim_PostFixture wdpostfixture with (nolock)
 						on p.RelatedSpiFixtureId = wdpostfixture.PostFixtureAlternateKey
-					left join Warehouse.Dim_Calendar cpdate
+					left join Warehouse.Dim_Calendar cpdate with (nolock)
 						on cpdate.FullDate = wdpostfixture.CPDate
 					left join Warehouse.Dim_Calendar bld with (nolock)
-						on bld.FullDate = convert(date, p.BillLadingDate);
+						on bld.FullDate = convert(date, p.BillLadingDate)
+					left join PostFixtures pf with (nolock)
+						on p.RelatedSpiFixtureId = pf.QBRecId
+					left join FullStyles fs with (nolock)
+						on pf.RelatedChartererFullStyle = fs.QBRecId
+					left join Warehouse.Dim_Owner wo with (nolock)
+						on wo.OwnerAlternateKey = fs.RelatedOwnerParentId
+					left join Warehouse.Dim_Charterer wch with (nolock)
+						on wch.ChartererAlternateKey = fs.RelatedChartererParentID;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging Parcel records - ' + error_message();
@@ -420,6 +433,8 @@ begin
 															BillLadingDateKey,
 															DimParcelKey,
 															CPDateKey,
+															ChartererKey,
+															OwnerKey,
 															OutTurnQty,
 															ShipLoadedQty,
 															ShipDischargeQty,
@@ -451,6 +466,8 @@ begin
 					sfp.BillLadingDateKey,
 					sfp.DimParcelKey,
 					sfp.CPDateKey,
+					sfp.ChartererKey,
+					sfp.OwnerKey,
 					sfp.OutTurnQty,
 					sfp.ShipLoadedQty,
 					sfp.ShipDischargeQty,

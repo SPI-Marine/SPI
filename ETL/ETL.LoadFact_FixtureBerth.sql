@@ -17,6 +17,7 @@ Developer		Date		Change
 Brian Boswick	06/26/2019	Added LaytimeCommenceLoad_CompleteLoad, LaytimeCommenceDischarge_CompleteDischarge,
 							AverageLaytimeCommenceLoad_CompleteLoad and 
 							AverageLaytimeCommenceDischarge_CompleteDischarge metrics
+Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey ETL logic
 ==========================================================================================================	
 */
 
@@ -61,10 +62,10 @@ begin
 					loadport.[Type],
 					loadberth.LaytimeAllowedBerthHrs_QBC
 				from
-					Parcels p
-						join ParcelPorts loadport
+					Parcels p with (nolock)
+						join ParcelPorts loadport with (nolock)
 							on p.RelatedLoadPortID = loadport.QBRecId
-						join ParcelBerths loadberth
+						join ParcelBerths loadberth with (nolock)
 							on p.RelatedLoadBerth = loadberth.QBRecId
 				where
 					p.RelatedSpiFixtureId is not null
@@ -95,9 +96,9 @@ begin
 					dischberth.LaytimeAllowedBerthHrs_QBC
 				from
 					Parcels p
-						join ParcelPorts dischport
+						join ParcelPorts dischport with (nolock)
 							on p.RelatedDischPortId = dischport.QBRecId
-						join ParcelBerths dischberth
+						join ParcelBerths dischberth with (nolock)
 							on p.RelatedDischBerth = dischberth.QBRecId
 				where
 					p.RelatedSpiFixtureId is not null
@@ -164,6 +165,10 @@ begin
 												PostFixtureKey,
 												VesselKey,
 												FirstEventDateKey,
+												LoadPortKey,
+												DischargePortKey,
+												ChartererKey,
+												OwnerKey,
 												LoadDischarge,
 												ParcelQuantity,
 												LaytimeAllowed
@@ -179,21 +184,38 @@ begin
 					isnull(wpostfixture.PostFixtureKey, -1)		PostFixtureKey,
 					isnull(vessel.VesselKey, -1)				VesselKey,
 					-1											FirstEventDateKey,
+					isnull(wloadport.PortKey, -1)				LoadPortKey,
+					isnull(wdischport.PortKey, -1)				DischargePortKey,
+					isnull(wch.ChartererKey, -1)				ChartererKey,
+					isnull(wo.OwnerKey, -1)						OwnerKey,
 					ufb.LoadDischarge							LoadDischarge,
 					ufb.ParcelQuantity							ParcelQuantity,
 					ufb.LaytimeAllowed							LaytimeAllowed
 				from
 					AggregatedParcelQuantity ufb
-						left join Warehouse.Dim_PostFixture wpostfixture
+						left join Warehouse.Dim_PostFixture wpostfixture with (nolock)
 							on wpostfixture.PostFixtureAlternateKey = ufb.PostFixtureAlternateKey
-						left join PostFixtures epostfixture
+						left join PostFixtures epostfixture with (nolock)
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
-						left join Warehouse.Dim_Vessel vessel
+						left join Warehouse.Dim_Vessel vessel with (nolock)
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
-						left join Warehouse.Dim_PortBerth portberth
+						left join ParcelPorts pp
+							on pp.QBRecId = ufb.LoadDischargeAlternateKey
+						left join Warehouse.Dim_Port wloadport with (nolock)
+							on wloadport.PortAlternateKey = pp.RelatedPortId
+								and pp.[Type] = 'Load'
+						left join Warehouse.Dim_Port wdischport with (nolock)
+							on wdischport.PortAlternateKey = pp.RelatedPortId
+								and pp.[Type] = 'Discharge'
+						left join Warehouse.Dim_PortBerth portberth with (nolock)
 							on portberth.PortAlternateKey = ufb.PortAlternateKey
-								and portberth.BerthAlternateKey = ufb.BerthAlternateKey;
-	end try
+								and portberth.BerthAlternateKey = ufb.BerthAlternateKey
+						left join FullStyles fs with (nolock)
+							on epostfixture.RelatedChartererFullStyle = fs.QBRecId
+						left join Warehouse.Dim_Owner wo with (nolock)
+							on wo.OwnerAlternateKey = fs.RelatedOwnerParentId
+						left join Warehouse.Dim_Charterer wch with (nolock)
+							on wch.ChartererAlternateKey = fs.RelatedChartererParentID	end try
 	begin catch
 		select @ErrorMsg = 'Staging FixtureBerth records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
@@ -211,13 +233,13 @@ begin
 							min(convert(date, e.StartDate)) FirstEventDate,
 							pb.RelatedSpiFixtureId PostFixtureAlternateKey
 						from
-							SOFEvents e
-								join ParcelBerths pb 
+							SOFEvents e with (nolock)
+								join ParcelBerths pb  with (nolock)
 									on e.RelatedParcelBerthId = pb.QBRecId
 						group by
 							pb.RelatedSpiFixtureId
 				) fe
-					join Warehouse.Dim_Calendar wc
+					join Warehouse.Dim_Calendar wc with (nolock)
 						on wc.FullDate = fe.FirstEventDate
 			where
 				fe.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
@@ -241,12 +263,12 @@ begin
 					max(p.BLQty)			MaxQuantity,
 					prodtype.TypeName		ProductType
 				from
-					Parcels p
-						join ParcelProducts pp
+					Parcels p with (nolock)
+						join ParcelProducts pp with (nolock)
 							on p.RelatedParcelProductId = pp.QBRecId
-						join Products prod
+						join Products prod with (nolock)
 							on pp.RelatedProductId = prod.QBRecId
-						join ProductType prodtype
+						join ProductType prodtype with (nolock)
 							on prod.RelatedProductTypeId = prodtype.QBRecId
 				where
 					p.RelatedSpiFixtureId is not null
@@ -298,10 +320,10 @@ begin
 					wevent.IsPumpingTime,
 					wevent.IsLaytime
 				from
-					Warehouse.Fact_SOFEvent wevent
-						join Warehouse.Dim_PostFixture wpf
+					Warehouse.Fact_SOFEvent wevent with (nolock)
+						join Warehouse.Dim_PostFixture wpf with (nolock)
 							on wpf.PostFixtureKey = wevent.PostFixtureKey
-						join SOFEvents e
+						join SOFEvents e with (nolock)
 							on wevent.EventAlternateKey = e.QBRecId
 				where
 					wevent.PostFixtureKey > 0
@@ -389,13 +411,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 219	-- NOR Tendered
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -406,7 +428,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 228	-- Berth/Alongside
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -439,13 +461,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 228	-- Berth/Alongside
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -456,7 +478,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 257	-- Hose Connected
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -488,13 +510,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 257	-- Hose Connected
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -505,7 +527,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 262	-- Commence Loading
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -537,13 +559,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 257	-- Hose Connected
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -554,7 +576,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 268	-- Commence Discharge
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -586,13 +608,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 228	-- Berth/Alongside
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -603,7 +625,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 260	-- Hose Disconnected
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -635,13 +657,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 265	-- Completed Loading
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -652,7 +674,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 260	-- Hose Disconnected
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -684,13 +706,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 271	-- Complete Discharge
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -701,7 +723,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 260	-- Hose Disconnected
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -733,13 +755,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 262	-- Commence Loading
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -749,7 +771,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 265	-- Completed Loading
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -781,13 +803,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 268	-- Commence Discharge
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -797,7 +819,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 271	-- Complete Discharge
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -829,13 +851,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 219	-- NOR Tendered
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -846,7 +868,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 228	-- Berth/Alongside
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -879,13 +901,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 228	-- Berth/Alongside
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -896,7 +918,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 257	-- Hose Connected
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -929,13 +951,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 257	-- Hose Connected
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -945,7 +967,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 262	-- Commence Loading
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -978,13 +1000,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 257	-- Hose Connected
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -994,7 +1016,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 268	-- Commence Discharge
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -1027,13 +1049,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 228	-- Berth/Alongside
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -1044,7 +1066,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 260	-- Hose Disconnected
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -1077,13 +1099,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 265	-- Completed Loading
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -1094,7 +1116,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 260	-- Hose Disconnected
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -1127,13 +1149,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 271	-- Complete Discharge
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -1144,7 +1166,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 260	-- Hose Disconnected
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -1177,13 +1199,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 262	-- Commence Loading
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -1193,7 +1215,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 265	-- Completed Loading
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -1226,13 +1248,13 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.EventNum >=	(
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 268	-- Commence Discharge
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -1242,7 +1264,7 @@ begin
 																	select
 																			min(EventNum)
 																		from
-																			Staging.Fact_FixtureBerthEvents en
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
 																		where
 																			en.EventTypeId = 271	-- Complete Discharge
 																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
@@ -1383,7 +1405,7 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.IsLayTime = 'Y'
 											and fbe.IsPumpingTime = 'Y'
@@ -1416,7 +1438,7 @@ begin
 							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 						from
-							Staging.Fact_FixtureBerthEvents fbe
+							Staging.Fact_FixtureBerthEvents fbe with (nolock)
 						where
 							fbe.IsLayTime = 'Y'
 							and fbe.IsPumpingTime = 'Y'
@@ -1450,7 +1472,7 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.IsLayTime = 'Y'
 										group by
@@ -1479,7 +1501,7 @@ begin
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
-											Staging.Fact_FixtureBerthEvents fbe
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
 										where
 											fbe.IsPumpingTime = 'Y'
 										group by
@@ -1536,7 +1558,7 @@ begin
 									min(evt.StartDateTime) MinNORDate,
 									evt.PostFixtureAlternateKey
 								from
-									Staging.Fact_FixtureBerthEvents evt
+									Staging.Fact_FixtureBerthEvents evt with (nolock)
 								where
 									evt.EventTypeId = 219	-- NOR Tendered
 								group by
@@ -1549,7 +1571,7 @@ begin
 									max(evt.StartDateTime) MaxNORDate,
 									evt.PostFixtureAlternateKey
 								from
-									Staging.Fact_FixtureBerthEvents evt
+									Staging.Fact_FixtureBerthEvents evt with (nolock)
 								where
 									evt.EventTypeId = 219	-- NOR Tendered
 								group by
@@ -1588,7 +1610,7 @@ begin
 											else 0
 										end
 			from
-				PostFixtures pf
+				PostFixtures pf with (nolock)
 			where
 				pf.QBRecId = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
 	end try
@@ -1610,7 +1632,7 @@ begin
 												else 0
 											end
 			from
-				PostFixtures pf
+				PostFixtures pf with (nolock)
 			where
 				pf.QBRecId = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
 	end try
@@ -1631,7 +1653,7 @@ begin
 										else 0
 									end
 			from
-				PostFixtures pf
+				PostFixtures pf with (nolock)
 			where
 				pf.QBRecId = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
 	end try
@@ -1653,7 +1675,7 @@ begin
 											else 0
 										end
 			from
-				PostFixtures pf
+				PostFixtures pf with (nolock)
 			where
 				pf.QBRecId = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
 	end try
@@ -1742,7 +1764,7 @@ begin
 					avg(fb.LaytimeAllowed)											AverageLaytimeAllowed,
 					avg(fb.PumpTime)												AveragePumpTime
 				from
-					Staging.Fact_FixtureBerth fb
+					Staging.Fact_FixtureBerth fb with (nolock)
 				where
 					PortBerthKey = fb.PortBerthKey
 					and ProductType = fb.ProductType
@@ -1756,7 +1778,7 @@ begin
 		)
 		
 		update
-				Staging.Fact_FixtureBerth
+				Staging.Fact_FixtureBerth with (tablock)
 			set
 				AverageWaitTimeNOR_Berth = fba.AverageWaitTimeNOR_Berth,
 				AverageWaitTimeBerth_HoseOn = fba.AverageWaitTimeBerth_HoseOn,
@@ -1822,6 +1844,10 @@ begin
 					sfb.PostFixtureKey,
 					sfb.VesselKey,
 					sfb.FirstEventDateKey,
+					sfb.LoadPortKey,
+					sfb.DischargePortKey,
+					sfb.ChartererKey,
+					sfb.OwnerKey,
 					sfb.LoadDischarge,
 					sfb.ProductType,
 					sfb.ParcelQuantityTShirtSize,
@@ -1898,7 +1924,7 @@ begin
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate
 				from
-					Staging.Fact_FixtureBerth sfb;
+					Staging.Fact_FixtureBerth sfb with (nolock);
 	end try
 	begin catch
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();

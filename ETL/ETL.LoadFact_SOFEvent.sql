@@ -8,6 +8,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	03/15/2019	Added LoadPortBerthKey and DischargePortBerthKey
 Brian Boswick	05/20/2019	Remove deleted records from Warehouse
+Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey ETL logic
 ==========================================================================================================	
 */
 
@@ -47,6 +48,8 @@ begin
 				isnull(vessel.VesselKey, -1)				VesselKey,
 				isnull(wparcel.ParcelKey, -1)				ParcelKey,
 				isnull(portberth.PortBerthKey, -1)			PortBerthKey,
+				isnull(wch.ChartererKey, -1)				ChartererKey,
+				isnull(wo.OwnerKey, -1)						OwnerKey,
 				sof.LaytimeProationType						ProrationType,
 				eventtype.EventNameReports					EventType,
 				case sof.Laytime
@@ -106,12 +109,12 @@ begin
 				try_convert(datetime, sof.StopDate)			StopDate,
 				parcel.ParcelProductId						ParcelProductId
 			from
-				SOFEvents sof
-					left join Warehouse.Dim_Calendar startdate
+				SOFEvents sof with (nolock)
+					left join Warehouse.Dim_Calendar startdate with (nolock)
 						on try_convert(date, sof.StartDate) = startdate.FullDate
-					left join Warehouse.Dim_Calendar stopdate
+					left join Warehouse.Dim_Calendar stopdate with (nolock)
 						on try_convert(date, sof.StopDate) = stopdate.FullDate
-					left join PortEventTimes eventtype
+					left join PortEventTimes eventtype with (nolock)
 						on sof.RelatedPortTimeEventId = eventtype.QBRecId
 					join	(
 								select
@@ -135,36 +138,42 @@ begin
 										dischport.[RelatedPortId]		DischPortAlternateKey,
 										dischberth.RelatedBerthId		DischBerthAlternateKey										
 									from
-										ParcelBerths pb
-											join ParcelPorts eventport
+										ParcelBerths pb with (nolock)
+											join ParcelPorts eventport with (nolock)
 												on eventport.QBRecId = pb.RelatedLDPId
-											join Parcels p
+											join Parcels p with (nolock)
 												on pb.RelatedSpiFixtureId = p.RelatedSpiFixtureId
-											join ParcelPorts loadport
+											join ParcelPorts loadport with (nolock)
 												on loadport.QBRecId = p.RelatedLoadPortID
-											join ParcelBerths loadberth
+											join ParcelBerths loadberth with (nolock)
 												on loadberth.QBRecId = p.RelatedLoadBerth
-											join ParcelPorts dischport
+											join ParcelPorts dischport with (nolock)
 												on dischport.QBRecId = p.RelatedDischPortId
-											join ParcelBerths dischberth
+											join ParcelBerths dischberth with (nolock)
 												on dischberth.QBRecId = p.RelatedDischBerth
-											join ParcelPorts loaddischarge
+											join ParcelPorts loaddischarge with (nolock)
 												on pb.RelatedLDPId = loaddischarge.QBRecId
 							) parcel
 						on sof.RelatedParcelBerthId = parcel.ParcelBerthId
-					left join Warehouse.Dim_Parcel wparcel
+					left join Warehouse.Dim_Parcel wparcel with (nolock)
 						on wparcel.ParcelAlternateKey = parcel.ParcelId
-					left join Warehouse.Dim_PostFixture wpostfixture
+					left join Warehouse.Dim_PostFixture wpostfixture with (nolock)
 						on wpostfixture.PostFixtureAlternateKey = parcel.PostFixtureAlternateKey
-					left join PostFixtures epostfixture
+					left join PostFixtures epostfixture with (nolock)
 						on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
-					left join Warehouse.Dim_Vessel vessel
+					left join FullStyles fs with (nolock)
+						on epostfixture.RelatedChartererFullStyle = fs.QBRecId
+					left join Warehouse.Dim_Owner wo with (nolock)
+						on wo.OwnerAlternateKey = fs.RelatedOwnerParentId
+					left join Warehouse.Dim_Charterer wch with (nolock)
+						on wch.ChartererAlternateKey = fs.RelatedChartererParentID
+					left join Warehouse.Dim_Vessel vessel with (nolock)
 						on vessel.VesselAlternateKey = epostfixture.RelatedVessel
-					left join Warehouse.Dim_Port [port]
+					left join Warehouse.Dim_Port [port] with (nolock)
 						on [port].PortAlternateKey = parcel.RelatedPortId
-					left join Warehouse.Dim_Berth berth
+					left join Warehouse.Dim_Berth berth with (nolock)
 						on berth.BerthAlternateKey = parcel.RelatedBerthId
-					left join Warehouse.Dim_PortBerth portberth
+					left join Warehouse.Dim_PortBerth portberth with (nolock)
 						on portberth.PortAlternateKey = parcel.RelatedPortId
 							and portberth.BerthAlternateKey = parcel.RelatedBerthId
 					left join	(
@@ -172,7 +181,7 @@ begin
 											sum(qty.BLQty) TotalQuantity,
 											qty.RelatedSpiFixtureId PostFixtureAlternateKey
 										from
-											Parcels qty
+											Parcels qty with (nolock)
 										group by
 											qty.RelatedSpiFixtureId
 								) totqty
@@ -226,7 +235,7 @@ begin
 			set
 				LaytimeActual =	ee.LtUsedProrationAmtHrs_QBC
 			from
-				SOFEvents ee
+				SOFEvents ee with (nolock)
 					join Staging.Fact_SOFEvent fe
 						on ee.QBRecId = fe.EventAlternateKey;
 
@@ -254,7 +263,7 @@ begin
 							p.RelatedSpiFixtureId,
 							p.QbRecId ParcelId
 						from
-							Parcels p
+							Parcels p with (nolock)
 				) parcelnumbers
 			where
 				parcelnumbers.ParcelId = Staging.Fact_SOFEvent.ParcelAlternateKey;
@@ -271,8 +280,8 @@ begin
 			set
 				ProductKey = wproduct.ProductKey
 			from
-				ParcelProducts pp
-					join Warehouse.Dim_Product wproduct
+				ParcelProducts pp with (nolock)
+					join Warehouse.Dim_Product wproduct with (nolock)
 						on pp.RelatedProductId = wproduct.ProductAlternateKey
 			where
 				pp.QBRecId = Staging.Fact_SOFEvent.ParcelProductID;
@@ -301,6 +310,8 @@ begin
 					evt.VesselKey,
 					evt.ParcelKey,
 					evt.PortBerthKey,
+					evt.ChartererKey,
+					evt.OwnerKey,
 					evt.ProrationType,
 					evt.EventType,
 					evt.IsLaytime,
@@ -318,7 +329,7 @@ begin
 					evt.ParcelQuantity,
 					getdate() RowStartDate
 				from
-					Staging.Fact_SOFEvent evt;
+					Staging.Fact_SOFEvent evt with (nolock);
 	end try
 	begin catch
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();

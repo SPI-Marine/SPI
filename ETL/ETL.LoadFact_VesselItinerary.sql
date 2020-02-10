@@ -19,6 +19,7 @@ Brian Boswick	10/30/2019	Added Within Laycan metrics
 Brian Boswick	12/13/2019	Changed DateModified field to point to new DateETAWasUpdatedByOperator_BETA field
 Brian Boswick	01/24/2020	Removed ETA change logic for ETALastModifiedDate
 Brian Boswick	01/25/2020	Added PortOrder field logic
+Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey ETL logic
 ==========================================================================================================	
 */
 
@@ -44,6 +45,8 @@ begin
 																ETAStartDateKey,
 																ETAEndDateKey,
 																DateModifiedKey,
+																ChartererKey,
+																OwnerKey,
 																ItineraryPortType,
 																Comments,
 																NORStartDate,
@@ -68,6 +71,8 @@ begin
 				isnull(sd.DateKey, 18991230)					ETAStartDateKey,
 				coalesce(ed.DateKey, sd.DateKey, 18991230)		ETAEndDateKey,
 				isnull(dm.DateKey, 47001231)					DateModifiedKey,	--- REMOVE THIS FIELD AFTER LETTING RACHEL KNOW ---
+				isnull(wch.ChartererKey, -1)					ChartererKey,
+				isnull(wo.OwnerKey, -1)							OwnerKey,
 				vi.ItineraryPortType							ItineraryPortType,
 				vi.Comments										Comments,
 				firstnorevent.FirstNOREventDate					NORStartDate,
@@ -152,6 +157,14 @@ begin
 							and portorder.RelatedPortID = loaddischarge.RelatedPortId
 					left join Warehouse.Fact_VesselItinerary wvi with (nolock)
 						on wvi.VesselItineraryAlternateKey = vi.RecordID
+					left join PostFixtures pf with (nolock)
+						on vi.RelatedSpiFixtureId = pf.QBRecId
+					left join FullStyles fs with (nolock)
+						on pf.RelatedChartererFullStyle = fs.QBRecId
+					left join Warehouse.Dim_Owner wo with (nolock)
+						on wo.OwnerAlternateKey = fs.RelatedOwnerParentId
+					left join Warehouse.Dim_Charterer wch with (nolock)
+						on wch.ChartererAlternateKey = fs.RelatedChartererParentID
 					left join	(
 									select
 											@ExistingRecord RecordStatus,
@@ -525,6 +538,8 @@ begin
 																	ETAStartDateKey,
 																	ETAEndDateKey,
 																	DateModifiedKey,
+																	ChartererKey,
+																	OwnerKey,
 																	ItineraryPortType,
 																	Comments,
 																	NORStartDate,
@@ -570,6 +585,8 @@ begin
 					fvi.ETAStartDateKey,
 					fvi.ETAEndDateKey,
 					fvi.DateModifiedKey,
+					fvi.ChartererKey,
+					fvi.OwnerKey,
 					fvi.ItineraryPortType,
 					fvi.Comments,
 					fvi.NORStartDate,
@@ -627,6 +644,8 @@ begin
 				ETAStartDateKey =  fvi.ETAStartDateKey,
 				ETAEndDateKey = fvi.ETAEndDateKey,
 				DateModifiedKey = fvi.DateModifiedKey,
+				ChartererKey = fvi.ChartererKey,
+				OwnerKey = fvi.OwnerKey,
 				ItineraryPortType = fvi.ItineraryPortType,
 				Comments = fvi.Comments,
 				NORStartDate = fvi.NORStartDate,

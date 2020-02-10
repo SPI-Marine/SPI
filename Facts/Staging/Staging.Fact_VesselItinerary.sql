@@ -10,6 +10,7 @@ Brian Boswick	10/10/2019	Added DateModifiedKey column
 Brian Boswick	10/20/2019	Added Original ETA benchmark metrics
 Brian Boswick	10/30/2019	Added Laycan metric fields
 Brian Boswick	01/25/2020	Added PortOrder field
+Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey
 ==========================================================================================================	
 */
 
@@ -21,10 +22,12 @@ create table Staging.Fact_VesselItinerary
 		VesselItineraryAlternateKey				int					not null,
 		PostFixtureKey							int					not null,
 		PortKey									int					not null,
-		ETAStartDateKey							int					not null,		-- Degenerate Dimension Attributes
+		ETAStartDateKey							int					not null,
 		ETAEndDateKey							int					not null,
 		DateModifiedKey							int					not null,
-		ItineraryPortType						varchar(50)			null,
+		ChartererKey							int					not null,
+		OwnerKey								int					not null,
+		ItineraryPortType						varchar(50)			null,			-- Degenerate Dimension Attributes
 		Comments								varchar(500)		null,
 		NORStartDate							date				null,
 		ETAOriginalDate							date				null,

@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	06/07/2019	Added Average Wait and Lay times for all fixtures
+Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey
 ==========================================================================================================	
 */
 
@@ -25,6 +26,10 @@ create table Warehouse.Fact_FixtureBerth
 		PostFixtureKey											int					not null,
 		VesselKey												int					not null,
 		FirstEventDateKey										int					not null,
+		LoadPortKey												int					not null,
+		DischargePortKey										int					not null,
+		ChartererKey											int					not null,
+		OwnerKey												int					not null,
 		LoadDischarge											varchar(50)			null,		-- Degenerate Dimension Attributes
 		ProductType												nvarchar(100)		null,
 		ParcelQuantityTShirtSize								varchar(50)			null,

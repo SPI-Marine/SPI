@@ -6,6 +6,7 @@ Description:	Creates the Staging.Fact_SOFEvent table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey
 ==========================================================================================================	
 */
 
@@ -26,6 +27,8 @@ create table Staging.Fact_SOFEvent
 		VesselKey				int					not null,
 		ParcelKey				int					not null,
 		PortBerthKey			int					not null,
+		ChartererKey			int					not null,
+		OwnerKey				int					not null,
 		ProrationType			nvarchar(100)		null,		-- Degenerate Dimension Attributes
 		EventType				nvarchar(250)		null,
 		IsLaytime				char(1)				null,
