@@ -15,6 +15,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey ETL logic
+Brian Boswick	02/11/2020	Added VesselKey ETL logic
 ==========================================================================================================	
 */
 
@@ -46,6 +47,7 @@ begin
 														CPDateKey,
 														ChartererKey,
 														OwnerKey,
+														VesselKey,
 														OutTurnQty,
 														ShipLoadedQty,
 														ShipDischargeQty,
@@ -75,6 +77,7 @@ begin
 				isnull(cpdate.DateKey, -1)						CPDateKey,
 				isnull(wch.ChartererKey, -1)					ChartererKey,
 				isnull(wo.OwnerKey, -1)							OwnerKey,
+				isnull(v.VesselKey, -1)							VesselKey,
 				p.OutTurnQty,
 				p.ShipLoadedQty,
 				p.ShipDischargeQty,
@@ -131,7 +134,9 @@ begin
 					left join Warehouse.Dim_Owner wo with (nolock)
 						on wo.OwnerAlternateKey = fs.RelatedOwnerParentId
 					left join Warehouse.Dim_Charterer wch with (nolock)
-						on wch.ChartererAlternateKey = fs.RelatedChartererParentID;
+						on wch.ChartererAlternateKey = fs.RelatedChartererParentID
+					left join Warehouse.Dim_Vessel v with (nolock)
+						on v.VesselAlternateKey = pf.RelatedVessel;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging Parcel records - ' + error_message();
@@ -153,9 +158,7 @@ begin
 						wloadberth.BerthKey,
 						sum(ee.LtUsedProrationAmtHrs_QBC) LaytimeUsed
 					from
-						Parcels p with (nolock)
-							join ParcelBerths loadberth with (nolock)
-								on p.RelatedLoadBerth = loadberth.QBRecId
+						ParcelBerths loadberth with (nolock)
 							join SOFEvents ee with (nolock)
 								on ee.RelatedParcelBerthId = loadberth.QBRecId
 							join Warehouse.Dim_PostFixture wpf with (nolock)
@@ -178,9 +181,7 @@ begin
 						wdischberth.BerthKey,
 						sum(ee.LtUsedProrationAmtHrs_QBC) LaytimeUsed
 					from
-						Parcels p with (nolock)
-							join ParcelBerths dischberth with (nolock)
-								on p.RelatedDischBerth = dischberth.QBRecId
+						ParcelBerths dischberth with (nolock)
 							join SOFEvents ee with (nolock)
 								on ee.RelatedParcelBerthId = dischberth.QBRecId
 							join Warehouse.Dim_PostFixture wpf with (nolock)
@@ -203,9 +204,7 @@ begin
 						wloadberth.BerthKey,
 						sum(loadberth.LaytimeAllowedBerthHrs_QBC) LaytimeAllowed
 					from
-						Parcels p with (nolock)
-							join ParcelBerths loadberth with (nolock)
-								on p.RelatedLoadBerth = loadberth.QBRecId
+						ParcelBerths loadberth with (nolock)
 							join Warehouse.Dim_PostFixture wpf with (nolock)
 								on wpf.PostFixtureAlternateKey = loadberth.RelatedSpiFixtureId
 							join Warehouse.Dim_Berth wloadberth with (nolock)
@@ -226,9 +225,7 @@ begin
 						wdischberth.BerthKey,
 						sum(dischberth.LaytimeAllowedBerthHrs_QBC) LaytimeAllowed
 					from
-						Parcels p with (nolock)
-							join ParcelBerths dischberth with (nolock)
-								on p.RelatedDischBerth = dischberth.QBRecId
+						ParcelBerths dischberth with (nolock)
 							join Warehouse.Dim_PostFixture wpf with (nolock)
 								on wpf.PostFixtureAlternateKey = dischberth.RelatedSpiFixtureId
 							join Warehouse.Dim_Berth wdischberth with (nolock)
@@ -435,6 +432,7 @@ begin
 															CPDateKey,
 															ChartererKey,
 															OwnerKey,
+															VesselKey,
 															OutTurnQty,
 															ShipLoadedQty,
 															ShipDischargeQty,
@@ -468,6 +466,7 @@ begin
 					sfp.CPDateKey,
 					sfp.ChartererKey,
 					sfp.OwnerKey,
+					sfp.VesselKey,
 					sfp.OutTurnQty,
 					sfp.ShipLoadedQty,
 					sfp.ShipDischargeQty,

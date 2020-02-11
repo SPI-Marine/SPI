@@ -20,6 +20,7 @@ Brian Boswick	12/13/2019	Changed DateModified field to point to new DateETAWasUp
 Brian Boswick	01/24/2020	Removed ETA change logic for ETALastModifiedDate
 Brian Boswick	01/25/2020	Added PortOrder field logic
 Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey ETL logic
+Brian Boswick	02/11/2020	Added VesselKey ETL logic
 ==========================================================================================================	
 */
 
@@ -47,6 +48,7 @@ begin
 																DateModifiedKey,
 																ChartererKey,
 																OwnerKey,
+																VesselKey,
 																ItineraryPortType,
 																Comments,
 																NORStartDate,
@@ -73,6 +75,7 @@ begin
 				isnull(dm.DateKey, 47001231)					DateModifiedKey,	--- REMOVE THIS FIELD AFTER LETTING RACHEL KNOW ---
 				isnull(wch.ChartererKey, -1)					ChartererKey,
 				isnull(wo.OwnerKey, -1)							OwnerKey,
+				isnull(v.VesselKey, -1)							VesselKey,
 				vi.ItineraryPortType							ItineraryPortType,
 				vi.Comments										Comments,
 				firstnorevent.FirstNOREventDate					NORStartDate,
@@ -165,6 +168,8 @@ begin
 						on wo.OwnerAlternateKey = fs.RelatedOwnerParentId
 					left join Warehouse.Dim_Charterer wch with (nolock)
 						on wch.ChartererAlternateKey = fs.RelatedChartererParentID
+					left join Warehouse.Dim_Vessel v with (nolock)
+						on v.VesselAlternateKey = pf.RelatedVessel
 					left join	(
 									select
 											@ExistingRecord RecordStatus,
@@ -540,6 +545,7 @@ begin
 																	DateModifiedKey,
 																	ChartererKey,
 																	OwnerKey,
+																	VesselKey,
 																	ItineraryPortType,
 																	Comments,
 																	NORStartDate,
@@ -587,6 +593,7 @@ begin
 					fvi.DateModifiedKey,
 					fvi.ChartererKey,
 					fvi.OwnerKey,
+					fvi.VesselKey,
 					fvi.ItineraryPortType,
 					fvi.Comments,
 					fvi.NORStartDate,
@@ -646,6 +653,7 @@ begin
 				DateModifiedKey = fvi.DateModifiedKey,
 				ChartererKey = fvi.ChartererKey,
 				OwnerKey = fvi.OwnerKey,
+				VesselKey = fvi.VesselKey,
 				ItineraryPortType = fvi.ItineraryPortType,
 				Comments = fvi.Comments,
 				NORStartDate = fvi.NORStartDate,

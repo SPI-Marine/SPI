@@ -9,6 +9,7 @@ Developer		Date		Change
 Brian Boswick	01/02/2020	Added LoadNORStartDate, DischargeNORStartDate
 Brian Boswick	01/09/2020	Added CPDateKey
 Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey
+Brian Boswick	02/11/2020	Added VesselKey
 ==========================================================================================================	
 */
 
@@ -32,6 +33,7 @@ create table Warehouse.Fact_Parcel
 		CPDateKey								int					not null,
 		ChartererKey							int					not null,
 		OwnerKey								int					not null,
+		VesselKey								int					not null,
 		OutTurnQty								decimal(18, 6)		null,			-- Metrics
 		ShipLoadedQty							decimal(18, 6)		null,
 		ShipDischargeQty						decimal(18, 6)		null,
