@@ -18,6 +18,7 @@ Brian Boswick	06/26/2019	Added LaytimeCommenceLoad_CompleteLoad, LaytimeCommence
 							AverageLaytimeCommenceLoad_CompleteLoad and 
 							AverageLaytimeCommenceDischarge_CompleteDischarge metrics
 Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey ETL logic
+Brian Boswick	02/10/2020	Added ProductKey ETL logic
 ==========================================================================================================	
 */
 
@@ -169,6 +170,7 @@ begin
 												DischargePortKey,
 												ChartererKey,
 												OwnerKey,
+												ProductKey,
 												LoadDischarge,
 												ParcelQuantity,
 												LaytimeAllowed
@@ -188,6 +190,7 @@ begin
 					isnull(wdischport.PortKey, -1)				DischargePortKey,
 					isnull(wch.ChartererKey, -1)				ChartererKey,
 					isnull(wo.OwnerKey, -1)						OwnerKey,
+					-1											ProductKey,
 					ufb.LoadDischarge							LoadDischarge,
 					ufb.ParcelQuantity							ParcelQuantity,
 					ufb.LaytimeAllowed							LaytimeAllowed
@@ -249,19 +252,21 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update ProductType for the Post Fixture
+	-- Update ProductType/ProductKey for the Post Fixture
 	begin try
 		with TopProductTypeQuantities	(
 											PostFixtureAlternateKey,
 											MaxQuantity,
-											ProductType
+											ProductType,
+											ProductKey
 										)
 		as
 		(
 			select
 					p.RelatedSpiFixtureId	PostFixtureAlternateKey,
 					max(p.BLQty)			MaxQuantity,
-					prodtype.TypeName		ProductType
+					prodtype.TypeName		ProductType,
+					wp.ProductKey			ProductKey
 				from
 					Parcels p with (nolock)
 						join ParcelProducts pp with (nolock)
@@ -270,17 +275,21 @@ begin
 							on pp.RelatedProductId = prod.QBRecId
 						join ProductType prodtype with (nolock)
 							on prod.RelatedProductTypeId = prodtype.QBRecId
+						join Warehouse.Dim_Product wp with (nolock)
+							on wp.ProductAlternateKey = prod.QBRecId
 				where
 					p.RelatedSpiFixtureId is not null
 				group by
 					p.RelatedSpiFixtureId,
-					prodtype.TypeName
+					prodtype.TypeName,
+					wp.ProductKey
 		)
 				
 		update
 				Staging.Fact_FixtureBerth with (tablock)
 			set
-				ProductType = prodtype.ProductType
+				ProductType = prodtype.ProductType,
+				ProductKey = prodtype.ProductKey
 			from
 				TopProductTypeQuantities prodtype						
 			where
@@ -1848,6 +1857,7 @@ begin
 					sfb.DischargePortKey,
 					sfb.ChartererKey,
 					sfb.OwnerKey,
+					sfb.ProductKey,
 					sfb.LoadDischarge,
 					sfb.ProductType,
 					sfb.ParcelQuantityTShirtSize,

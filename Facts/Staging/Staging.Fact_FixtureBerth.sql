@@ -8,6 +8,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	06/07/2019	Added Average Wait and Lay times for all fixtures
 Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey
+Brian Boswick	02/10/2020	Added ProductKey
 ==========================================================================================================	
 */
 
@@ -29,6 +30,7 @@ create table Staging.Fact_FixtureBerth
 		DischargePortKey										int					not null,
 		ChartererKey											int					not null,
 		OwnerKey												int					not null,
+		ProductKey												int					not null,
 		LoadDischarge											varchar(50)			null,		-- Degenerate Dimension Attributes
 		ProductType												nvarchar(100)		null,
 		ParcelQuantityTShirtSize								varchar(50)			null,
