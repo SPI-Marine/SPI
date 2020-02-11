@@ -6,6 +6,7 @@ Description:	Creates the Warehouse.Fact_Position table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	02/10/2020	Added OwnerKey ETL logic
 ==========================================================================================================	
 */
 
@@ -22,6 +23,7 @@ create table Warehouse.Fact_Position
 		VesselKey								int					not null,
 		OpenDateKey								int					not null,
 		EndDateKey								int					not null,
+		OwnerKey								int					not null,
 		Comments								varchar(500)		null,		-- Degenerate Dimension Attributes
 		StatusCalculation						varchar(500)		null,
 		LastCargo								varchar(500)		null,

@@ -14,6 +14,7 @@ Description:	Creates the LoadFact_Position stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	02/10/2020	Added OwnerKey ETL logic
 ==========================================================================================================	
 */
 
@@ -40,6 +41,7 @@ begin
 															VesselKey,
 															OpenDateKey,
 															EndDateKey,
+															OwnerKey,
 															Comments,
 															StatusCalculation,
 															LastCargo,
@@ -54,6 +56,7 @@ begin
 				isnull(v.VesselKey, -1)				VesselKey,
 				isnull(od.DateKey, -1)				OpenDateKey,
 				isnull(ed.DateKey, -1)				EndDateKey,
+				isnull(o.OwnerKey, -1)				OwnerKey,
 				p.Comments							Comments,
 				p.StatusCalculation_ADMIN			StatusCalculation,
 				p.LastCargo							LastCargo,
@@ -72,7 +75,9 @@ begin
 					left join Warehouse.Dim_Product prod with (nolock)
 						on prod.ProductAlternateKey = p.RelatedProductID
 					left join Warehouse.Dim_Port dischport with (nolock)
-						on dischport.PortName = isnull(p.Direction, '');
+						on dischport.PortName = isnull(p.Direction, '')
+					left join Warehouse.Dim_Owner o with (nolock)
+						on o.OwnerAlternateKey = p.RelatedOwnerParentID;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging records - ' + error_message();
@@ -94,6 +99,7 @@ begin
 															VesselKey,
 															OpenDateKey,
 															EndDateKey,
+															OwnerKey,
 															Comments,
 															StatusCalculation,
 															LastCargo,
@@ -109,6 +115,7 @@ begin
 					sp.VesselKey,
 					sp.OpenDateKey,
 					sp.EndDateKey,
+					sp.OwnerKey,
 					sp.Comments,
 					sp.StatusCalculation,
 					sp.LastCargo,
