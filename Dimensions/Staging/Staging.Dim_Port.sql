@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	07/19/2019	Added Area, Region
+Brian Boswick	02/17/2020	Added LOARestriction, DraftRestriction, ProductRestriction
 ==========================================================================================================	
 */
 
@@ -26,6 +27,9 @@ create table Staging.Dim_Port
 		PortCosts				nvarchar(250)		null,
 		Area					varchar(150)		null,
 		Region					varchar(150)		null,
+		LOARestriction			numeric(10, 4)		null,
+		DraftRestriction		numeric(10, 4)		null,
+		ProductRestriction		varchar(500)		null,
 		Type1HashValue			varbinary(16)		not null,
 		RecordStatus			int					not null
 		constraint [PK_Staging_Dim_Port_QBRecId] primary key clustered 

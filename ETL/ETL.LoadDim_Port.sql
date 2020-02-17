@@ -8,6 +8,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	05/20/2019	Remove deleted records from Warehouse
 Brian Boswick	07/19/2019	Added Area, Region
+Brian Boswick	02/17/2020	Added LOARestriction, DraftRestriction, ProductRestriction ETL logic
 ==========================================================================================================	
 */
 
@@ -59,6 +60,9 @@ begin
 				[port].PortCosts,
 				area.[Name]							Area,
 				region.RegionName					Region,
+				[port].LOARestriction				LOARestriction,
+				[port].DraftRestriction				DraftRestriction,
+				[port].ProductRestriction			ProductRestriction,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -99,7 +103,10 @@ begin
 																Longitude,
 																PortCosts,
 																Area,
-																Region
+																Region,
+																LOARestriction,
+																DraftRestriction,
+																ProductRestriction
 															)
 												);
 		
@@ -134,6 +141,9 @@ begin
 					[port].PortCosts,
 					[port].Area,
 					[port].Region,
+					[port].LOARestriction,
+					[port].DraftRestriction,
+					[port].ProductRestriction,
 					[port].Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -163,6 +173,9 @@ begin
 				PortCosts = [port].PortCosts,
 				Area = [port].Area,
 				Region = [port].Region,
+				LOARestriction = [port].LOARestriction,
+				DraftRestriction = [port].DraftRestriction,
+				ProductRestriction = [port].ProductRestriction,
 				Type1HashValue = [port].Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -222,6 +235,9 @@ begin
 														PortCosts,
 														Area,
 														Region,
+														LOARestriction,
+														DraftRestriction,
+														ProductRestriction,
 														Type1HashValue,
 														RowCreatedDate,
 														RowUpdatedDate,
@@ -241,6 +257,9 @@ begin
 							'Unknown',		-- PortCosts
 							'Unknown',		-- Area
 							'Unknown',		-- Region
+							0,				-- LOARestriction
+							0,				-- DraftRestriction
+							'Unknown',		-- ProductRestriction
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
@@ -259,6 +278,9 @@ begin
 							'Unknown',		-- PortCosts
 							'ANY',			-- Area
 							'ANY',			-- Region
+							0,				-- LOARestriction
+							0,				-- DraftRestriction
+							'Unknown',		-- ProductRestriction
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
