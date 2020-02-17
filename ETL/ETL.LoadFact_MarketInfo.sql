@@ -41,6 +41,7 @@ begin
 															VesselKey,
 															OwnerKey,
 															ChartererKey,
+															ProductQuantityKey,
 															LoadPort2,
 															DischargePort2,
 															DischargePort3,
@@ -50,49 +51,52 @@ begin
 															ProductQuantity
 														)
 		select
-				mi.RecordID						MarketInfoAlternateKey,
-				isnull(wp.ProductKey, -1)		ProductKey,
-				isnull(loadport1.PortKey, -1)	LoadPortKey,
-				isnull(dischport1.PortKey, -1)	DischargePortKey,
-				isnull(rd.DateKey, -1)			ReportDateKey,
-				isnull(commdate.DateKey, -1)	CommencementDateKey,
-				isnull(canceldate.DateKey, -1)	CancellingDateKey,
-				isnull(v.VesselKey, -1)			VesselKey,
-				isnull(o.OwnerKey, -1)			OwnerKey,
-				isnull(ch.ChartererKey, -1)		ChartererKey,
-				loadport2.PortName				LoadPort2,
-				dischport2.PortName				DischargePort2,
-				dischport3.PortName				DischargePort3,
-				mi.[Type]						MarketInfoType,
-				mi.Unit							Unit,
-				mi.FreightRatePMTEntry			FreightRatePayment,
-				mi.ProductQuantity_ENTRY		ProductQuantity
+				mi.RecordID							MarketInfoAlternateKey,
+				isnull(wp.ProductKey, -1)			ProductKey,
+				isnull(loadport1.PortKey, -1)		LoadPortKey,
+				isnull(dischport1.PortKey, -1)		DischargePortKey,
+				isnull(rd.DateKey, -1)				ReportDateKey,
+				isnull(commdate.DateKey, -1)		CommencementDateKey,
+				isnull(canceldate.DateKey, -1)		CancellingDateKey,
+				isnull(v.VesselKey, -1)				VesselKey,
+				isnull(o.OwnerKey, -1)				OwnerKey,
+				isnull(ch.ChartererKey, -1)			ChartererKey,
+				isnull(pq.ProductQuantityKey, -1)	ProductQuantityKey,
+				loadport2.PortName					LoadPort2,
+				dischport2.PortName					DischargePort2,
+				dischport3.PortName					DischargePort3,
+				mi.[Type]							MarketInfoType,
+				mi.Unit								Unit,
+				mi.FreightRatePMTEntry				FreightRatePayment,
+				mi.ProductQuantity_ENTRY			ProductQuantity
 			from
 				MarketInfo mi
-					left join Warehouse.Dim_Product wp
+					left join Warehouse.Dim_Product wp with (nolock)
 						on wp.ProductAlternateKey = mi.RelatedProductID
-					left join Warehouse.Dim_Port loadport1
-						on loadport1.PortAlternateKey = mi.RelatedDischPort1ID
-					left join Warehouse.Dim_Port dischport1
+					left join Warehouse.Dim_Port loadport1 with (nolock)
+						on loadport1.PortAlternateKey = mi.RelatedLoadPort1ID
+					left join Warehouse.Dim_Port dischport1 with (nolock)
 						on dischport1.PortAlternateKey = mi.RelatedDischPort1ID
-					left join Warehouse.Dim_Port loadport2
-						on loadport2.PortAlternateKey = mi.RelatedDischPort2ID
-					left join Warehouse.Dim_Port dischport2
+					left join Warehouse.Dim_Port loadport2 with (nolock)
+						on loadport2.PortAlternateKey = mi.RelatedLoadPort2ID
+					left join Warehouse.Dim_Port dischport2 with (nolock)
 						on dischport2.PortAlternateKey = mi.RelatedDischPort2ID
-					left join Warehouse.Dim_Port dischport3
+					left join Warehouse.Dim_Port dischport3 with (nolock)
 						on dischport3.PortAlternateKey = mi.DischPort3RelatedID
-					left join Warehouse.Dim_Calendar rd
+					left join Warehouse.Dim_Calendar rd with (nolock)
 						on rd.FullDate = convert(date, mi.ReportDate)
-					left join Warehouse.Dim_Calendar commdate
+					left join Warehouse.Dim_Calendar commdate with (nolock)
 						on commdate.FullDate = convert(date, mi.Commencement)
-					left join Warehouse.Dim_Calendar canceldate
+					left join Warehouse.Dim_Calendar canceldate with (nolock)
 						on canceldate.FullDate = convert(date, mi.Cancelling)
-					left join Warehouse.Dim_Vessel v
+					left join Warehouse.Dim_Vessel v with (nolock)
 						on v.VesselAlternateKey = mi.RelatedVesselID
-					left join Warehouse.Dim_Owner o
+					left join Warehouse.Dim_Owner o with (nolock)
 						on o.OwnerAlternateKey = mi.RelatedOwnerLinkID
-					left join Warehouse.Dim_Charterer ch
-						on ch.ChartererAlternateKey = mi.RelatedChartererID;
+					left join Warehouse.Dim_Charterer ch with (nolock)
+						on ch.ChartererAlternateKey = mi.RelatedChartererID
+					left join Warehouse.Dim_ProductQuantity pq with (nolock)
+						on convert(decimal(18, 4), mi.ProductQuantity_ENTRY) between pq.MinimumQuantity and pq.MaximumQuantity;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging MarketInfo records - ' + error_message();
@@ -117,6 +121,7 @@ begin
 																VesselKey,
 																OwnerKey,
 																ChartererKey,
+																ProductQuantityKey,
 																LoadPort2,
 																DischargePort2,
 																DischargePort3,
@@ -137,6 +142,7 @@ begin
 					fmi.VesselKey,
 					fmi.OwnerKey,
 					fmi.ChartererKey,
+					fmi.ProductQuantityKey,
 					fmi.LoadPort2,
 					fmi.DischargePort2,
 					fmi.DischargePort3,
@@ -146,7 +152,7 @@ begin
 					fmi.ProductQuantity,
 					getdate()
 				from
-					Staging.Fact_MarketInfo fmi;
+					Staging.Fact_MarketInfo fmi with (nolock);
 	end try
 	begin catch
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();

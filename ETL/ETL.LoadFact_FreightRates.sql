@@ -14,6 +14,7 @@ Description:	Creates the LoadFact_FreightRates stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	02/12/2020	Added ProductQuantityKey ETL logic
 ==========================================================================================================	
 */
 
@@ -38,6 +39,7 @@ begin
 				isnull(lp.PortKey, -1)						LoadPortKey,
 				isnull(dp.PortKey, -1)						DischargePortKey,
 				isnull(rd.DateKey, 18991230)				ReportDateKey,
+				isnull(pq.ProductQuantityKey, -1)			ProductQuantityKey,
 				fr.ProductQty								ProductQuantity,
 				fr.Currency									Currency,
 				fr.FrtRate									FreightRate
@@ -50,7 +52,9 @@ begin
 					left join Warehouse.Dim_Port dp with (nolock)
 						on dp.PortAlternateKey = fr.DischRelatedPortId
 					left join Warehouse.Dim_Calendar rd with (nolock)
-						on rd.FullDate = convert(date, fr.DateReported);
+						on rd.FullDate = convert(date, fr.DateReported)
+					left join Warehouse.Dim_ProductQuantity pq with (nolock)
+							on convert(decimal(18, 4), fr.ProductQty) between pq.MinimumQuantity and pq.MaximumQuantity;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging FreightRates records - ' + error_message();
@@ -71,12 +75,13 @@ begin
 					sfr.LoadPortKey,
 					sfr.DischargePortKey,
 					sfr.ReportDateKey,
+					sfr.ProductQuantityKey,
 					sfr.ProductQuantity,
 					sfr.Currency,
 					sfr.FreightRate,
 					getdate() RowStartDate
 				from
-					Staging.Fact_FreightRates sfr;
+					Staging.Fact_FreightRates sfr with (nolock);
 	end try
 	begin catch
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();

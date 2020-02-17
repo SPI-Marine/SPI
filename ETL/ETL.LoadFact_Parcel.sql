@@ -16,6 +16,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey ETL logic
 Brian Boswick	02/11/2020	Added VesselKey ETL logic
+Brian Boswick	02/14/2020	Added ProductQuantityKey ETL logic
 ==========================================================================================================	
 */
 
@@ -48,6 +49,7 @@ begin
 														ChartererKey,
 														OwnerKey,
 														VesselKey,
+														ProductQuantityKey,
 														OutTurnQty,
 														ShipLoadedQty,
 														ShipDischargeQty,
@@ -78,6 +80,7 @@ begin
 				isnull(wch.ChartererKey, -1)					ChartererKey,
 				isnull(wo.OwnerKey, -1)							OwnerKey,
 				isnull(v.VesselKey, -1)							VesselKey,
+				-1												ProductQuantityKey,
 				p.OutTurnQty,
 				p.ShipLoadedQty,
 				p.ShipDischargeQty,
@@ -316,15 +319,20 @@ begin
 				Staging.Fact_Parcel with (tablock)
 			set
 				TotalLoadBerthBLQty = lt.TotalBerthBLQty,
-				TotalDischargeBerthBLQty = dt.TotalBerthBLQty
+				TotalDischargeBerthBLQty = dt.TotalBerthBLQty,
+				ProductQuantityKey = coalesce(lpq.ProductQuantityKey, dpq.ProductQuantityKey, -1)
 			from
 				Staging.Fact_Parcel sfp
 					left join AggregateLoadTotalBerthBLQty lt
 						on sfp.PostFixtureKey = lt.PostFixtureKey
 							and sfp.LoadBerthKey = lt.BerthKey
+					left join Warehouse.Dim_ProductQuantity lpq
+						on convert(decimal(18, 2), lt.TotalBerthBLQty) between lpq.MinimumQuantity and lpq.MaximumQuantity
 					left join AggregateDischargeBerthBLQty dt
 						on sfp.PostFixtureKey = dt.PostFixtureKey
-							and sfp.DischargeBerthKey = dt.BerthKey;
+							and sfp.DischargeBerthKey = dt.BerthKey
+					left join Warehouse.Dim_ProductQuantity dpq
+						on convert(decimal(18, 2), lt.TotalBerthBLQty) between dpq.MinimumQuantity and dpq.MaximumQuantity;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating Berth BL Quantity metrics - ' + error_message();
@@ -433,6 +441,7 @@ begin
 															ChartererKey,
 															OwnerKey,
 															VesselKey,
+															ProductQuantityKey,
 															OutTurnQty,
 															ShipLoadedQty,
 															ShipDischargeQty,
@@ -467,6 +476,7 @@ begin
 					sfp.ChartererKey,
 					sfp.OwnerKey,
 					sfp.VesselKey,
+					sfp.ProductQuantityKey,
 					sfp.OutTurnQty,
 					sfp.ShipLoadedQty,
 					sfp.ShipDischargeQty,

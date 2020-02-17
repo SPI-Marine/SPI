@@ -6,6 +6,7 @@ Description:	Creates the Warehouse.Fact_FreightRates table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	02/12/2020	Added ProductQuantityKey
 ==========================================================================================================	
 */
 
@@ -20,6 +21,7 @@ create table Warehouse.Fact_FreightRates
 		LoadPortKey												int					not null,
 		DischargePortKey										int					not null,
 		ReportDateKey											int					not null,
+		ProductQuantityKey										int					not null,
 		ProductQuantity											decimal(18, 2)		null,		-- Degenerate Dimension Attributes
 		Currency												varchar(15)			null,
 		FreightRate												decimal(18, 2)		null,		-- Metrics

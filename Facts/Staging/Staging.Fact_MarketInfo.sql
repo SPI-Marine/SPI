@@ -24,6 +24,7 @@ create table Staging.Fact_MarketInfo
 		VesselKey								int					not null,
 		OwnerKey								int					not null,
 		ChartererKey							int					not null,
+		ProductQuantityKey						int					not null,
 		LoadPort2								varchar(500)		null,		-- Degenerate Dimension Attributes
 		DischargePort2							varchar(500)		null,
 		DischargePort3							varchar(500)		null,
