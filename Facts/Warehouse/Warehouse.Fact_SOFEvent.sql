@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey
+Brian Boswick	02/14/2020	Renamed multiple metrics
 ==========================================================================================================	
 */
 
@@ -39,7 +40,7 @@ create table Warehouse.Fact_SOFEvent
 		StopDateTime			varchar(50)			null,
 		StartDateTimeSort		datetime			null,
 		Duration				decimal(18, 4)		null,		-- Metrics
-		LaytimeActual			decimal(18, 4)		null,
+		LaytimeUsed				decimal(18, 4)		null,
 		LaytimeAllowed			decimal(18, 4)		null,
 		LaytimeAllowedProrated	decimal(18, 4)		null,
 		ParcelQuantity			decimal(18, 4)		null,

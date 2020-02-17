@@ -9,6 +9,7 @@ Developer		Date		Change
 Brian Boswick	03/15/2019	Added LoadPortBerthKey and DischargePortBerthKey
 Brian Boswick	05/20/2019	Remove deleted records from Warehouse
 Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey ETL logic
+Brian Boswick	02/14/2020	Renamed multiple metrics
 ==========================================================================================================	
 */
 
@@ -82,7 +83,7 @@ begin
 								+ sof.StartTime
 							)								StartDateTimeSort,
 				null										Duration,
-				null										LaytimeActual,
+				null										LaytimeUsed,
 				case
 					when epostfixture.Disch_FAC = 1 and parcel.LoadDischarge = 'Discharge'
 						then 0
@@ -229,11 +230,11 @@ begin
 								else null
 							end;
 
-		-- Calculate LaytimeActual
+		-- Calculate LaytimeUsed
 		update
 				Staging.Fact_SOFEvent with (tablock)
 			set
-				LaytimeActual =	ee.LtUsedProrationAmtHrs_QBC
+				LaytimeUsed =	ee.LtUsedProrationAmtHrs_QBC
 			from
 				SOFEvents ee with (nolock)
 					join Staging.Fact_SOFEvent fe
@@ -246,7 +247,7 @@ begin
 				LaytimeAllowedProrated = ProrationPercentage*LaytimeAllowed;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating SOFEvent Duration/LaytimeActual/LaytimeAllowedProrated - ' + error_message();
+		select @ErrorMsg = 'Updating SOFEvent Duration/LaytimeUsed/LaytimeAllowedProrated - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
@@ -323,7 +324,7 @@ begin
 					evt.StopDateTime,
 					evt.StartDateTimeSort,
 					evt.Duration,
-					evt.LaytimeActual,
+					evt.LaytimeUsed,
 					evt.LaytimeAllowed,
 					evt.LaytimeAllowedProrated,
 					evt.ParcelQuantity,
