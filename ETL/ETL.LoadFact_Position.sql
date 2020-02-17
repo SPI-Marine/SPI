@@ -15,6 +15,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/10/2020	Added OwnerKey ETL logic
+Brian Boswick	02/12/2020	Added Direction and ShippingArea ETL logic
 ==========================================================================================================	
 */
 
@@ -46,7 +47,9 @@ begin
 															StatusCalculation,
 															LastCargo,
 															FOFSA,
-															PositionType
+															PositionType,
+															Direction,
+															ShippingArea
 														)	
 		select
 				p.RecordID							PositionAlternateKey,
@@ -61,7 +64,9 @@ begin
 				p.StatusCalculation_ADMIN			StatusCalculation,
 				p.LastCargo							LastCargo,
 				p.FOFSA_prod						FOFSA,
-				p.PositionType						PositionType				
+				p.PositionType						PositionType,
+				p.Direction							Direction,
+				sa.[Name]							ShippingArea
 			from
 				Positions p with (nolock)
 					left join Warehouse.Dim_Calendar od with (nolock)
@@ -77,7 +82,9 @@ begin
 					left join Warehouse.Dim_Port dischport with (nolock)
 						on dischport.PortName = isnull(p.Direction, '')
 					left join Warehouse.Dim_Owner o with (nolock)
-						on o.OwnerAlternateKey = p.RelatedOwnerParentID;
+						on o.OwnerAlternateKey = p.RelatedOwnerParentID
+					left join ShippingAreas sa with (nolock)
+						on sa.QBRecId = p.RelatedShippingAreaID_P;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging records - ' + error_message();
@@ -105,6 +112,8 @@ begin
 															LastCargo,
 															FOFSA,
 															PositionType,
+															Direction,
+															ShippingArea,
 															RowCreatedDate
 														)
 			select
@@ -121,6 +130,8 @@ begin
 					sp.LastCargo,
 					sp.FOFSA,
 					sp.PositionType,
+					sp.Direction,
+					sp.ShippingArea,
 					getdate()
 				from
 					Staging.Fact_Position sp;

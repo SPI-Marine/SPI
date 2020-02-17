@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/10/2020	Added OwnerKey ETL logic
+Brian Boswick	02/12/2020	Added Direction and ShippingArea
 ==========================================================================================================	
 */
 
@@ -29,6 +30,8 @@ create table Warehouse.Fact_Position
 		LastCargo								varchar(500)		null,
 		FOFSA									varchar(500)		null,
 		PositionType							varchar(500)		null,
+		Direction								varchar(500)		null,
+		ShippingArea							varchar(500)		null,
 		RowCreatedDate							datetime			not null,
 		constraint [PK_Warehouse_Fact_Position_Key] primary key clustered 
 		(

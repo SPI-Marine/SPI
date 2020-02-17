@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/10/2020	Added OwnerKey ETL logic
+Brian Boswick	02/12/2020	Added Direction and ShippingArea
 ==========================================================================================================	
 */
 
@@ -28,6 +29,8 @@ create table Staging.Fact_Position
 		LastCargo								varchar(500)		null,
 		FOFSA									varchar(500)		null,
 		PositionType							varchar(500)		null,
+		Direction								varchar(500)		null,
+		ShippingArea							varchar(500)		null,
 		constraint [PK_Staging_Fact_Position_AltKey] primary key clustered 
 		(
 			PositionAlternateKey asc
