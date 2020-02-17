@@ -14,11 +14,13 @@ Description:	Creates the LoadFact_FixtureBerth stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
-Brian Boswick	06/26/2019	Added LaytimeCommenceLoad_CompleteLoad, LaytimeCommenceDischarge_CompleteDischarge,
-							AverageLaytimeCommenceLoad_CompleteLoad and 
-							AverageLaytimeCommenceDischarge_CompleteDischarge metrics
+Brian Boswick	06/26/2019	Added TimeToCountCommenceLoad_CompleteLoad, TimeToCountCommenceDischarge_CompleteDischarge,
+							AverageTimeToCountCommenceLoad_CompleteLoad and 
+							AverageTimeToCountCommenceDischarge_CompleteDischarge metrics
 Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey ETL logic
 Brian Boswick	02/10/2020	Added ProductKey ETL logic
+Brian Boswick	02/12/2020	Added ProductQuantityKey ETL logic
+Brian Boswick	02/13/2020	Renamed multiple metrics
 ==========================================================================================================	
 */
 
@@ -171,6 +173,7 @@ begin
 												ChartererKey,
 												OwnerKey,
 												ProductKey,
+												ProductQuantityKey,
 												LoadDischarge,
 												ParcelQuantity,
 												LaytimeAllowed
@@ -191,6 +194,7 @@ begin
 					isnull(wch.ChartererKey, -1)				ChartererKey,
 					isnull(wo.OwnerKey, -1)						OwnerKey,
 					-1											ProductKey,
+					isnull(pq.ProductQuantityKey, -1)			ProductQuantityKey,
 					ufb.LoadDischarge							LoadDischarge,
 					ufb.ParcelQuantity							ParcelQuantity,
 					ufb.LaytimeAllowed							LaytimeAllowed
@@ -202,7 +206,7 @@ begin
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
 						left join Warehouse.Dim_Vessel vessel with (nolock)
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
-						left join ParcelPorts pp
+						left join ParcelPorts pp with (nolock)
 							on pp.QBRecId = ufb.LoadDischargeAlternateKey
 						left join Warehouse.Dim_Port wloadport with (nolock)
 							on wloadport.PortAlternateKey = pp.RelatedPortId
@@ -218,7 +222,10 @@ begin
 						left join Warehouse.Dim_Owner wo with (nolock)
 							on wo.OwnerAlternateKey = fs.RelatedOwnerParentId
 						left join Warehouse.Dim_Charterer wch with (nolock)
-							on wch.ChartererAlternateKey = fs.RelatedChartererParentID	end try
+							on wch.ChartererAlternateKey = fs.RelatedChartererParentID
+						left join Warehouse.Dim_ProductQuantity pq with (nolock)
+							on convert(decimal(18, 4), ufb.ParcelQuantity) between pq.MinimumQuantity and pq.MaximumQuantity;
+	end try
 	begin catch
 		select @ErrorMsg = 'Staging FixtureBerth records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
@@ -846,17 +853,17 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update LayTimeNOR_Berth
+	-- Update TimeToCountNOR_Berth
 	begin try
 		update
 				fb with (tablock)
 			set
-				LayTimeNOR_Berth = isnull(fbed.LayTimeNOR_Berth, 0)
+				TimeToCountNOR_Berth = isnull(fbed.TimeToCountNOR_Berth, 0)
 			from
 				Staging.Fact_FixtureBerth fb
 					left join	(
 									select
-											sum(fbe.LayTimeUsedProrated)	LayTimeNOR_Berth,
+											sum(fbe.LayTimeUsedProrated)	TimeToCountNOR_Berth,
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
@@ -892,21 +899,21 @@ begin
 						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating LayTimeNOR_Berth - ' + error_message();
+		select @ErrorMsg = 'Updating TimeToCountNOR_Berth - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update LayTimeBerth_HoseOn
+	-- Update TimeToCountBerth_HoseOn
 	begin try
 		update
 				fb with (tablock)
 			set
-				LayTimeBerth_HoseOn = isnull(fbed.LayTimeBerth_HoseOn, 0)
+				TimeToCountBerth_HoseOn = isnull(fbed.TimeToCountBerth_HoseOn, 0)
 			from
 				Staging.Fact_FixtureBerth fb
 					left join	(
 									select
-											sum(fbe.LayTimeUsedProrated)	LayTimeBerth_HoseOn,
+											sum(fbe.LayTimeUsedProrated)	TimeToCountBerth_HoseOn,
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
@@ -942,21 +949,21 @@ begin
 						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating LayTimeBerth_HoseOn - ' + error_message();
+		select @ErrorMsg = 'Updating TimeToCountBerth_HoseOn - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update LayTimeHoseOn_CommenceLoad
+	-- Update TimeToCountHoseOn_CommenceLoad
 	begin try
 		update
 				fb with (tablock)
 			set
-				LayTimeHoseOn_CommenceLoad = isnull(fbed.LayTimeHoseOn_CommenceLoad, 0)
+				TimeToCountHoseOn_CommenceLoad = isnull(fbed.TimeToCountHoseOn_CommenceLoad, 0)
 			from
 				Staging.Fact_FixtureBerth fb
 					left join	(
 									select
-											sum(fbe.Duration)				LayTimeHoseOn_CommenceLoad,
+											sum(fbe.Duration)				TimeToCountHoseOn_CommenceLoad,
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
@@ -991,21 +998,21 @@ begin
 						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating LayTimeHoseOn_CommenceLoad - ' + error_message();
+		select @ErrorMsg = 'Updating TimeToCountHoseOn_CommenceLoad - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update LayTimeHoseOn_CommenceDischarge
+	-- Update TimeToCountHoseOn_CommenceDischarge
 	begin try
 		update
 				fb with (tablock)
 			set
-				LayTimeHoseOn_CommenceDischarge = isnull(fbed.LayTimeHoseOn_CommenceDischarge, 0)
+				TimeToCountHoseOn_CommenceDischarge = isnull(fbed.TimeToCountHoseOn_CommenceDischarge, 0)
 			from
 				Staging.Fact_FixtureBerth fb
 					left join	(
 									select
-											sum(fbe.Duration)				LayTimeHoseOn_CommenceDischarge,
+											sum(fbe.Duration)				TimeToCountHoseOn_CommenceDischarge,
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
@@ -1040,21 +1047,21 @@ begin
 						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating LayTimeHoseOn_CommenceDischarge - ' + error_message();
+		select @ErrorMsg = 'Updating TimeToCountHoseOn_CommenceDischarge - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update LayTimeBerth_HoseOff
+	-- Update TimeToCountBerth_HoseOff
 	begin try
 		update
 				fb with (tablock)
 			set
-				LayTimeBerth_HoseOff = isnull(fbed.LayTimeBerth_HoseOff, 0)
+				TimeToCountBerth_HoseOff = isnull(fbed.TimeToCountBerth_HoseOff, 0)
 			from
 				Staging.Fact_FixtureBerth fb
 					left join	(
 									select
-											sum(fbe.LayTimeUsedProrated)	LayTimeBerth_HoseOff,
+											sum(fbe.LayTimeUsedProrated)	TimeToCountBerth_HoseOff,
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
@@ -1090,21 +1097,21 @@ begin
 						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating LayTimeBerth_HoseOff - ' + error_message();
+		select @ErrorMsg = 'Updating TimeToCountBerth_HoseOff - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update LayTimeCompleteLoad_HoseOff
+	-- Update TimeToCountCompleteLoad_HoseOff
 	begin try
 		update
 				fb with (tablock)
 			set
-				LayTimeCompleteLoad_HoseOff = isnull(fbed.LayTimeCompleteLoad_HoseOff, 0)
+				TimeToCountCompleteLoad_HoseOff = isnull(fbed.TimeToCountCompleteLoad_HoseOff, 0)
 			from
 				Staging.Fact_FixtureBerth fb
 					left join	(
 									select
-											sum(fbe.LayTimeUsedProrated)	LayTimeCompleteLoad_HoseOff,
+											sum(fbe.LayTimeUsedProrated)	TimeToCountCompleteLoad_HoseOff,
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
@@ -1140,21 +1147,21 @@ begin
 						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating LayTimeCompleteLoad_HoseOff - ' + error_message();
+		select @ErrorMsg = 'Updating TimeToCountCompleteLoad_HoseOff - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update LayTimeCompleteDischarge_HoseOff
+	-- Update TimeToCountCompleteDischarge_HoseOff
 	begin try
 		update
 				fb with (tablock)
 			set
-				LayTimeCompleteDischarge_HoseOff = isnull(fbed.LayTimeCompleteDischarge_HoseOff, 0)
+				TimeToCountCompleteDischarge_HoseOff = isnull(fbed.TimeToCountCompleteDischarge_HoseOff, 0)
 			from
 				Staging.Fact_FixtureBerth fb
 					left join	(
 									select
-											sum(fbe.LayTimeUsedProrated)	LayTimeCompleteDischarge_HoseOff,
+											sum(fbe.LayTimeUsedProrated)	TimeToCountCompleteDischarge_HoseOff,
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
@@ -1190,21 +1197,21 @@ begin
 						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating LayTimeCompleteDischarge_HoseOff - ' + error_message();
+		select @ErrorMsg = 'Updating TimeToCountCompleteDischarge_HoseOff - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update LaytimeCommenceLoad_CompleteLoad
+	-- Update TimeToCountCommenceLoad_CompleteLoad
 	begin try
 		update
 				fb with (tablock)
 			set
-				LaytimeCommenceLoad_CompleteLoad = isnull(fbed.LaytimeCommenceLoad_CompleteLoad, 0)
+				TimeToCountCommenceLoad_CompleteLoad = isnull(fbed.TimeToCountCommenceLoad_CompleteLoad, 0)
 			from
 				Staging.Fact_FixtureBerth fb
 					left join	(
 									select
-											sum(fbe.Duration)				LaytimeCommenceLoad_CompleteLoad,
+											sum(fbe.Duration)				TimeToCountCommenceLoad_CompleteLoad,
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
@@ -1239,21 +1246,21 @@ begin
 						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating LaytimeCommenceLoad_CompleteLoad - ' + error_message();
+		select @ErrorMsg = 'Updating TimeToCountCommenceLoad_CompleteLoad - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update LaytimeCommenceDischarge_CompleteDischarge
+	-- Update TimeToCountCommenceDischarge_CompleteDischarge
 	begin try
 		update
 				fb with (tablock)
 			set
-				LaytimeCommenceDischarge_CompleteDischarge = isnull(fbed.LaytimeCommenceDischarge_CompleteDischarge, 0)
+				TimeToCountCommenceDischarge_CompleteDischarge = isnull(fbed.TimeToCountCommenceDischarge_CompleteDischarge, 0)
 			from
 				Staging.Fact_FixtureBerth fb
 					left join	(
 									select
-											sum(fbe.Duration)				LaytimeCommenceDischarge_CompleteDischarge,
+											sum(fbe.Duration)				TimeToCountCommenceDischarge_CompleteDischarge,
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
@@ -1288,129 +1295,129 @@ begin
 						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating LaytimeCommenceDischarge_CompleteDischarge - ' + error_message();
+		select @ErrorMsg = 'Updating TimeToCountCommenceDischarge_CompleteDischarge - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update WaitTimeNOR_Berth
+	-- Update FreeTimeNOR_Berth
 	begin try
 		update
 				Staging.Fact_FixtureBerth with (tablock)
 			set
-				WaitTimeNOR_Berth = isnull(DurationNOR_Berth, 0) - isnull(LayTimeNOR_Berth, 0)
+				FreeTimeNOR_Berth = isnull(DurationNOR_Berth, 0) - isnull(TimeToCountNOR_Berth, 0)
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating WaitTimeNOR_Berth - ' + error_message();
+		select @ErrorMsg = 'Updating FreeTimeNOR_Berth - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update WaitTimeBerth_HoseOn
+	-- Update FreeTimeBerth_HoseOn
 	begin try
 		update
 				Staging.Fact_FixtureBerth with (tablock)
 			set
-				WaitTimeBerth_HoseOn = isnull(DurationBerth_HoseOn, 0) - isnull(LayTimeBerth_HoseOn, 0)
+				FreeTimeBerth_HoseOn = isnull(DurationBerth_HoseOn, 0) - isnull(TimeToCountBerth_HoseOn, 0)
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating WaitTimeBerth_HoseOn - ' + error_message();
+		select @ErrorMsg = 'Updating FreeTimeBerth_HoseOn - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update WaitTimeHoseOn_CommenceLoad
+	-- Update FreeTimeHoseOn_CommenceLoad
 	begin try
 		update
 				Staging.Fact_FixtureBerth with (tablock)
 			set
-				WaitTimeHoseOn_CommenceLoad = isnull(DurationHoseOn_CommenceLoad, 0) - isnull(LayTimeHoseOn_CommenceLoad, 0)
+				FreeTimeHoseOn_CommenceLoad = isnull(DurationHoseOn_CommenceLoad, 0) - isnull(TimeToCountHoseOn_CommenceLoad, 0)
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating WaitTimeHoseOn_CommenceLoad - ' + error_message();
+		select @ErrorMsg = 'Updating FreeTimeHoseOn_CommenceLoad - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update WaitTimeHoseOn_CommenceDischarge
+	-- Update FreeTimeHoseOn_CommenceDischarge
 	begin try
 		update
 				Staging.Fact_FixtureBerth with (tablock)
 			set
-				WaitTimeHoseOn_CommenceDischarge = isnull(DurationHoseOn_CommenceDischarge, 0) - isnull(LayTimeHoseOn_CommenceDischarge, 0)
+				FreeTimeHoseOn_CommenceDischarge = isnull(DurationHoseOn_CommenceDischarge, 0) - isnull(TimeToCountHoseOn_CommenceDischarge, 0)
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating WaitTimeHoseOn_CommenceDischarge - ' + error_message();
+		select @ErrorMsg = 'Updating FreeTimeHoseOn_CommenceDischarge - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update WaitTimeBerth_HoseOff
+	-- Update FreeTimeBerth_HoseOff
 	begin try
 		update
 				Staging.Fact_FixtureBerth with (tablock)
 			set
-				WaitTimeBerth_HoseOff = isnull(DurationBerth_HoseOff, 0) - isnull(LayTimeBerth_HoseOff, 0)
+				FreeTimeBerth_HoseOff = isnull(DurationBerth_HoseOff, 0) - isnull(TimeToCountBerth_HoseOff, 0)
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating WaitTimeBerth_HoseOff - ' + error_message();
+		select @ErrorMsg = 'Updating FreeTimeBerth_HoseOff - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update WaitTimeCompleteLoad_HoseOff
+	-- Update FreeTimeCompleteLoad_HoseOff
 	begin try
 		update
 				Staging.Fact_FixtureBerth with (tablock)
 			set
-				WaitTimeCompleteLoad_HoseOff = isnull(DurationCompleteLoad_HoseOff, 0) - isnull(LayTimeCompleteLoad_HoseOff, 0)
+				FreeTimeCompleteLoad_HoseOff = isnull(DurationCompleteLoad_HoseOff, 0) - isnull(TimeToCountCompleteLoad_HoseOff, 0)
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating WaitTimeCompleteLoad_HoseOff - ' + error_message();
+		select @ErrorMsg = 'Updating FreeTimeCompleteLoad_HoseOff - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update WaitTimeCompleteDischarge_HoseOff
+	-- Update FreeTimeCompleteDischarge_HoseOff
 	begin try
 		update
 				Staging.Fact_FixtureBerth with (tablock)
 			set
-				WaitTimeCompleteDischarge_HoseOff = isnull(DurationCompleteDischarge_HoseOff, 0) - isnull(LayTimeCompleteDischarge_HoseOff, 0)
+				FreeTimeCompleteDischarge_HoseOff = isnull(DurationCompleteDischarge_HoseOff, 0) - isnull(TimeToCountCompleteDischarge_HoseOff, 0)
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating WaitTimeCompleteDischarge_HoseOff - ' + error_message();
+		select @ErrorMsg = 'Updating FreeTimeCompleteDischarge_HoseOff - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update WaitTimeCommenceLoad_CompleteLoad
+	-- Update FreeTimeCommenceLoad_CompleteLoad
 	begin try
 		update
 				Staging.Fact_FixtureBerth with (tablock)
 			set
-				WaitTimeCommenceLoad_CompleteLoad = isnull(DurationCommenceLoad_CompleteLoad, 0) - isnull(LaytimeCommenceLoad_CompleteLoad, 0)
+				FreeTimeCommenceLoad_CompleteLoad = isnull(DurationCommenceLoad_CompleteLoad, 0) - isnull(TimeToCountCommenceLoad_CompleteLoad, 0)
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating WaitTimeCommenceLoad_CompleteLoad - ' + error_message();
+		select @ErrorMsg = 'Updating FreeTimeCommenceLoad_CompleteLoad - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update WaitTimeCommenceDischarge_CompleteDischarge
+	-- Update FreeTimeCommenceDischarge_CompleteDischarge
 	begin try
 		update
 				Staging.Fact_FixtureBerth with (tablock)
 			set
-				WaitTimeCommenceDischarge_CompleteDischarge = isnull(DurationCommenceDischarge_CompleteDischarge, 0) - isnull(LaytimeCommenceDischarge_CompleteDischarge, 0)
+				FreeTimeCommenceDischarge_CompleteDischarge = isnull(DurationCommenceDischarge_CompleteDischarge, 0) - isnull(TimeToCountCommenceDischarge_CompleteDischarge, 0)
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating WaitTimeCommenceDischarge_CompleteDischarge - ' + error_message();
+		select @ErrorMsg = 'Updating FreeTimeCommenceDischarge_CompleteDischarge - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update LayTimePumpingTime
+	-- Update TimeToCountPumpingTime
 	begin try
 		update
 				fb with (tablock)
 			set
-				LayTimePumpingTime = isnull(fbed.LayTimePumpingTime, 0)
+				TimeToCountPumpingTime = isnull(fbed.TimeToCountPumpingTime, 0)
 			from
 				Staging.Fact_FixtureBerth fb
 					left join	(
 									select
-											sum(fbe.LayTimeUsedProrated)	LayTimePumpingTime,
+											sum(fbe.LayTimeUsedProrated)	TimeToCountPumpingTime,
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
@@ -1426,24 +1433,24 @@ begin
 							and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating LayTimePumpingTime - ' + error_message();
+		select @ErrorMsg = 'Updating TimeToCountPumpingTime - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update LayTimePumpingRate
+	-- Update TimeToCountPumpingRate
 	begin try
 		update
 				fbe with (tablock)
 			set
-				LayTimePumpingRate =	case										
-											when isnull(fbed.LayTimePumpingTime, 0.0) > 0
-												then isnull(fbe.ParcelQuantity/fbed.LayTimePumpingTime, 0)
+				TimeToCountPumpingRate =	case										
+											when isnull(fbed.TimeToCountPumpingTime, 0.0) > 0
+												then isnull(fbe.ParcelQuantity/fbed.TimeToCountPumpingTime, 0)
 											else 0
 										end
 			from
 				(
 					select
-							sum(fbe.LayTimeUsedProrated)	LayTimePumpingTime,
+							sum(fbe.LayTimeUsedProrated)	TimeToCountPumpingTime,
 							fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 							fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 						from
@@ -1463,21 +1470,21 @@ begin
 				and fbed.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating LayTimePumpingRate - ' + error_message();
+		select @ErrorMsg = 'Updating TimeToCountPumpingRate - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Update LaytimeActual
+	-- Update LaytimeUsed
 	begin try
 		update
 				fb with (tablock)
 			set
-				LaytimeActual = isnull(fbed.LaytimeActual, 0)
+				LaytimeUsed = isnull(fbed.LaytimeUsed, 0)
 			from
 				Staging.Fact_FixtureBerth fb
 					left join	(
 									select
-											sum(fbe.LayTimeUsedProrated)	LaytimeActual,
+											sum(fbe.LayTimeUsedProrated)	LaytimeUsed,
 											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
 											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
 										from
@@ -1492,7 +1499,7 @@ begin
 							and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating LaytimeActual - ' + error_message();
+		select @ErrorMsg = 'Updating LaytimeUsed - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
@@ -1693,22 +1700,22 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
-	-- Find comparable, averable wait and lay times and aggregate them for comparison
+	-- Find comparable, averable Free and lay times and aggregate them for comparison
 	begin try
 		with FixtureBerthEventTimeAggregations	(
 													PortBerthKey,
 													ProductType,
 													ParcelQuantityTShirtSize,
 													LoadDischarge,
-													AverageWaitTimeNOR_Berth,
-													AverageWaitTimeBerth_HoseOn,
-													AverageWaitTimeHoseOn_CommenceLoad,
-													AverageWaitTimeHoseOn_CommenceDischarge,
-													AverageWaitTimeBerth_HoseOff,
-													AverageWaitTimeCompleteLoad_HoseOff,
-													AverageWaitTimeCompleteDischarge_HoseOff,
-													AverageWaitTimeCommenceLoad_CompleteLoad,
-													AverageWaitTimeCommenceDischarge_CompleteDischarge,
+													AverageFreeTimeNOR_Berth,
+													AverageFreeTimeBerth_HoseOn,
+													AverageFreeTimeHoseOn_CommenceLoad,
+													AverageFreeTimeHoseOn_CommenceDischarge,
+													AverageFreeTimeBerth_HoseOff,
+													AverageFreeTimeCompleteLoad_HoseOff,
+													AverageFreeTimeCompleteDischarge_HoseOff,
+													AverageFreeTimeCommenceLoad_CompleteLoad,
+													AverageFreeTimeCommenceDischarge_CompleteDischarge,
 													AverageDurationNOR_Berth,
 													AverageDurationBerth_HoseOn,
 													AverageDurationHoseOn_CommenceLoad,
@@ -1718,18 +1725,18 @@ begin
 													AverageDurationCompleteDischarge_HoseOff,
 													AverageDurationCommenceLoad_CompleteLoad,
 													AverageDurationCommenceDischarge_CompleteDischarge,
-													AverageLayTimeNOR_Berth,
-													AverageLayTimeBerth_HoseOn,
-													AverageLayTimeHoseOn_CommenceLoad,
-													AverageLayTimeHoseOn_CommenceDischarge,
-													AverageLayTimeBerth_HoseOff,
-													AverageLayTimeCompleteLoad_HoseOff,
-													AverageLayTimeCompleteDischarge_HoseOff,
-													AverageLaytimeCommenceLoad_CompleteLoad,
-													AverageLaytimeCommenceDischarge_CompleteDischarge,
+													AverageTimeToCountNOR_Berth,
+													AverageTimeToCountBerth_HoseOn,
+													AverageTimeToCountHoseOn_CommenceLoad,
+													AverageTimeToCountHoseOn_CommenceDischarge,
+													AverageTimeToCountBerth_HoseOff,
+													AverageTimeToCountCompleteLoad_HoseOff,
+													AverageTimeToCountCompleteDischarge_HoseOff,
+													AverageTimeToCountCommenceLoad_CompleteLoad,
+													AverageTimeToCountCommenceDischarge_CompleteDischarge,
 													AverageLayTimePumpingTime,
 													AverageLayTimePumpingRate,
-													AverageLaytimeActual,
+													AverageLaytimeUsed,
 													AverageLaytimeAllowed,
 													AveragePumpTime
 												)
@@ -1740,15 +1747,15 @@ begin
 					fb.ProductType,
 					fb.ParcelQuantityTShirtSize,
 					fb.LoadDischarge,
-					avg(fb.WaitTimeNOR_Berth)										AverageWaitTimeNOR_Berth,
-					avg(fb.WaitTimeBerth_HoseOn)									AverageWaitTimeBerth_HoseOn,
-					avg(fb.WaitTimeHoseOn_CommenceLoad)								AverageWaitTimeHoseOn_CommenceLoad,
-					avg(fb.WaitTimeHoseOn_CommenceDischarge)						AverageWaitTimeHoseOn_CommenceDischarge,
-					avg(fb.WaitTimeBerth_HoseOff)									AverageWaitTimeBerth_HoseOff,
-					avg(fb.WaitTimeCompleteLoad_HoseOff)							AverageWaitTimeCompleteLoad_HoseOff,
-					avg(fb.WaitTimeCompleteDischarge_HoseOff)						AverageWaitTimeCompleteDischarge_HoseOff,
-					avg(fb.WaitTimeCommenceLoad_CompleteLoad)						AverageWaitTimeCommenceLoad_CompleteLoad,
-					avg(fb.WaitTimeCommenceDischarge_CompleteDischarge)				AverageWaitTimeCommenceDischarge_CompleteDischarge,
+					avg(fb.FreeTimeNOR_Berth)										AverageFreeTimeNOR_Berth,
+					avg(fb.FreeTimeBerth_HoseOn)									AverageFreeTimeBerth_HoseOn,
+					avg(fb.FreeTimeHoseOn_CommenceLoad)								AverageFreeTimeHoseOn_CommenceLoad,
+					avg(fb.FreeTimeHoseOn_CommenceDischarge)						AverageFreeTimeHoseOn_CommenceDischarge,
+					avg(fb.FreeTimeBerth_HoseOff)									AverageFreeTimeBerth_HoseOff,
+					avg(fb.FreeTimeCompleteLoad_HoseOff)							AverageFreeTimeCompleteLoad_HoseOff,
+					avg(fb.FreeTimeCompleteDischarge_HoseOff)						AverageFreeTimeCompleteDischarge_HoseOff,
+					avg(fb.FreeTimeCommenceLoad_CompleteLoad)						AverageFreeTimeCommenceLoad_CompleteLoad,
+					avg(fb.FreeTimeCommenceDischarge_CompleteDischarge)				AverageFreeTimeCommenceDischarge_CompleteDischarge,
 					avg(fb.DurationNOR_Berth)										AverageDurationNOR_Berth,
 					avg(fb.DurationBerth_HoseOn)									AverageDurationBerth_HoseOn,
 					avg(fb.DurationHoseOn_CommenceLoad)								AverageDurationHoseOn_CommenceLoad,
@@ -1758,18 +1765,18 @@ begin
 					avg(fb.DurationCompleteDischarge_HoseOff)						AverageDurationCompleteDischarge_HoseOff,
 					avg(fb.DurationCommenceLoad_CompleteLoad)						AverageDurationCommenceLoad_CompleteLoad,
 					avg(fb.DurationCommenceDischarge_CompleteDischarge)				AverageDurationCommenceDischarge_CompleteDischarge,
-					avg(fb.LayTimeNOR_Berth)										AverageLayTimeNOR_Berth,
-					avg(fb.LayTimeBerth_HoseOn)										AverageLayTimeBerth_HoseOn,
-					avg(fb.LayTimeHoseOn_CommenceLoad)								AverageLayTimeHoseOn_CommenceLoad,
-					avg(fb.LayTimeHoseOn_CommenceDischarge)							AverageLayTimeHoseOn_CommenceDischarge,
-					avg(fb.LayTimeBerth_HoseOff)									AverageLayTimeBerth_HoseOff,
-					avg(fb.LayTimeCompleteLoad_HoseOff)								AverageLayTimeCompleteLoad_HoseOff,
-					avg(fb.LayTimeCompleteDischarge_HoseOff)						AverageLayTimeCompleteDischarge_HoseOff,
-					avg(fb.LaytimeCommenceLoad_CompleteLoad)						AverageLaytimeCommenceLoad_CompleteLoad,
-					avg(fb.LaytimeCommenceDischarge_CompleteDischarge)				AverageLaytimeCommenceDischarge_CompleteDischarge,
-					avg(fb.LayTimePumpingTime)										AverageLayTimePumpingTime,
-					avg(fb.LayTimePumpingRate)										AverageLayTimePumpingRate,
-					avg(fb.LaytimeActual)											AverageLaytimeActual,
+					avg(fb.TimeToCountNOR_Berth)										AverageTimeToCountNOR_Berth,
+					avg(fb.TimeToCountBerth_HoseOn)										AverageTimeToCountBerth_HoseOn,
+					avg(fb.TimeToCountHoseOn_CommenceLoad)								AverageTimeToCountHoseOn_CommenceLoad,
+					avg(fb.TimeToCountHoseOn_CommenceDischarge)							AverageTimeToCountHoseOn_CommenceDischarge,
+					avg(fb.TimeToCountBerth_HoseOff)									AverageTimeToCountBerth_HoseOff,
+					avg(fb.TimeToCountCompleteLoad_HoseOff)								AverageTimeToCountCompleteLoad_HoseOff,
+					avg(fb.TimeToCountCompleteDischarge_HoseOff)						AverageTimeToCountCompleteDischarge_HoseOff,
+					avg(fb.TimeToCountCommenceLoad_CompleteLoad)						AverageTimeToCountCommenceLoad_CompleteLoad,
+					avg(fb.TimeToCountCommenceDischarge_CompleteDischarge)				AverageTimeToCountCommenceDischarge_CompleteDischarge,
+					avg(fb.TimeToCountPumpingTime)										AverageLayTimePumpingTime,
+					avg(fb.TimeToCountPumpingRate)										AverageLayTimePumpingRate,
+					avg(fb.LaytimeUsed)											AverageLaytimeUsed,
 					avg(fb.LaytimeAllowed)											AverageLaytimeAllowed,
 					avg(fb.PumpTime)												AveragePumpTime
 				from
@@ -1789,15 +1796,15 @@ begin
 		update
 				Staging.Fact_FixtureBerth with (tablock)
 			set
-				AverageWaitTimeNOR_Berth = fba.AverageWaitTimeNOR_Berth,
-				AverageWaitTimeBerth_HoseOn = fba.AverageWaitTimeBerth_HoseOn,
-				AverageWaitTimeHoseOn_CommenceLoad = fba.AverageWaitTimeHoseOn_CommenceLoad,
-				AverageWaitTimeHoseOn_CommenceDischarge = fba.AverageWaitTimeHoseOn_CommenceDischarge,
-				AverageWaitTimeBerth_HoseOff = fba.AverageWaitTimeBerth_HoseOff,
-				AverageWaitTimeCompleteLoad_HoseOff = fba.AverageWaitTimeCompleteLoad_HoseOff,
-				AverageWaitTimeCompleteDischarge_HoseOff = fba.AverageWaitTimeCompleteDischarge_HoseOff,
-				AverageWaitTimeCommenceLoad_CompleteLoad = fba.AverageWaitTimeCommenceLoad_CompleteLoad,
-				AverageWaitTimeCommenceDischarge_CompleteDischarge = fba.AverageWaitTimeCommenceDischarge_CompleteDischarge,
+				AverageFreeTimeNOR_Berth = fba.AverageFreeTimeNOR_Berth,
+				AverageFreeTimeBerth_HoseOn = fba.AverageFreeTimeBerth_HoseOn,
+				AverageFreeTimeHoseOn_CommenceLoad = fba.AverageFreeTimeHoseOn_CommenceLoad,
+				AverageFreeTimeHoseOn_CommenceDischarge = fba.AverageFreeTimeHoseOn_CommenceDischarge,
+				AverageFreeTimeBerth_HoseOff = fba.AverageFreeTimeBerth_HoseOff,
+				AverageFreeTimeCompleteLoad_HoseOff = fba.AverageFreeTimeCompleteLoad_HoseOff,
+				AverageFreeTimeCompleteDischarge_HoseOff = fba.AverageFreeTimeCompleteDischarge_HoseOff,
+				AverageFreeTimeCommenceLoad_CompleteLoad = fba.AverageFreeTimeCommenceLoad_CompleteLoad,
+				AverageFreeTimeCommenceDischarge_CompleteDischarge = fba.AverageFreeTimeCommenceDischarge_CompleteDischarge,
 				AverageDurationNOR_Berth = fba.AverageDurationNOR_Berth,
 				AverageDurationBerth_HoseOn = fba.AverageDurationBerth_HoseOn,
 				AverageDurationHoseOn_CommenceLoad = fba.AverageDurationHoseOn_CommenceLoad,
@@ -1807,18 +1814,18 @@ begin
 				AverageDurationCompleteDischarge_HoseOff = fba.AverageDurationCompleteDischarge_HoseOff,
 				AverageDurationCommenceLoad_CompleteLoad = fba.AverageDurationCommenceLoad_CompleteLoad,
 				AverageDurationCommenceDischarge_CompleteDischarge = fba.AverageDurationCommenceDischarge_CompleteDischarge,
-				AverageLayTimeNOR_Berth = fba.AverageLayTimeNOR_Berth,
-				AverageLayTimeBerth_HoseOn = fba.AverageLayTimeBerth_HoseOn,
-				AverageLayTimeHoseOn_CommenceLoad = fba.AverageLayTimeHoseOn_CommenceLoad,
-				AverageLayTimeHoseOn_CommenceDischarge = fba.AverageLayTimeHoseOn_CommenceDischarge,
-				AverageLayTimeBerth_HoseOff = fba.AverageLayTimeBerth_HoseOff,
-				AverageLayTimeCompleteLoad_HoseOff = fba.AverageLayTimeCompleteLoad_HoseOff,
-				AverageLayTimeCompleteDischarge_HoseOff = fba.AverageLayTimeCompleteDischarge_HoseOff,
-				AverageLaytimeCommenceLoad_CompleteLoad = fba.AverageLaytimeCommenceLoad_CompleteLoad,
-				AverageLaytimeCommenceDischarge_CompleteDischarge = fba.AverageLaytimeCommenceDischarge_CompleteDischarge,
+				AverageTimeToCountNOR_Berth = fba.AverageTimeToCountNOR_Berth,
+				AverageTimeToCountBerth_HoseOn = fba.AverageTimeToCountBerth_HoseOn,
+				AverageTimeToCountHoseOn_CommenceLoad = fba.AverageTimeToCountHoseOn_CommenceLoad,
+				AverageTimeToCountHoseOn_CommenceDischarge = fba.AverageTimeToCountHoseOn_CommenceDischarge,
+				AverageTimeToCountBerth_HoseOff = fba.AverageTimeToCountBerth_HoseOff,
+				AverageTimeToCountCompleteLoad_HoseOff = fba.AverageTimeToCountCompleteLoad_HoseOff,
+				AverageTimeToCountCompleteDischarge_HoseOff = fba.AverageTimeToCountCompleteDischarge_HoseOff,
+				AverageTimeToCountCommenceLoad_CompleteLoad = fba.AverageTimeToCountCommenceLoad_CompleteLoad,
+				AverageTimeToCountCommenceDischarge_CompleteDischarge = fba.AverageTimeToCountCommenceDischarge_CompleteDischarge,
 				AverageLayTimePumpingTime = fba.AverageLayTimePumpingTime,
 				AverageLayTimePumpingRate = fba.AverageLayTimePumpingRate,
-				AverageLaytimeActual = fba.AverageLaytimeActual,
+				AverageLaytimeUsed = fba.AverageLaytimeUsed,
 				AverageLaytimeAllowed = fba.AverageLaytimeAllowed,
 				AveragePumpTime = fba.AveragePumpTime
 			from
@@ -1858,27 +1865,28 @@ begin
 					sfb.ChartererKey,
 					sfb.OwnerKey,
 					sfb.ProductKey,
+					sfb.ProductQuantityKey,
 					sfb.LoadDischarge,
 					sfb.ProductType,
 					sfb.ParcelQuantityTShirtSize,
-					sfb.WaitTimeNOR_Berth,
-					sfb.AverageWaitTimeNOR_Berth,
-					sfb.WaitTimeBerth_HoseOn,
-					sfb.AverageWaitTimeBerth_HoseOn,
-					sfb.WaitTimeHoseOn_CommenceLoad,
-					sfb.AverageWaitTimeHoseOn_CommenceLoad,
-					sfb.WaitTimeHoseOn_CommenceDischarge,
-					sfb.AverageWaitTimeHoseOn_CommenceDischarge,
-					sfb.WaitTimeBerth_HoseOff,
-					sfb.AverageWaitTimeBerth_HoseOff,
-					sfb.WaitTimeCompleteLoad_HoseOff,
-					sfb.AverageWaitTimeCompleteLoad_HoseOff,
-					sfb.WaitTimeCompleteDischarge_HoseOff,
-					sfb.AverageWaitTimeCompleteDischarge_HoseOff,
-					sfb.WaitTimeCommenceLoad_CompleteLoad,
-					sfb.AverageWaitTimeCommenceLoad_CompleteLoad,
-					sfb.WaitTimeCommenceDischarge_CompleteDischarge,
-					sfb.AverageWaitTimeCommenceDischarge_CompleteDischarge,
+					sfb.FreeTimeNOR_Berth,
+					sfb.AverageFreeTimeNOR_Berth,
+					sfb.FreeTimeBerth_HoseOn,
+					sfb.AverageFreeTimeBerth_HoseOn,
+					sfb.FreeTimeHoseOn_CommenceLoad,
+					sfb.AverageFreeTimeHoseOn_CommenceLoad,
+					sfb.FreeTimeHoseOn_CommenceDischarge,
+					sfb.AverageFreeTimeHoseOn_CommenceDischarge,
+					sfb.FreeTimeBerth_HoseOff,
+					sfb.AverageFreeTimeBerth_HoseOff,
+					sfb.FreeTimeCompleteLoad_HoseOff,
+					sfb.AverageFreeTimeCompleteLoad_HoseOff,
+					sfb.FreeTimeCompleteDischarge_HoseOff,
+					sfb.AverageFreeTimeCompleteDischarge_HoseOff,
+					sfb.FreeTimeCommenceLoad_CompleteLoad,
+					sfb.AverageFreeTimeCommenceLoad_CompleteLoad,
+					sfb.FreeTimeCommenceDischarge_CompleteDischarge,
+					sfb.AverageFreeTimeCommenceDischarge_CompleteDischarge,
 					sfb.DurationNOR_Berth,
 					sfb.AverageDurationNOR_Berth,
 					sfb.DurationBerth_HoseOn,
@@ -1897,31 +1905,31 @@ begin
 					sfb.AverageDurationCommenceLoad_CompleteLoad,
 					sfb.DurationCommenceDischarge_CompleteDischarge,
 					sfb.AverageDurationCommenceDischarge_CompleteDischarge,
-					sfb.LayTimeNOR_Berth,
-					sfb.AverageLayTimeNOR_Berth,
-					sfb.LayTimeBerth_HoseOn,
-					sfb.AverageLayTimeBerth_HoseOn,
-					sfb.LayTimeHoseOn_CommenceLoad,
-					sfb.AverageLayTimeHoseOn_CommenceLoad,
-					sfb.LayTimeHoseOn_CommenceDischarge,
-					sfb.AverageLayTimeHoseOn_CommenceDischarge,
-					sfb.LayTimeBerth_HoseOff,
-					sfb.AverageLayTimeBerth_HoseOff,
-					sfb.LayTimeCompleteLoad_HoseOff,
-					sfb.AverageLayTimeCompleteLoad_HoseOff,
-					sfb.LayTimeCompleteDischarge_HoseOff,
-					sfb.AverageLayTimeCompleteDischarge_HoseOff,
-					sfb.LaytimeCommenceLoad_CompleteLoad,
-					sfb.AverageLaytimeCommenceLoad_CompleteLoad,
-					sfb.LaytimeCommenceDischarge_CompleteDischarge,
-					sfb.AverageLaytimeCommenceDischarge_CompleteDischarge,
-					sfb.LayTimePumpingTime,
+					sfb.TimeToCountNOR_Berth,
+					sfb.AverageTimeToCountNOR_Berth,
+					sfb.TimeToCountBerth_HoseOn,
+					sfb.AverageTimeToCountBerth_HoseOn,
+					sfb.TimeToCountHoseOn_CommenceLoad,
+					sfb.AverageTimeToCountHoseOn_CommenceLoad,
+					sfb.TimeToCountHoseOn_CommenceDischarge,
+					sfb.AverageTimeToCountHoseOn_CommenceDischarge,
+					sfb.TimeToCountBerth_HoseOff,
+					sfb.AverageTimeToCountBerth_HoseOff,
+					sfb.TimeToCountCompleteLoad_HoseOff,
+					sfb.AverageTimeToCountCompleteLoad_HoseOff,
+					sfb.TimeToCountCompleteDischarge_HoseOff,
+					sfb.AverageTimeToCountCompleteDischarge_HoseOff,
+					sfb.TimeToCountCommenceLoad_CompleteLoad,
+					sfb.AverageTimeToCountCommenceLoad_CompleteLoad,
+					sfb.TimeToCountCommenceDischarge_CompleteDischarge,
+					sfb.AverageTimeToCountCommenceDischarge_CompleteDischarge,
+					sfb.TimeToCountPumpingTime,
 					sfb.AverageLayTimePumpingTime,
-					sfb.LayTimePumpingRate,
+					sfb.TimeToCountPumpingRate,
 					sfb.AverageLayTimePumpingRate,
 					sfb.ParcelQuantity,
-					sfb.LaytimeActual,
-					sfb.AverageLaytimeActual,
+					sfb.LaytimeUsed,
+					sfb.AverageLaytimeUsed,
 					sfb.LaytimeAllowed,
 					sfb.AverageLaytimeAllowed,
 					sfb.PumpTime,
