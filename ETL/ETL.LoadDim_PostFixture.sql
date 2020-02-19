@@ -1,3 +1,11 @@
+set ansi_nulls on;
+go
+set quoted_identifier on;
+go
+
+drop procedure if exists ETL.LoadDim_PostFixture;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -11,16 +19,9 @@ Brian Boswick	04/25/2019	Added LaycanCancellingOriginal, LaycanCancellingFinal_Q
 							LaycanCommencementFinal_QBC,
 Brian Boswick	07/01/2019	Added four new fields from QB
 Brian Boswick	07/17/2019	Added OwnerParent and ChartererParent fields
+Brian Boswick	02/19/2020	Added COA_Title_Admin ETL logic
 ==========================================================================================================	
 */
-
-set ansi_nulls on;
-go
-set quoted_identifier on;
-go
-
-drop procedure if exists ETL.LoadDim_PostFixture;
-go
 
 create procedure ETL.LoadDim_PostFixture
 as
@@ -101,6 +102,7 @@ begin
 				coa.RenewalDate_DeclareBy,
 				coa.ContractCommencement,
 				coa.ContractCancelling,
+				coa.COA_Title_Admin,
 				fixture.LaycanCancelOrig,
 				fixture.Laycan_Cancelling_Final_QBC,
 				fixture.Laycan_Commencement_Final_QBC,
@@ -219,6 +221,7 @@ begin
 																COA_RenewalDateDeclareBy,
 																COA_ContractCommencement,
 																COA_ContractCancelling,
+																COA_Title_Admin,
 																LaycanCancellingOriginal,
 																LaycanCancellingFinal_QBC,
 																LaycanCommencementFinal_QBC,
@@ -310,6 +313,7 @@ begin
 					fixture.COA_RenewalDateDeclareBy,
 					fixture.COA_ContractCommencement,
 					fixture.COA_ContractCancelling,
+					fixture.COA_Title_Admin,
 					fixture.LaycanCancellingOriginal,
 					fixture.LaycanCancellingFinal_QBC,
 					fixture.LaycanCommencementFinal_QBC,
@@ -396,6 +400,7 @@ begin
 				COA_RenewalDateDeclareBy = fixture.COA_RenewalDateDeclareBy,
 				COA_ContractCommencement = fixture.COA_ContractCommencement,
 				COA_ContractCancelling = fixture.COA_ContractCancelling,
+				COA_Title_Admin = fixture.COA_Title_Admin,
 				LaycanCancellingOriginal = fixture.LaycanCancellingOriginal,
 				LaycanCancellingFinal_QBC = fixture.LaycanCancellingFinal_QBC,
 				LaycanCommencementFinal_QBC = fixture.LaycanCommencementFinal_QBC,
@@ -512,6 +517,7 @@ begin
 													COA_RenewalDateDeclareBy,
 													COA_ContractCommencement,
 													COA_ContractCancelling,
+													COA_Title_Admin,
 													LaycanCancellingOriginal,
 													LaycanCancellingFinal_QBC,
 													LaycanCommencementFinal_QBC,
@@ -588,6 +594,7 @@ begin
 							'12/30/1899',	-- COA_RenewalDateDeclareBy
 							'12/30/1899',	-- COA_ContractCommencement
 							'12/30/1899',	-- COA_ContractCancelling
+							'Unknown',		-- COA_Title_Admin
 							'12/30/1899',	-- LaycanCancellingOriginal
 							'12/30/1899',	-- LaycanCancellingFinal_QBC
 							'12/30/1899',	-- LaycanCommencementFinal_QBC

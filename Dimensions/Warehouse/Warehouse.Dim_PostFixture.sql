@@ -15,6 +15,7 @@ Brian Boswick	07/01/2019	Added four new fields from QB
 Brian Boswick	07/17/2019	Added OwnerParent and ChartererParent fields
 Brian Boswick	09/23/2019	Added FixtureType
 Brian Boswick	01/07/2020	Added GroupName
+Brian Boswick	02/19/2020	Added COA_Title_Admin
 ==========================================================================================================	
 */
 
@@ -81,6 +82,7 @@ create table Warehouse.Dim_PostFixture
 		COA_RenewalDateDeclareBy		date				null,
 		COA_ContractCommencement		date				null,
 		COA_ContractCancelling			date				null,
+		COA_Title_Admin					varchar(500)		null,
 		LaycanCancellingOriginal		date				null,
 		LaycanCancellingFinal_QBC		date				null,
 		LaycanCommencementFinal_QBC		date				null,
