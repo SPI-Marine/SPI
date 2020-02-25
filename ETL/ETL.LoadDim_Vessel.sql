@@ -6,6 +6,7 @@ Description:	Creates the LoadDim_Vessel stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	02/20/2020	Added TankCoating ETL Logic
 ==========================================================================================================	
 */
 
@@ -81,16 +82,19 @@ begin
 				vessel.KTRChangeDate,
 				vessel.DeliveryDate,
 				vessel.VesselType,
+				tc.[Type]							TankCoating,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
-				Vessels vessel
+				Vessels vessel with (nolock)
+					left join TankCoatings tc
+						on tc.QBRecId = vessel.RelatedCoatingId
 					left join	(
 									select
 											@ExistingRecord RecordStatus,
 											VesselAlternateKey
 										from
-											Warehouse.Dim_Vessel
+											Warehouse.Dim_Vessel with (nolock)
 								) rs
 						on rs.VesselAlternateKey = vessel.QBRecId;
 	end try
@@ -102,7 +106,7 @@ begin
 	-- Generate hash values for Type 1 changes. Only Type 1 SCDs
 	begin try
 		update
-				Staging.Dim_Vessel
+				Staging.Dim_Vessel with (tablock)
 			set
 				-- Type 1 SCD
 				Type1HashValue =	hashbytes	(
@@ -152,16 +156,17 @@ begin
 																RetiredDate,
 																KTRChangeDate,
 																DeliveryDate,
-																VesselType
+																VesselType,
+																TankCoating
 															)
 												);
 		
 		update
-				Staging.Dim_Vessel
+				Staging.Dim_Vessel with (tablock)
 			set
 				RecordStatus += @Type1Change
 			from
-				Warehouse.Dim_Vessel wv
+				Warehouse.Dim_Vessel wv with (nolock)
 			where
 				wv.VesselAlternateKey = Staging.Dim_Vessel.VesselAlternateKey
 				and wv.Type1HashValue <> Staging.Dim_Vessel.Type1HashValue;
@@ -174,7 +179,7 @@ begin
 	-- Insert new vessels into Warehouse table
 	begin try
 		insert
-				Warehouse.Dim_Vessel
+				Warehouse.Dim_Vessel with (tablock)
 			select
 					vessel.VesselAlternateKey,
 					vessel.VesselName,
@@ -222,12 +227,13 @@ begin
 					vessel.KTRChangeDate,
 					vessel.DeliveryDate,
 					vessel.VesselType,
+					Vessel.TankCoating,
 					vessel.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
 					'Y' IsCurrentRow
 				from
-					Staging.Dim_Vessel vessel
+					Staging.Dim_Vessel vessel with (nolock)
 				where
 					vessel.RecordStatus & @NewRecord = @NewRecord;
 	end try
@@ -239,7 +245,7 @@ begin
 	-- Update existing records that have changed
 	begin try
 		update
-				Warehouse.Dim_Vessel
+				Warehouse.Dim_Vessel with (tablock)
 			set
 				VesselName = vessel.VesselName,
 				Draft = vessel.Draft,
@@ -286,10 +292,11 @@ begin
 				KTRChangeDate = vessel.KTRChangeDate,
 				DeliveryDate = vessel.DeliveryDate,
 				VesselType = vessel.VesselType,
+				TankCoating = vessel.TankCoating,
 				Type1HashValue = vessel.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
-				Staging.Dim_Vessel vessel
+				Staging.Dim_Vessel vessel with (nolock)
 			where
 				vessel.RecordStatus & @ExistingRecord = @ExistingRecord
 				and vessel.VesselAlternateKey = Warehouse.Dim_Vessel.VesselAlternateKey
@@ -303,13 +310,13 @@ begin
 	-- Delete rows removed from source system
 	begin try
 		delete
-				Warehouse.Dim_Vessel
+				Warehouse.Dim_Vessel with (tablock)
 			where
 				not exists	(
 								select
 										1
 									from
-										Vessels v
+										Vessels v with (nolock)
 									where
 										v.QBRecId = VesselAlternateKey
 							);
@@ -324,7 +331,7 @@ begin
 		if exists (select 1 from Warehouse.Dim_Vessel where VesselKey = -1)
 		begin
 			delete
-					Warehouse.Dim_Vessel
+					Warehouse.Dim_Vessel with (tablock)
 				where
 					VesselKey = -1;
 		end
@@ -332,59 +339,60 @@ begin
 		begin
 			set identity_insert Warehouse.Dim_Vessel on;
 			insert
-					Warehouse.Dim_Vessel	(
-													VesselKey,
-													VesselAlternateKey,
-													VesselName,
-													Draft,
-													YearBuilt,
-													Coils,
-													DeadWeight,
-													Beam,
-													LOA,
-													Yard,
-													IceEntry,
-													RegisteredOwner,
-													CleanDirty,
-													TcCandidate,
-													IMOType,
-													Tanks,
-													Pumps,
-													Segs,
-													CBM,
-													Hull,
-													ExName,
-													Comments,
-													Trade,
-													CountryOfBuild,
-													Flag,
-													DataSource,
-													CommercialOwnerOperator,
-													ArchivedVsl,
-													ReasonForArchive,
-													IGSType,
-													[Status],
-													IMOCertificateRemoved,
-													KTRNumber,
-													STSTCBM,
-													MarineLineCBM,
-													InterlineCBM,
-													EpoxyCBM,
-													ZincCBM,
-													IMO1CBM,
-													IMO2CBM,
-													IMO3CBM,
-													YdNo,
-													NBContractDate,
-													RetiredDate,
-													KTRChangeDate,
-													DeliveryDate,
-													VesselType,
-													Type1HashValue,
-													RowCreatedDate,
-													RowUpdatedDate,
-													IsCurrentRow
-												)
+					Warehouse.Dim_Vessel with (Tablock)	(
+															VesselKey,
+															VesselAlternateKey,
+															VesselName,
+															Draft,
+															YearBuilt,
+															Coils,
+															DeadWeight,
+															Beam,
+															LOA,
+															Yard,
+															IceEntry,
+															RegisteredOwner,
+															CleanDirty,
+															TcCandidate,
+															IMOType,
+															Tanks,
+															Pumps,
+															Segs,
+															CBM,
+															Hull,
+															ExName,
+															Comments,
+															Trade,
+															CountryOfBuild,
+															Flag,
+															DataSource,
+															CommercialOwnerOperator,
+															ArchivedVsl,
+															ReasonForArchive,
+															IGSType,
+															[Status],
+															IMOCertificateRemoved,
+															KTRNumber,
+															STSTCBM,
+															MarineLineCBM,
+															InterlineCBM,
+															EpoxyCBM,
+															ZincCBM,
+															IMO1CBM,
+															IMO2CBM,
+															IMO3CBM,
+															YdNo,
+															NBContractDate,
+															RetiredDate,
+															KTRChangeDate,
+															DeliveryDate,
+															VesselType,
+															TankCoating,
+															Type1HashValue,
+															RowCreatedDate,
+															RowUpdatedDate,
+															IsCurrentRow
+														)
 
 				values	(
 							-1,				-- VesselKey
@@ -434,6 +442,7 @@ begin
 							'12/30/1899',	-- KTRChangeDate
 							'12/30/1899',	-- DeliveryDate
 							'Unknown',		-- VesselType
+							'Unknown',		-- TankCoating
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate

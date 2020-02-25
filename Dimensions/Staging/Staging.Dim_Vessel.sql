@@ -6,6 +6,7 @@ Description:	Creates the Staging.Dim_Vessel table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	02/20/2020	Added TankCoating
 ==========================================================================================================	
 */
 
@@ -60,6 +61,7 @@ create table Staging.Dim_Vessel
 		KTRChangeDate			date				null,
 		DeliveryDate			date				null,
 		VesselType				nvarchar(max)		null,
+		TankCoating				varchar(500)		null,
 		Type1HashValue			varbinary(16)		not null,
 		RecordStatus			int					not null
 		constraint [PK_Staging_Dim_Vessel_QBRecId] primary key clustered 
