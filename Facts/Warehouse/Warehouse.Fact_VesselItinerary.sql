@@ -12,6 +12,7 @@ Brian Boswick	10/30/2019	Added Laycan metric fields
 Brian Boswick	01/25/2020	Added PortOrder field
 Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey
 Brian Boswick	02/11/2020	Added VesselKey
+Brian Boswick	02/21/2020	Added Direction and ProductType
 ==========================================================================================================	
 */
 
@@ -45,6 +46,8 @@ create table Warehouse.Fact_VesselItinerary
 		ETAWithinLaycanOriginal					tinyint				null,
 		ETAWithinLaycanFinal					tinyint				null,
 		PortOrder								tinyint				null,
+		Direction								varchar(500)		null,
+		ProductType								varchar(500)		null,
 		NORLaycanOverUnderOriginal				int					null,			-- Metrics
 		NORLaycanOverUnderFinal					int					null,
 		ETALaycanOverUnderOriginal				int					null,

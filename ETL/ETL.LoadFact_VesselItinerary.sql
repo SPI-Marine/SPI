@@ -21,6 +21,7 @@ Brian Boswick	01/24/2020	Removed ETA change logic for ETALastModifiedDate
 Brian Boswick	01/25/2020	Added PortOrder field logic
 Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey ETL logic
 Brian Boswick	02/11/2020	Added VesselKey ETL logic
+Brian Boswick	02/21/2020	Added Direction and ProductType ETL logic
 ==========================================================================================================	
 */
 
@@ -533,6 +534,99 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 		
+	-- Update Direction by pulling last Discharge Itinerary entry for the Post Fixture
+	begin try
+		with
+			LastDischargePort	(
+									PostFixtureKey,
+									PortKey
+								)
+		as
+		(
+			select
+					PostFixtureKey,
+					PortKey
+				from
+					Staging.Fact_VesselItinerary vi with (nolock)
+				where
+					vi.LoadDischarge = 'Discharge'			
+					and vi.ETAStartDateKey =	(
+													select
+															max(ETAStartDateKey) MaxDate
+														from
+															Staging.Fact_VesselItinerary with (nolock)
+														where
+															PostFixtureKey = vi.PostFixtureKey
+															and ItineraryPortType = 'Fixture Port'
+												)
+								
+			
+		)
+
+		update
+				Staging.Fact_VesselItinerary with (tablock)
+			set
+				Direction = wlp.Area
+			from
+				LastDischargePort lp
+					join Warehouse.Dim_Port wlp
+						on lp.PortKey = wlp.PortKey							
+			where
+				LoadDischarge = 'Load'
+				and Staging.Fact_VesselItinerary.PostFixtureKey = lp.PostFixtureKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating Direction for Load Ports - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update ProductType by using the ProductType of the largest quantity Parcel
+	begin try
+		with
+			MaxProductType	(
+								PostFixtureKey,
+								ProductType
+							)
+		as
+		(
+			select
+					pf.PostFixtureKey,
+					pt.TypeName ProductType					
+				from
+					ParcelProducts pp with (nolock)
+						join Warehouse.Dim_PostFixture pf with (nolock)
+							on pf.PostFixtureAlternateKey = pp.RelatedSPIFixtureId
+						join Products p with (nolock)
+							on pp.RelatedProductId = p.QBRecId
+						join ProductType pt with (nolock)
+							on pt.QBRecId = p.RelatedProductTypeId
+						join Parcels parcel with (nolock)
+							on pp.QBRecId = parcel.RelatedParcelProductId
+				where
+					parcel.BLQty =	(
+										select
+												max(par.BLQty)
+											from
+												Parcels par with (nolock)
+											where
+												par.RelatedSpiFixtureId = parcel.RelatedSpiFixtureId
+									)
+		)
+
+		update
+				Staging.Fact_VesselItinerary with (tablock)
+			set
+				ProductType = mpt.ProductType
+			from
+				MaxProductType mpt
+			where
+				mpt.PostFixtureKey = Staging.Fact_VesselItinerary.PostFixtureKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating ProductType records - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
 	-- Insert new events into Warehouse table
 	begin try
 		insert
@@ -561,6 +655,8 @@ begin
 																	ETAWithinLaycanOriginal,
 																	ETAWithinLaycanFinal,
 																	PortOrder,
+																	Direction,
+																	ProductType,
 																	NORLaycanOverUnderOriginal,
 																	NORLaycanOverUnderFinal,
 																	ETALaycanOverUnderOriginal,
@@ -609,6 +705,8 @@ begin
 					fvi.ETAWithinLaycanOriginal,
 					fvi.ETAWithinLaycanFinal,
 					fvi.PortOrder,
+					fvi.Direction,
+					fvi.ProductType,
 					fvi.NORLaycanOverUnderOriginal,
 					fvi.NORLaycanOverUnderFinal,
 					fvi.ETALaycanOverUnderOriginal,
@@ -681,6 +779,8 @@ begin
 				NominatedQuantity = fvi.NominatedQuantity,
 				VesselPortStatus_Override = fvi.VesselPortStatus_Override,
 				PortOrder = fvi.PortOrder,
+				Direction = fvi.Direction,
+				ProductType = fvi.ProductType,
 				RowUpdatedDate = getdate()
 			from
 				Staging.Fact_VesselItinerary fvi with (nolock)
