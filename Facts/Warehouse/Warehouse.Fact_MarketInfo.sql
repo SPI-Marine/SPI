@@ -6,6 +6,7 @@ Description:	Creates the Warehouse.Fact_MarketInfo table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	02/20/2020	Added BasisDataEntry
 ==========================================================================================================	
 */
 
@@ -31,6 +32,7 @@ create table Warehouse.Fact_MarketInfo
 		DischargePort3							varchar(500)		null,
 		MarketInfoType							varchar(500)		null,
 		Unit									varchar(50)			null,
+		BasisDataEntry							varchar(500)		null,
 		FreightRatePayment						numeric(18, 4)		null,		-- Metrics
 		ProductQuantity							numeric(18, 4)		null,
 		RowCreatedDate							datetime			not null,

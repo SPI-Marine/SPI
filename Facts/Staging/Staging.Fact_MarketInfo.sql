@@ -30,6 +30,7 @@ create table Staging.Fact_MarketInfo
 		DischargePort3							varchar(500)		null,
 		MarketInfoType							varchar(500)		null,
 		Unit									varchar(50)			null,
+		BasisDataEntry							varchar(500)		null,
 		FreightRatePayment						numeric(18, 4)		null,		-- Metrics
 		ProductQuantity							numeric(18, 4)		null,
 		constraint [PK_Staging_Fact_MarketInfo_AltKey] primary key clustered 

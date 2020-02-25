@@ -47,6 +47,7 @@ begin
 															DischargePort3,
 															MarketInfoType,
 															Unit,
+															BasisDataEntry,
 															FreightRatePayment,
 															ProductQuantity
 														)
@@ -67,6 +68,7 @@ begin
 				dischport3.PortName					DischargePort3,
 				mi.[Type]							MarketInfoType,
 				mi.Unit								Unit,
+				mi.BasisDataEntry					BasisDataEntry,
 				mi.FreightRatePMTEntry				FreightRatePayment,
 				mi.ProductQuantity_ENTRY			ProductQuantity
 			from
@@ -127,6 +129,7 @@ begin
 																DischargePort3,
 																MarketInfoType,
 																Unit,
+																BasisDataEntry,
 																FreightRatePayment,
 																ProductQuantity,
 																RowCreatedDate
@@ -148,6 +151,7 @@ begin
 					fmi.DischargePort3,
 					fmi.MarketInfoType,
 					fmi.Unit,
+					fmi.BasisDataEntry,
 					fmi.FreightRatePayment,
 					fmi.ProductQuantity,
 					getdate()
