@@ -11,6 +11,7 @@ Brian Boswick	01/09/2020	Added CPDateKey
 Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey
 Brian Boswick	02/11/2020	Added VesselKey
 Brian Boswick	02/14/2020	Added ProductQuantityKey
+Brian Boswick	02/20/2020	Added BunkerCharge
 ==========================================================================================================	
 */
 
@@ -49,6 +50,7 @@ create table Staging.Fact_Parcel
 		LoadLaytimeUsed							decimal(18, 6)		null,
 		DischargeLaytimeAllowed					decimal(18, 6)		null,
 		DischargeLaytimeUsed					decimal(18, 6)		null,
+		BunkerCharge							decimal(18, 6)		null,
 		LoadNORStartDate						date				null,
 		DischargeNORStartDate					date				null,
 		TotalLoadBerthBLQty						decimal(18, 6)		null,			-- ETL fields

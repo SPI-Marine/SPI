@@ -17,6 +17,7 @@ Developer		Date		Change
 Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey ETL logic
 Brian Boswick	02/11/2020	Added VesselKey ETL logic
 Brian Boswick	02/14/2020	Added ProductQuantityKey ETL logic
+Brian Boswick	02/20/2020	Added BunkerCharge ETL logic
 ==========================================================================================================	
 */
 
@@ -418,6 +419,57 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 	
+	-- Calculate BunkerCharge for the Post Fixture and pro-rate it by the number of Parcels
+	begin try
+		with PostFixtureParcelCount	(
+										PostFixtureAlternateKey,
+										ParcelCount
+									)
+		as
+		(
+			select
+					p.RelatedSpiFixtureId	PostFixtureAlternateKey,
+					count(p.QBRecId)		ParcelCount
+				from
+					Parcels p with (nolock)
+				group by
+					p.RelatedSpiFixtureId
+		),
+		PostFixtureBunkerCharges	(
+										PostFixtureAlternateKey,
+										BunkerCharge
+									)
+		as
+		(
+			select
+					ac.RelatedSPIFixtureId		PostFixtureAlternateKey,
+					sum(ac.Amount)			BunkerCharge
+				from
+					AdditionalCharges ac with (nolock)
+				where
+					ac.[Type] = 'Bunker Adjustment'
+				group by
+					ac.RelatedSPIFixtureId
+		)
+
+		update
+				Staging.Fact_Parcel with (tablock)
+			set
+				BunkerCharge = bc.BunkerCharge/ pc.ParcelCount
+			from
+				Staging.Fact_Parcel fp
+					join PostFixtureBunkerCharges bc
+						on bc.PostFixtureAlternateKey = fp.PostFixtureAlternateKey
+					join PostFixtureParcelCount pc
+						on pc.PostFixtureAlternateKey = fp.PostFixtureAlternateKey
+			where
+				pc.ParcelCount > 0
+	end try
+	begin catch
+		select @ErrorMsg = 'Calculating BunkerCharge - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+	
 	-- Clear Warehouse table
 	if object_id(N'Warehouse.Fact_Parcel', 'U') is not null
 		truncate table Warehouse.Fact_Parcel;
@@ -456,6 +508,7 @@ begin
 															LoadLaytimeUsed,
 															DischargeLaytimeAllowed,
 															DischargeLaytimeUsed,
+															BunkerCharge,
 															LoadNORStartDate,
 															DischargeNORStartDate,
 															RowCreatedDate
@@ -491,6 +544,7 @@ begin
 					sfp.LoadLaytimeUsed,
 					sfp.DischargeLaytimeAllowed,
 					sfp.DischargeLaytimeUsed,
+					sfp.BunkerCharge,
 					LoadNORStartDate,
 					sfp.DischargeNORStartDate,
 					getdate()
