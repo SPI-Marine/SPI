@@ -107,8 +107,14 @@ create table Staging.Fact_FixtureBerth
 		WithinLaycanFinal										smallint			null,
 		LaycanOverUnderFinal									int					null,
 		VoyageDuration											int					null,		-- 1st NOR to last NOR on Post Fixture
+		TransitTime												decimal(20, 8)		null,
 		MinimumNORDate											date				null,		-- ETL fields
 		MaximumNORDate											date				null,
+		POB_Berth												decimal(20, 8)		null,
+		LastDropAnchor_POB										decimal(20, 8)		null,
+		FirstFixtureBerth										tinyint				null,
+		FirstPortBerth											tinyint				null,
+		HasMultipleDropAnchors									tinyint				null,
 		constraint [PK_Staging_Fact_FixtureBerth_AltKeys] primary key clustered 
 		(
 			PostFixtureAlternateKey,

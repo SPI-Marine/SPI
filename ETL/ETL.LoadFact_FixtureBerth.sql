@@ -463,6 +463,203 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+	-- Update POB_Berth. Pilot on Board to Berth. Used to calculate transit time when there is only one POB event on the first berth
+	begin try
+		update
+				fb with (tablock)
+			set
+				POB_Berth = isnull(fbed.DurationPOB_Berth, 0)
+			from
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				DurationPOB_Berth,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
+										where
+											fbe.EventNum >=	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
+																		where
+																			en.EventTypeId = 225	-- Pilot On Board
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+							
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
+																		where
+																			en.EventTypeId = 228	-- Berth/Alongside
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating POB_Berth - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update LastDropAnchor_POB. Used to calculate transit time when there is more than one POB event on the first berth.  Subtracted from the POB_Berth
+	begin try
+		update
+				fb with (tablock)
+			set
+				LastDropAnchor_POB = isnull(fbed.DurationLastDropAnchor_POB, 0)
+			from
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				DurationLastDropAnchor_POB,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
+										where
+											fbe.EventNum >=	(
+																	select
+																			max(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
+																		where
+																			en.EventTypeId = 215	-- Drop Anchor
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+							
+											and	fbe.EventNum <	(
+																	select
+																			min(EventNum)
+																		from
+																			Staging.Fact_FixtureBerthEvents en with (nolock)
+																		where
+																			en.EventTypeId = 225	-- Pilot on Board
+																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
+																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
+																)
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating LastDropAnchor_POB - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update HasMultipleDropAnchors. Used to help determine when to subtract out LastDropAnchor_POB from POB_Berth for transit time
+	begin try
+		update
+				fb
+			set
+				HasMultipleDropAnchors = 1
+			from
+				Staging.Fact_FixtureBerth fb
+			where
+				(
+					select
+							count(*)
+						from
+							Staging.Fact_FixtureBerthEvents fbe
+						where
+							fbe.EventTypeId = 225
+							and fbe.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+							and fbe.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey
+				) > 1
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating HasMultipleDropAnchors - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Find FirstFixtureBerth for transit time calculation
+	begin try
+		update
+				fb with (tablock)
+			set
+				FirstFixtureBerth =	case
+										when isnull(fe.ParcelBerthAlternateKey, 0) = fb.ParcelBerthAlternateKey
+											then 1
+										else 0
+									end
+			from
+				Staging.Fact_FixtureBerth fb
+					outer apply	(
+									select
+										top 1
+											e.ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents e with (nolock)
+										where
+											e.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+										order by
+											e.StartDateTime
+								) fe;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating FirstFixtureBerth - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Find FirstPortBerth for transit time calculation
+	begin try
+		update
+				fb with (tablock)
+			set
+				FirstPortBerth =	case
+										when isnull(fpb.ParcelBerthAlternateKey, 0) = fb.ParcelBerthAlternateKey
+											then 1
+										else 0
+									end
+			from
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+										distinct
+											fbe.PostFixtureAlternateKey,
+											first_value(fbe.ParcelBerthAlternateKey) over (partition by fbe.PostFixtureAlternateKey, fbe.LoadDischarge order by fbe.StartDateTime) ParcelBerthAlternateKey
+										from Staging.Fact_FixtureBerthEvents fbe with (nolock)
+								) fpb
+						on fpb.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+							and fpb.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating FirstPortBerth - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update transit time
+	begin try
+		update
+				Staging.Fact_FixtureBerth
+			set
+				TransitTime =	case
+									when isnull(HasMultipleDropAnchors, 0) = 1
+										then POB_Berth - LastDropAnchor_POB
+									else POB_Berth
+								end
+			where
+				FirstPortBerth = 1
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating FirstFixtureBerth - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
 	-- Update DurationBerth_HoseOn
 	begin try
 		update
@@ -1939,6 +2136,9 @@ begin
 					sfb.WithinLaycanFinal,
 					sfb.LaycanOverUnderFinal,
 					sfb.VoyageDuration,
+					sfb.TransitTime,
+					sfb.FirstFixtureBerth,
+					sfb.FirstPortBerth,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate
 				from
