@@ -40,14 +40,14 @@ create table Staging.Fact_SOFEvent
 		StartDateTime			varchar(50)			null,
 		StopDateTime			varchar(50)			null,
 		StartDateTimeSort		datetime			null,
-		Duration				decimal(18, 4)		null,		-- Metrics
-		LaytimeUsed				decimal(18, 4)		null,
-		LaytimeAllowed			decimal(18, 4)		null,
-		LaytimeAllowedProrated	decimal(18, 4)		null,
-		ProrationPercentage		decimal(18, 4)		null,		-- ETL fields
-		ParcelQuantity			decimal(18, 4)		null,
-		ParcelQuantityETL		decimal(18, 4)		null,
-		TotalQuantity			decimal(18, 4)		null,
+		Duration				decimal(18, 5)		null,		-- Metrics
+		LaytimeUsed				decimal(18, 5)		null,
+		LaytimeAllowed			decimal(18, 5)		null,
+		LaytimeAllowedProrated	decimal(18, 5)		null,
+		ProrationPercentage		decimal(18, 5)		null,		-- ETL fields
+		ParcelQuantity			decimal(18, 5)		null,
+		ParcelQuantityETL		decimal(18, 5)		null,
+		TotalQuantity			decimal(18, 5)		null,
 		StartTime				time				null,
 		StopTime				time				null,
 		StartDate				datetime			null,

@@ -31,8 +31,8 @@ create table Staging.Fact_MarketInfo
 		MarketInfoType							varchar(500)		null,
 		Unit									varchar(50)			null,
 		BasisDataEntry							varchar(500)		null,
-		FreightRatePayment						numeric(18, 4)		null,		-- Metrics
-		ProductQuantity							numeric(18, 4)		null,
+		FreightRatePayment						numeric(18, 5)		null,		-- Metrics
+		ProductQuantity							numeric(18, 5)		null,
 		constraint [PK_Staging_Fact_MarketInfo_AltKey] primary key clustered 
 		(
 			MarketInfoAlternateKey asc

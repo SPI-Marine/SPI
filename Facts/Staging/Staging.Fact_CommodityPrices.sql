@@ -20,9 +20,9 @@ create table Staging.Fact_CommodityPrices
 		AssessmentType											varchar(50)			null,		-- Degenerate Dimension Attributes
 		Unit													varchar(50)			null,
 		Remarks													varchar(500)		null,
-		PriceHigh												decimal(12, 2)		null,		-- Metrics
-		PriceLow												decimal(14, 2)		null,
-		PriceAverage											decimal(14, 2)		null,		-- Metrics
+		PriceHigh												decimal(12, 5)		null,		-- Metrics
+		PriceLow												decimal(12, 5)		null,
+		PriceAverage											decimal(12, 5)		null,		-- Metrics
 		constraint [PK_Staging_Fact_CommodityPrices_AltKey] primary key clustered 
 		(
 			CommodityPriceAlternateKey asc

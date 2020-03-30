@@ -23,8 +23,8 @@ create table Staging.Fact_FixtureBerthEvents
 		NextEventTypeId						int					null,
 		NextEventName						varchar(50)			null,
 		StartDateTime						datetime			null,
-		Duration							decimal(18, 4)		null,
-		LayTimeUsedProrated					decimal(18, 4)		null,
+		Duration							decimal(20, 8)		null,
+		LayTimeUsedProrated					decimal(20, 8)		null,
 		IsPumpingTime						char(1)				null,
 		IsLayTime							char(1)				null,
 		constraint [PK_Staging_Fact_FixtureBerthEvents_AltKeys] primary key clustered 

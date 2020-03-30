@@ -22,9 +22,9 @@ create table Warehouse.Fact_FreightRates
 		DischargePortKey										int					not null,
 		ReportDateKey											int					not null,
 		ProductQuantityKey										int					not null,
-		ProductQuantity											decimal(18, 2)		null,		-- Degenerate Dimension Attributes
+		ProductQuantity											decimal(18, 5)		null,		-- Degenerate Dimension Attributes
 		Currency												varchar(15)			null,
-		FreightRate												decimal(18, 2)		null,		-- Metrics
+		FreightRate												decimal(18, 5)		null,		-- Metrics
 		RowCreatedDate											date				not null,
 		constraint [PK_Warehouse_Fact_FreightRate_Key] primary key clustered 
 		(

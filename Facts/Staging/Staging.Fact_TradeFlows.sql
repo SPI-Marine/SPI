@@ -21,9 +21,9 @@ create table Staging.Fact_TradeFlows
 		ReportDateKey											int					not null,
 		ImportExport											varchar(50)			null,		-- Degenerate Dimension Attributes
 		Unit													varchar(50)			null,
-		Quantity												decimal(14, 2)		null,		-- Metrics
-		[Value]													decimal(14, 2)		null,
-		AveragePrice											decimal(14, 2)		null,		-- Metrics
+		Quantity												decimal(18, 5)		null,		-- Metrics
+		[Value]													decimal(18, 5)		null,
+		AveragePrice											decimal(18, 5)		null,		-- Metrics
 		constraint [PK_Staging_Fact_TradeFlows_AltKey] primary key clustered 
 		(
 			TradeFlowAlternateKey asc

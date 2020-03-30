@@ -66,7 +66,7 @@ create table Warehouse.Fact_VesselItinerary
 		ArrivedLessThanThreeDaysOneWeek			tinyint				null,
 		ArrivedThreeToSevenDaysOneWeek			tinyint				null,
 		ArrivedGreaterThanSevenDaysOneWeek		tinyint				null,
-		NominatedQuantity						decimal(18, 2)		null,
+		NominatedQuantity						decimal(18, 5)		null,
 		VesselPortStatus_Override				bit					null,
 		RowCreatedDate							datetime			not null,
 		RowUpdatedDate							datetime			not null,

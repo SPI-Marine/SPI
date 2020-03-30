@@ -21,9 +21,9 @@ create table Staging.Fact_FreightRates
 		DischargePortKey										int					not null,
 		ReportDateKey											int					not null,
 		ProductQuantityKey										int					not null,
-		ProductQuantity											decimal(18, 2)		null,		-- Degenerate Dimension Attributes
+		ProductQuantity											decimal(18, 5)		null,		-- Degenerate Dimension Attributes
 		Currency												varchar(15)			null,
-		FreightRate												decimal(18, 2)		null,		-- Metrics
+		FreightRate												decimal(18, 5)		null,		-- Metrics
 		constraint [PK_Staging_Fact_FreightRates_AltKey] primary key clustered 
 		(
 			FreightRateAlternateKey asc

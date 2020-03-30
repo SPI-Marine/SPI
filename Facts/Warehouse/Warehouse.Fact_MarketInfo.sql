@@ -33,8 +33,8 @@ create table Warehouse.Fact_MarketInfo
 		MarketInfoType							varchar(500)		null,
 		Unit									varchar(50)			null,
 		BasisDataEntry							varchar(500)		null,
-		FreightRatePayment						numeric(18, 4)		null,		-- Metrics
-		ProductQuantity							numeric(18, 4)		null,
+		FreightRatePayment						numeric(18, 5)		null,		-- Metrics
+		ProductQuantity							numeric(18, 5)		null,
 		RowCreatedDate							datetime			not null,
 		constraint [PK_Warehouse_Fact_MarketInfo_Key] primary key clustered 
 		(

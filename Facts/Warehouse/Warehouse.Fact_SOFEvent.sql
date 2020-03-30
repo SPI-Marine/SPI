@@ -39,11 +39,11 @@ create table Warehouse.Fact_SOFEvent
 		StartDateTime			varchar(50)			null,
 		StopDateTime			varchar(50)			null,
 		StartDateTimeSort		datetime			null,
-		Duration				decimal(18, 4)		null,		-- Metrics
-		LaytimeUsed				decimal(18, 4)		null,
-		LaytimeAllowed			decimal(18, 4)		null,
-		LaytimeAllowedProrated	decimal(18, 4)		null,
-		ParcelQuantity			decimal(18, 4)		null,
+		Duration				decimal(18, 5)		null,		-- Metrics
+		LaytimeUsed				decimal(18, 5)		null,
+		LaytimeAllowed			decimal(18, 5)		null,
+		LaytimeAllowedProrated	decimal(18, 5)		null,
+		ParcelQuantity			decimal(18, 5)		null,
 		RowCreatedDate			datetime			not null,
 		constraint [PK_Warehouse_Fact_SOFEvent_QBRecId] primary key clustered 
 		(

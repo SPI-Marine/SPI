@@ -21,9 +21,9 @@ create table Warehouse.Fact_CommodityPrices
 		AssessmentType											varchar(50)			null,		-- Degenerate Dimension Attributes
 		Unit													varchar(50)			null,
 		Remarks													varchar(500)		null,
-		PriceHigh												decimal(12, 2)		null,		-- Metrics
-		PriceLow												decimal(12, 2)		null,
-		PriceAverage											decimal(12, 2)		null,		-- Metrics
+		PriceHigh												decimal(12, 5)		null,		-- Metrics
+		PriceLow												decimal(12, 5)		null,
+		PriceAverage											decimal(12, 5)		null,		-- Metrics
 		RowCreatedDate											date				not null,
 		constraint [PK_Warehouse_Fact_CommodityPrice_Key] primary key clustered 
 		(
