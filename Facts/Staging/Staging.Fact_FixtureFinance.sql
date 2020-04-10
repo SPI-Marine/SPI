@@ -43,18 +43,5 @@ create table Staging.Fact_FixtureFinance
 		ChargePerMetricTon				decimal(20, 8)		null,
 		AddressCommissionRate			decimal(20, 8)		null,
 		AddressCommissionAmount			decimal(20, 8)		null,
-		AddressCommissionApplied		decimal(20, 8)		null,
-		constraint [PK_Staging_Fact_FixtureFinance_QBRecId] primary key clustered 
-		(
-			PostFixtureAlternateKey,
-			RebillAlternateKey,
-			ChargeAlternateKey,
-			ParcelProductAlternateKey,
-			ProductAlternateKey,
-			ParcelAlternateKey,
-			ChargeTypeAlternateKey asc
-		)
-			with 
-				(pad_index = off, statistics_norecompute = off, ignore_dup_key = off, allow_row_locks = on, allow_page_locks = on) 
-			on [primary]
+		AddressCommissionApplied		decimal(20, 8)		null
 	) on [primary];

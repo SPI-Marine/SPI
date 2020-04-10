@@ -341,16 +341,16 @@ begin
 					charge.RelatedSPIFixtureId									PostFixtureAlternateKey,
 					-1															RebillAlternateKey,
 					charge.QBRecId												ChargeAlternateKey,
-					-1															ParcelProductAlternateKey,
-					-1															ProductAlternateKey,
-					-1															ParcelAlternateKey,
+					isnull(parcel.RelatedParcelProductId, -1)					ParcelProductAlternateKey,
+					isnull(parprod.RelatedProductId, -1)						ProductAlternateKey,
+					parcel.QbRecId												ParcelAlternateKey,
 					@AdditionalChargeType										ChargeTypeAlternateKey,
-					-1															LoadPortBerthKey,
-					-1															DischargePortBerthKey,
-					-1															LoadPortKey,
-					-1															DischargePortKey,
-					-1															ProductKey,
-					-2															ParcelKey,
+					isnull(loadportberth.PortBerthKey, -1)						LoadPortBerthKey,
+					isnull(dischargeportberth.PortBerthKey, -1)					DischargePortBerthKey,
+					isnull(loadport.PortKey, -1)								LoadPortKey,
+					isnull(dischargeport.PortKey, -1)							DischargePortKey,
+					isnull(wproduct.ProductKey, -1)								ProductKey,
+					isnull(wparcel.ParcelKey, -1)								ParcelKey,
 					isnull(wpostfixture.PostFixtureKey, -1)						PostFixtureKey,
 					isnull(vessel.VesselKey, -1)								VesselKey,
 					isnull(cpdate.DateKey, -1)									CharterPartyDateKey,
@@ -360,7 +360,15 @@ begin
 					charge.[Type]												ChargeType,
 					charge.[Description]										ChargeDescription,
 					null														ParcelNumber,
-					charge.Amount												Charge,
+					case
+						when charge.ProrationType = 'Tonnage' and parceltotals.TotalQty > 0
+							then (parcel.BLQty/convert(decimal(18, 6), parceltotals.TotalQty) * charge.Amount)
+						when charge.ProrationType = 'Equally' and parceltotals.ParcelCount > 0
+							then charge.Amount/convert(decimal(18, 6), parceltotals.ParcelCount)
+						when charge.ProrationType = 'None'
+							then charge.Amount
+						else null
+					end															Charge,
 					null														ChargePerMetricTon,
 					try_convert	(
 									decimal(20, 8),
@@ -380,7 +388,46 @@ begin
 						else null
 					end															AddressCommissionApplied
 				from
-					AdditionalCharges charge with (nolock)
+					Parcels parcel with (nolock)
+						join	(
+									select
+											RelatedSpiFixtureId,
+											count(*) ParcelCount,
+											sum(BLQty) TotalQty
+										from
+											Parcels with (nolock)
+										group by
+											RelatedSpiFixtureId
+								) parceltotals
+							on parceltotals.RelatedSpiFixtureId = parcel.RelatedSpiFixtureId
+						left join ParcelProducts parprod with (nolock)
+							on parprod.QBRecId = parcel.RelatedParcelProductId
+						left join Products product with (nolock)
+							on product.QBRecId = parprod.RelatedProductId
+						left join Warehouse.Dim_Product wproduct with (nolock)
+							on wproduct.ProductAlternateKey = product.QBRecId	
+						left join Warehouse.Dim_Parcel wparcel with (nolock)
+							on wparcel.ParcelAlternateKey = parcel.QbRecId
+						left join ParcelPorts loadparcelport with (nolock)
+							on loadparcelport.QBRecId = parcel.RelatedLoadPortID
+						left join ParcelBerths loadparcelberth with (nolock)
+							on loadparcelberth.QBRecId = parcel.RelatedLoadBerth
+						left join ParcelPorts dischargeparcelport with (nolock)
+							on dischargeparcelport.QBRecId = parcel.RelatedDischPortId
+						left join ParcelBerths dischargeparcelberth with (nolock)
+							on dischargeparcelberth.QBRecId = parcel.RelatedDischBerth
+						left join Warehouse.Dim_PortBerth loadportberth with (nolock)
+							on loadportberth.PortAlternateKey = loadparcelport.RelatedPortId
+								and loadportberth.BerthAlternateKey = loadparcelberth.RelatedBerthId
+						left join Warehouse.Dim_PortBerth dischargeportberth with (nolock)
+							on dischargeportberth.PortAlternateKey = dischargeparcelport.RelatedPortId
+								and dischargeportberth.BerthAlternateKey = dischargeparcelberth.RelatedBerthId
+						left join Warehouse.Dim_Port loadport with (nolock)
+							on loadport.PortAlternateKey = loadparcelport.RelatedPortId
+						left join Warehouse.Dim_Port dischargeport with (nolock)
+							on dischargeport.PortAlternateKey = dischargeparcelberth.RelatedPortId
+						left join AdditionalCharges charge with (nolock)
+							on charge.RelatedSPIFixtureId = parcel.RelatedSpiFixtureId
 						left join Warehouse.Dim_PostFixture wpostfixture with (nolock)
 							on wpostfixture.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
 						left join PostFixtures epostfixture with (nolock)
@@ -417,7 +464,8 @@ begin
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
 				where
 					charge.RelatedSPIFixtureId is not null
-					and charge.DoNotIncludeInAdditionalChargeCalculation = 0;
+					and charge.ProrationType not in ('Individual')
+					and charge.DoNotIncludeInAdditionalChargeCalculation = 0
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging AdditionalCharge records - ' + error_message();
@@ -545,14 +593,7 @@ begin
 				where
 					parcel.RelatedSPIFixtureId is not null
 					and parcel.RelatedParcelProductId is not null
-					and not exists	(
-										select
-												1
-											from
-												Staging.Fact_FixtureFinance sff
-											where
-												sff.PostFixtureAlternateKey = parcel.RelatedSpiFixtureId
-									);
+					and chargetype.ProrationType = 'Individual';
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging ParcelAdditionalCharges records - ' + error_message();
