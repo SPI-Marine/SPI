@@ -574,7 +574,7 @@ begin
 					select
 							count(*)
 						from
-							Staging.Fact_FixtureBerthEvents fbe
+							Staging.Fact_FixtureBerthEvents fbe with (nolock)
 						where
 							fbe.EventTypeId = 225
 							and fbe.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
@@ -632,7 +632,10 @@ begin
 										distinct
 											fbe.PostFixtureAlternateKey,
 											first_value(fbe.ParcelBerthAlternateKey) over (partition by fbe.PostFixtureAlternateKey, fbe.LoadDischarge order by fbe.StartDateTime) ParcelBerthAlternateKey
-										from Staging.Fact_FixtureBerthEvents fbe with (nolock)
+										from
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
+										where
+											fbe.EventTypeId = 228
 								) fpb
 						on fpb.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
 							and fpb.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
@@ -657,6 +660,62 @@ begin
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating FirstFixtureBerth - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Flag WaitingTimeCandidate rows for transit time calculation.  Required: POB, NOR and Berth events
+	begin try
+		update
+				fb with (tablock)
+			set
+				WaitingTimeCandidate = isnull(nor.HasNOR, 0) & isnull(pob.HasPOB, 0) & isnull(berth.HasBerth, 0)
+			from
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+										distinct
+											fbe.PostFixtureAlternateKey,
+											fbe.EventTypeId,
+											fbe.LoadDischarge,
+											1 HasNOR
+										from
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
+										where
+											fbe.EventTypeId = 219
+								) nor
+						on nor.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+							and nor.LoadDischarge = fb.LoadDischarge
+					left join	(
+									select
+										distinct
+											fbe.PostFixtureAlternateKey,
+											fbe.EventTypeId,
+											fbe.LoadDischarge,
+											1 HasPOB
+										from
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
+										where
+											fbe.EventTypeId = 225
+								) pob
+						on pob.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+							and pob.LoadDischarge = fb.LoadDischarge
+					left join	(
+									select
+										distinct
+											fbe.PostFixtureAlternateKey,
+											fbe.EventTypeId,
+											fbe.LoadDischarge,
+											1 HasBerth
+										from
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
+										where
+											fbe.EventTypeId = 228
+								) berth
+						on berth.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+							and berth.LoadDischarge = fb.LoadDischarge;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating WaitingTimeCandidate - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
@@ -2139,6 +2198,7 @@ begin
 					sfb.TransitTime,
 					sfb.FirstFixtureBerth,
 					sfb.FirstPortBerth,
+					sfb.WaitingTimeCandidate,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate
 				from

@@ -114,6 +114,7 @@ create table Staging.Fact_FixtureBerth
 		LastDropAnchor_POB										decimal(20, 8)		null,
 		FirstFixtureBerth										tinyint				null,
 		FirstPortBerth											tinyint				null,
+		WaitingTimeCandidate									tinyint				null,
 		HasMultipleDropAnchors									tinyint				null,
 		constraint [PK_Staging_Fact_FixtureBerth_AltKeys] primary key clustered 
 		(

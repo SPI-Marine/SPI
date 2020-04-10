@@ -111,6 +111,7 @@ create table Warehouse.Fact_FixtureBerth
 		TransitTime												decimal(20, 8)		null,
 		FirstFixtureBerth										tinyint				null,
 		FirstPortBerth											tinyint				null,
+		WaitingTimeCandidate									tinyint				null,
 		RowCreatedDate											date				not null,
 		RowUpdatedDate											date				not null,
 		constraint [PK_Warehouse_Fact_FixtureBerth_Key] primary key clustered 
