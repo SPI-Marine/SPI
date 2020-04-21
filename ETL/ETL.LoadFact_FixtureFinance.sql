@@ -357,7 +357,7 @@ begin
 					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					isnull(wch.ChartererKey, -1)								ChartererKey,
 					isnull(wo.OwnerKey, -1)										OwnerKey,
-					charge.[Type]												ChargeType,
+					chargetype.ChargeType										ChargeType,
 					charge.[Description]										ChargeDescription,
 					null														ParcelNumber,
 					case
@@ -428,6 +428,8 @@ begin
 							on dischargeport.PortAlternateKey = dischargeparcelberth.RelatedPortId
 						left join AdditionalCharges charge with (nolock)
 							on charge.RelatedSPIFixtureId = parcel.RelatedSpiFixtureId
+						left join AdditionalChargeType chargetype with (nolock)
+							on chargetype.RecordID = charge.RelatedAdditionalChargeType
 						left join Warehouse.Dim_PostFixture wpostfixture with (nolock)
 							on wpostfixture.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
 						left join PostFixtures epostfixture with (nolock)
@@ -497,8 +499,8 @@ begin
 					isnull(firsteventdate.DateKey, -1)														FirstLoadEventDateKey,
 					isnull(wch.ChartererKey, -1)															ChartererKey,
 					isnull(wo.OwnerKey, -1)																	OwnerKey,
-					chargetype.[Type]																		ChargeType,		
-					chargetype.[Description]																ChargeDescription,
+					chargetype.ChargeType																	ChargeType,		
+					addcharges.[Description]																ChargeDescription,
 					null																					ParcelNumber,
 					charge.ParcelAdditionalChargeAmountDue_QBC												Charge,
 					case
@@ -526,8 +528,10 @@ begin
 					end																						AddressCommissionApplied
 				from
 					ParcelAdditionalCharges charge with (nolock)
-						left join AdditionalCharges chargetype with (nolock)
-							on chargetype.QBRecId = charge.RelatedAdditionalChargeID
+						left join AdditionalCharges addcharges with (nolock)
+							on addcharges.QBRecId = charge.RelatedAdditionalChargeID
+						left join AdditionalChargeType chargetype with (nolock)
+							on addcharges.RelatedAdditionalChargeType = chargetype.RecordID 
 						left join Parcels parcel with (nolock)
 							on parcel.QbRecId = charge.RelatedParcelID						
 						left join ParcelProducts parprod with (nolock)
@@ -593,7 +597,7 @@ begin
 				where
 					parcel.RelatedSPIFixtureId is not null
 					and parcel.RelatedParcelProductId is not null
-					and chargetype.ProrationType = 'Individual';
+					and addcharges.ProrationType = 'Individual';
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging ParcelAdditionalCharges records - ' + error_message();
