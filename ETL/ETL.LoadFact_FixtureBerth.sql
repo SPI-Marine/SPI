@@ -312,6 +312,7 @@ begin
 		with EventDurations	(
 								PostFixtureAlternateKey,
 								ParcelBerthAlternateKey,
+								EventAlternateKey,
 								EventTypeId,
 								EventType,
 								Duration,
@@ -327,6 +328,7 @@ begin
 				distinct
 					wpf.PostFixtureAlternateKey,
 					e.RelatedParcelBerthId,
+					e.QBRecId,
 					e.RelatedPortTimeEventId,
 					wevent.EventType,
 					wevent.Duration,
@@ -348,6 +350,7 @@ begin
 		OrderedEvents	(
 							PostFixtureAlternateKey,
 							ParcelBerthAlternateKey,
+							EventAlternateKey,
 							EventNum,
 							EventTypeId,
 							EventName,
@@ -365,9 +368,10 @@ begin
 			select
 					ed.PostFixtureAlternateKey								PostFixtureAlternateKey,
 					ed.ParcelBerthAlternateKey								ParcelBerthAlternateKey,
+					ed.EventAlternateKey,
 					row_number() over	(
 											partition by ed.ParcelBerthAlternateKey
-											order by ed.StartDateTime
+											order by ed.StartDateTime, EventAlternateKey
 										)									EventNum,
 					ed.EventTypeId,
 					ed.EventType,
@@ -418,45 +422,29 @@ begin
 		update
 				fb with (tablock)
 			set
-				DurationNOR_Berth = isnull(fbed.DurationNOR_Berth, 0)
+				DurationNOR_Berth = isnull(abs(datediff(minute, e1.StartDateTime, e2.StartDateTime)/60.0), 0)
 			from
 				Staging.Fact_FixtureBerth fb
 					left join	(
 									select
-											sum(fbe.Duration)				DurationNOR_Berth,
-											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
-											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+											*
 										from
-											Staging.Fact_FixtureBerthEvents fbe with (nolock)
+											Staging.Fact_FixtureBerthEvents (nolock)
 										where
-											fbe.EventNum >=	(
-																	select
-																			min(EventNum)
-																		from
-																			Staging.Fact_FixtureBerthEvents en with (nolock)
-																		where
-																			en.EventTypeId = 219	-- NOR Tendered
-																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-																)
-							
-											and	fbe.EventNum <	(
-																	select
-																			min(EventNum)
-																		from
-																			Staging.Fact_FixtureBerthEvents en with (nolock)
-																		where
-																			en.EventTypeId = 228	-- Berth/Alongside
-																			and en.PostFixtureAlternateKey = fbe.PostFixtureAlternateKey
-																			and en.ParcelBerthAlternateKey = fbe.ParcelBerthAlternateKey
-																)
-										group by
-											fbe.PostFixtureAlternateKey,
-											fbe.ParcelBerthAlternateKey
-								) fbed
-					on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
-						and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
-
+											EventTypeId = 219	-- NOR Tendered
+								) e1
+						on fb.PostFixtureAlternateKey = e1.PostFixtureAlternateKey
+							and fb.ParcelBerthAlternateKey = e1.ParcelBerthAlternateKey		
+					left join	(
+									select
+											*
+										from
+											Staging.Fact_FixtureBerthEvents (nolock)
+										where
+											EventTypeId = 228	-- Berth/Alongside
+								) e2
+						on fb.PostFixtureAlternateKey = e2.PostFixtureAlternateKey
+							and fb.ParcelBerthAlternateKey = e2.ParcelBerthAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating DurationNOR_Berth - ' + error_message();
