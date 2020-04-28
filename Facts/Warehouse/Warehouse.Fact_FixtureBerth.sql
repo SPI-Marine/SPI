@@ -109,6 +109,8 @@ create table Warehouse.Fact_FixtureBerth
 		LaycanOverUnderOriginal									decimal(18,6)		null,
 		WithinLaycanFinal										smallint			null,
 		LaycanOverUnderFinal									decimal(18,6)		null,
+		WithinLaycanNarrowed									smallint			null,
+		LaycanOverUnderNarrowed									decimal(18,6)		null,
 		VoyageDuration											int					null,		-- 1st NOR to last NOR on Post Fixture
 		TransitTime												decimal(20, 8)		null,
 		FirstFixtureBerth										tinyint				null,

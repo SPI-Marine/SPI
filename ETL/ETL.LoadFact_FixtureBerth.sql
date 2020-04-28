@@ -1869,8 +1869,10 @@ begin
 				Staging.Fact_FixtureBerth with (tablock)
 			set
 				LaycanCommencementDateTimeOriginal = convert(datetime, pf.LaycanCommencementOriginal) + convert(datetime, pf.Laycan_Commencement_Time_ADMIN),
+				LaycanCommencementDateTimeNarrowed = convert(datetime, pf.LaycanCommencementNarrowed) + convert(datetime, pf.Laycan_Commencement_Time_ADMIN),
 				LaycanCommencementDateTimeFinal = convert(datetime, pf.Laycan_Commencement_Final_QBC) + convert(datetime, pf.Laycan_Commencement_Time_ADMIN),
 				LaycanCancellingDateTimeOriginal = convert(datetime, pf.LaycanCancelOrig) + convert(datetime, Laycan_Cancelling_Time_ADMIN),
+				LaycanCancellingDateTimeNarrowed = convert(datetime, pf.LaycanCancellingNarrowed) + convert(datetime, Laycan_Cancelling_Time_ADMIN),
 				LaycanCancellingDateTimeFinal = convert(datetime, pf.Laycan_Cancelling_Final_QBC) + convert(datetime, Laycan_Cancelling_Time_ADMIN)
 			from
 				PostFixtures pf with (nolock)
@@ -1915,6 +1917,41 @@ begin
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LaycanOverUnderOriginal - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update WithinLaycanNarrowed
+	begin try
+		update
+				Staging.Fact_FixtureBerth with (tablock)
+			set
+				WithinLaycanNarrowed =	case
+											when MinimumNORDate between LaycanCommencementDateTimeNarrowed
+													and LaycanCancellingDateTimeNarrowed
+												then 1
+											else 0
+										end;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating WithinLaycanNarrowed - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update LaycanOverUnderNarrowed
+	begin try
+		update
+				Staging.Fact_FixtureBerth with (tablock)
+			set
+				LaycanOverUnderNarrowed =	case
+												when MinimumNORDate <= LaycanCommencementDateTimeNarrowed
+													then datediff(hour, LaycanCommencementDateTimeNarrowed, MinimumNORDate)/24.0
+												when MinimumNORDate > LaycanCancellingDateTimeNarrowed
+													then datediff(hour, LaycanCancellingDateTimeNarrowed, MinimumNORDate)/24.0
+												else 0
+											end;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating LaycanOverUnderNarrowed - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
@@ -2018,18 +2055,18 @@ begin
 					avg(fb.DurationCompleteDischarge_HoseOff)						AverageDurationCompleteDischarge_HoseOff,
 					avg(fb.DurationCommenceLoad_CompleteLoad)						AverageDurationCommenceLoad_CompleteLoad,
 					avg(fb.DurationCommenceDischarge_CompleteDischarge)				AverageDurationCommenceDischarge_CompleteDischarge,
-					avg(fb.TimeToCountNOR_Berth)										AverageTimeToCountNOR_Berth,
-					avg(fb.TimeToCountBerth_HoseOn)										AverageTimeToCountBerth_HoseOn,
-					avg(fb.TimeToCountHoseOn_CommenceLoad)								AverageTimeToCountHoseOn_CommenceLoad,
-					avg(fb.TimeToCountHoseOn_CommenceDischarge)							AverageTimeToCountHoseOn_CommenceDischarge,
-					avg(fb.TimeToCountBerth_HoseOff)									AverageTimeToCountBerth_HoseOff,
-					avg(fb.TimeToCountCompleteLoad_HoseOff)								AverageTimeToCountCompleteLoad_HoseOff,
-					avg(fb.TimeToCountCompleteDischarge_HoseOff)						AverageTimeToCountCompleteDischarge_HoseOff,
-					avg(fb.TimeToCountCommenceLoad_CompleteLoad)						AverageTimeToCountCommenceLoad_CompleteLoad,
-					avg(fb.TimeToCountCommenceDischarge_CompleteDischarge)				AverageTimeToCountCommenceDischarge_CompleteDischarge,
-					avg(fb.TimeToCountPumpingTime)										AverageLayTimePumpingTime,
-					avg(fb.TimeToCountPumpingRate)										AverageLayTimePumpingRate,
-					avg(fb.LaytimeUsed)											AverageLaytimeUsed,
+					avg(fb.TimeToCountNOR_Berth)									AverageTimeToCountNOR_Berth,
+					avg(fb.TimeToCountBerth_HoseOn)									AverageTimeToCountBerth_HoseOn,
+					avg(fb.TimeToCountHoseOn_CommenceLoad)							AverageTimeToCountHoseOn_CommenceLoad,
+					avg(fb.TimeToCountHoseOn_CommenceDischarge)						AverageTimeToCountHoseOn_CommenceDischarge,
+					avg(fb.TimeToCountBerth_HoseOff)								AverageTimeToCountBerth_HoseOff,
+					avg(fb.TimeToCountCompleteLoad_HoseOff)							AverageTimeToCountCompleteLoad_HoseOff,
+					avg(fb.TimeToCountCompleteDischarge_HoseOff)					AverageTimeToCountCompleteDischarge_HoseOff,
+					avg(fb.TimeToCountCommenceLoad_CompleteLoad)					AverageTimeToCountCommenceLoad_CompleteLoad,
+					avg(fb.TimeToCountCommenceDischarge_CompleteDischarge)			AverageTimeToCountCommenceDischarge_CompleteDischarge,
+					avg(fb.TimeToCountPumpingTime)									AverageLayTimePumpingTime,
+					avg(fb.TimeToCountPumpingRate)									AverageLayTimePumpingRate,
+					avg(fb.LaytimeUsed)												AverageLaytimeUsed,
 					avg(fb.LaytimeAllowed)											AverageLaytimeAllowed,
 					avg(fb.PumpTime)												AveragePumpTime
 				from
@@ -2192,6 +2229,8 @@ begin
 					sfb.LaycanOverUnderOriginal,
 					sfb.WithinLaycanFinal,
 					sfb.LaycanOverUnderFinal,
+					sfb.WithinLaycanNarrowed,
+					sfb.LaycanOverUnderNarrowed,
 					sfb.VoyageDuration,
 					sfb.TransitTime,
 					sfb.FirstFixtureBerth,

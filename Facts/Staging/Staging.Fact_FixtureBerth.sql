@@ -108,6 +108,8 @@ create table Staging.Fact_FixtureBerth
 		LaycanOverUnderOriginal									decimal(18,6)		null,
 		WithinLaycanFinal										smallint			null,
 		LaycanOverUnderFinal									decimal(18,6)		null,
+		WithinLaycanNarrowed									smallint			null,
+		LaycanOverUnderNarrowed									decimal(18,6)		null,
 		VoyageDuration											int					null,		-- 1st NOR to last NOR on Post Fixture
 		TransitTime												decimal(20, 8)		null,
 		MinimumNORDate											datetime			null,		-- ETL fields
@@ -119,8 +121,10 @@ create table Staging.Fact_FixtureBerth
 		WaitingTimeCandidate									tinyint				null,
 		HasMultipleDropAnchors									tinyint				null,
 		LaycanCommencementDateTimeOriginal						datetime			null,
+		LaycanCommencementDateTimeNarrowed						datetime			null,
 		LaycanCommencementDateTimeFinal							datetime			null,
 		LaycanCancellingDateTimeOriginal						datetime			null,
+		LaycanCancellingDateTimeNarrowed						datetime			null,
 		LaycanCancellingDateTimeFinal							datetime			null,
 		constraint [PK_Staging_Fact_FixtureBerth_AltKeys] primary key clustered 
 		(
