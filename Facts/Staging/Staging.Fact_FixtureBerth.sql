@@ -11,6 +11,7 @@ Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey
 Brian Boswick	02/10/2020	Added ProductKey
 Brian Boswick	02/12/2020	Added ProductQuantityKey
 Brian Boswick	02/13/2020	Renamed multiple metrics
+Brian Boswick	04/22/2020	Added CPDateKey
 ==========================================================================================================	
 */
 
@@ -34,6 +35,7 @@ create table Staging.Fact_FixtureBerth
 		OwnerKey												int					not null,
 		ProductKey												int					not null,
 		ProductQuantityKey										int					not null,
+		CPDateKey												int					not null,
 		LoadDischarge											varchar(50)			null,		-- Degenerate Dimension Attributes
 		ProductType												nvarchar(100)		null,
 		ParcelQuantityTShirtSize								varchar(50)			null,
@@ -103,19 +105,23 @@ create table Staging.Fact_FixtureBerth
 		PumpTime												decimal(20, 8)		null,
 		AveragePumpTime											decimal(20, 8)		null,
 		WithinLaycanOriginal									smallint			null,
-		LaycanOverUnderOriginal									int					null,
+		LaycanOverUnderOriginal									decimal(18,6)		null,
 		WithinLaycanFinal										smallint			null,
-		LaycanOverUnderFinal									int					null,
+		LaycanOverUnderFinal									decimal(18,6)		null,
 		VoyageDuration											int					null,		-- 1st NOR to last NOR on Post Fixture
 		TransitTime												decimal(20, 8)		null,
-		MinimumNORDate											date				null,		-- ETL fields
-		MaximumNORDate											date				null,
+		MinimumNORDate											datetime			null,		-- ETL fields
+		MaximumNORDate											datetime			null,
 		POB_Berth												decimal(20, 8)		null,
 		LastDropAnchor_POB										decimal(20, 8)		null,
 		FirstFixtureBerth										tinyint				null,
 		FirstPortBerth											tinyint				null,
 		WaitingTimeCandidate									tinyint				null,
 		HasMultipleDropAnchors									tinyint				null,
+		LaycanCommencementDateTimeOriginal						datetime			null,
+		LaycanCommencementDateTimeFinal							datetime			null,
+		LaycanCancellingDateTimeOriginal						datetime			null,
+		LaycanCancellingDateTimeFinal							datetime			null,
 		constraint [PK_Staging_Fact_FixtureBerth_AltKeys] primary key clustered 
 		(
 			PostFixtureAlternateKey,

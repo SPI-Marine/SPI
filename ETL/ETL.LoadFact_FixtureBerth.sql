@@ -21,6 +21,7 @@ Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey ETL logic
 Brian Boswick	02/10/2020	Added ProductKey ETL logic
 Brian Boswick	02/12/2020	Added ProductQuantityKey ETL logic
 Brian Boswick	02/13/2020	Renamed multiple metrics
+Brian Boswick	04/22/2020	Added CPDateKey ETL
 ==========================================================================================================	
 */
 
@@ -66,10 +67,10 @@ begin
 					loadberth.LaytimeAllowedBerthHrs_QBC
 				from
 					Parcels p with (nolock)
-						join ParcelPorts loadport with (nolock)
-							on p.RelatedLoadPortID = loadport.QBRecId
 						join ParcelBerths loadberth with (nolock)
 							on p.RelatedLoadBerth = loadberth.QBRecId
+						join ParcelPorts loadport with (nolock)
+							on loadberth.RelatedLDPId = loadport.QBRecId
 				where
 					p.RelatedSpiFixtureId is not null
 		),
@@ -99,10 +100,10 @@ begin
 					dischberth.LaytimeAllowedBerthHrs_QBC
 				from
 					Parcels p
-						join ParcelPorts dischport with (nolock)
-							on p.RelatedDischPortId = dischport.QBRecId
 						join ParcelBerths dischberth with (nolock)
 							on p.RelatedDischBerth = dischberth.QBRecId
+						join ParcelPorts dischport with (nolock)
+							on dischberth.RelatedLDPId = dischport.QBRecId
 				where
 					p.RelatedSpiFixtureId is not null
 		),
@@ -168,6 +169,7 @@ begin
 												PostFixtureKey,
 												VesselKey,
 												FirstEventDateKey,
+												CPDateKey,
 												LoadPortKey,
 												DischargePortKey,
 												ChartererKey,
@@ -189,6 +191,7 @@ begin
 					isnull(wpostfixture.PostFixtureKey, -1)		PostFixtureKey,
 					isnull(vessel.VesselKey, -1)				VesselKey,
 					-1											FirstEventDateKey,
+					isnull(CPDate.DateKey, -1)					CPDateKey,
 					isnull(wloadport.PortKey, -1)				LoadPortKey,
 					isnull(wdischport.PortKey, -1)				DischargePortKey,
 					isnull(wch.ChartererKey, -1)				ChartererKey,
@@ -202,6 +205,8 @@ begin
 					AggregatedParcelQuantity ufb
 						left join Warehouse.Dim_PostFixture wpostfixture with (nolock)
 							on wpostfixture.PostFixtureAlternateKey = ufb.PostFixtureAlternateKey
+						left join Warehouse.Dim_Calendar CPDate
+							on CPDate.FullDate = wpostfixture.CPDate
 						left join PostFixtures epostfixture with (nolock)
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
 						left join Warehouse.Dim_Vessel vessel with (nolock)
@@ -1858,21 +1863,37 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+		-- Update Laycan DateTime values
+	begin try
+		update
+				Staging.Fact_FixtureBerth with (tablock)
+			set
+				LaycanCommencementDateTimeOriginal = convert(datetime, pf.LaycanCommencementOriginal) + convert(datetime, pf.Laycan_Commencement_Time_ADMIN),
+				LaycanCommencementDateTimeFinal = convert(datetime, pf.Laycan_Commencement_Final_QBC) + convert(datetime, pf.Laycan_Commencement_Time_ADMIN),
+				LaycanCancellingDateTimeOriginal = convert(datetime, pf.LaycanCancelOrig) + convert(datetime, Laycan_Cancelling_Time_ADMIN),
+				LaycanCancellingDateTimeFinal = convert(datetime, pf.Laycan_Cancelling_Final_QBC) + convert(datetime, Laycan_Cancelling_Time_ADMIN)
+			from
+				PostFixtures pf with (nolock)
+			where
+				pf.QBRecId = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating Laycan DateTime values - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+
 	-- Update WithinLaycanOriginal
 	begin try
 		update
 				Staging.Fact_FixtureBerth with (tablock)
 			set
 				WithinLaycanOriginal =	case
-											when MinimumNORDate between convert(date, pf.LaycanCommencementOriginal)
-													and convert(date, pf.LaycanCancelOrig)
+											when MinimumNORDate between LaycanCommencementDateTimeOriginal
+													and LaycanCancellingDateTimeOriginal
 												then 1
 											else 0
-										end
-			from
-				PostFixtures pf with (nolock)
-			where
-				pf.QBRecId = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
+										end;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating WithinLaycanOriginal - ' + error_message();
@@ -1885,16 +1906,12 @@ begin
 				Staging.Fact_FixtureBerth with (tablock)
 			set
 				LaycanOverUnderOriginal =	case
-												when MinimumNORDate <= convert(date, pf.LaycanCommencementOriginal)
-													then datediff(day, convert(date, pf.LaycanCommencementOriginal), MinimumNORDate)
-												when MinimumNORDate > convert(date, pf.LaycanCancelOrig)
-													then datediff(day, convert(date, pf.LaycanCancelOrig), MinimumNORDate)
+												when MinimumNORDate <= LaycanCommencementDateTimeOriginal
+													then datediff(hour, LaycanCommencementDateTimeOriginal, MinimumNORDate)/24.0
+												when MinimumNORDate > LaycanCancellingDateTimeOriginal
+													then datediff(hour, LaycanCancellingDateTimeOriginal, MinimumNORDate)/24.0
 												else 0
-											end
-			from
-				PostFixtures pf with (nolock)
-			where
-				pf.QBRecId = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
+											end;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LaycanOverUnderOriginal - ' + error_message();
@@ -1907,15 +1924,11 @@ begin
 				Staging.Fact_FixtureBerth with (tablock)
 			set
 				WithinLaycanFinal =	case
-										when MinimumNORDate between convert(date, pf.Laycan_Commencement_Final_QBC)
-												and convert(date, pf.Laycan_Cancelling_Final_QBC)
+										when MinimumNORDate between LaycanCommencementDateTimeFinal
+												and LaycanCancellingDateTimeFinal
 											then 1
 										else 0
-									end
-			from
-				PostFixtures pf with (nolock)
-			where
-				pf.QBRecId = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
+									end;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating WithinLaycanFinal - ' + error_message();
@@ -1928,16 +1941,12 @@ begin
 				Staging.Fact_FixtureBerth with (tablock)
 			set
 				LaycanOverUnderFinal =	case
-											when MinimumNORDate <= convert(date, pf.Laycan_Commencement_Final_QBC)
-												then datediff(day, convert(date, pf.Laycan_Commencement_Final_QBC), MinimumNORDate)
-											when MinimumNORDate > convert(date, pf.Laycan_Cancelling_Final_QBC)
-												then datediff(day, convert(date, pf.Laycan_Cancelling_Final_QBC), MinimumNORDate)
+											when MinimumNORDate <= LaycanCommencementDateTimeFinal
+												then datediff(hour, LaycanCommencementDateTimeFinal, MinimumNORDate)/24.0
+											when MinimumNORDate > LaycanCancellingDateTimeFinal
+												then datediff(hour, LaycanCancellingDateTimeFinal, MinimumNORDate)/24.0
 											else 0
-										end
-			from
-				PostFixtures pf with (nolock)
-			where
-				pf.QBRecId = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
+										end;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LaycanOverUnderFinal - ' + error_message();
@@ -2110,6 +2119,7 @@ begin
 					sfb.OwnerKey,
 					sfb.ProductKey,
 					sfb.ProductQuantityKey,
+					sfb.CPDateKey,
 					sfb.LoadDischarge,
 					sfb.ProductType,
 					sfb.ParcelQuantityTShirtSize,
