@@ -85,7 +85,7 @@ begin
 				null										Duration,
 				null										LaytimeUsed,
 				case
-					when epostfixture.Disch_FAC = 1 and parcel.LoadDischarge = 'Discharge'
+					when epostfixture.DischFAC = 1 and parcel.LoadDischarge = 'Discharge'
 						then 0
 					else parcel.LaytimeAllowed
 				end											LaytimeAllowed,
