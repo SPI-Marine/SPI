@@ -333,7 +333,7 @@ begin
 						on sfp.PostFixtureKey = dt.PostFixtureKey
 							and sfp.DischargeBerthKey = dt.BerthKey
 					left join Warehouse.Dim_ProductQuantity dpq
-						on convert(decimal(18, 2), lt.TotalBerthBLQty) between dpq.MinimumQuantity and dpq.MaximumQuantity;
+						on convert(decimal(18, 2), dt.TotalBerthBLQty) between dpq.MinimumQuantity and dpq.MaximumQuantity;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating Berth BL Quantity metrics - ' + error_message();
