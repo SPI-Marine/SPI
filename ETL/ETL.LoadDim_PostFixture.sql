@@ -114,6 +114,7 @@ begin
 				fixture.LaytimeAllowedTypeFixture_QBC,
 				fixture.FixtureType,
 				chartererfullstyle.GroupNameFS GroupName,
+				office.OfficeName SPIOffice,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -130,6 +131,8 @@ begin
 						on rtrim(ltrim(brokername.EmailAddress)) = rtrim(ltrim(fixture.RelatedBroker))
 					left join SPICOA coa
 						on coa.RecordID = fixture.RelatedSPICOAId
+					left join SPIOffices office
+						on office.QBRecId = fixture.RelatedSPIOfficeID
 					left join	(
 									select
 											tm.EmailAddress,
@@ -232,7 +235,8 @@ begin
 																LAF_Total_hrs_QBC,
 																LaytimeAllowedTypeFixture_QBC,
 																FixtureType,
-																GroupName
+																GroupName,
+																SPIOffice
 															)
 												);
 		
@@ -325,6 +329,7 @@ begin
 					fixture.LaytimeAllowedTypeFixture_QBC,
 					fixture.FixtureType,
 					fixture.GroupName,
+					fixture.SPIOffice,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -412,6 +417,7 @@ begin
 				LaytimeAllowedTypeFixture_QBC = fixture.LaytimeAllowedTypeFixture_QBC,
 				FixtureType = fixture.FixtureType,
 				GroupName = fixture.GroupName,
+				SPIOffice = fixture.SPIOffice,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -529,6 +535,7 @@ begin
 													LaytimeAllowedTypeFixture_QBC,
 													FixtureType,
 													GroupName,
+													SPIOffice,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -606,6 +613,7 @@ begin
 							0.0,			-- LaytimeAllowedTypeFixture_QBC
 							'Unknown',		-- FixtureType
 							'Unknown',		-- GroupName
+							'Unknown',		-- SPIOffice
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate

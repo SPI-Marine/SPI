@@ -93,6 +93,7 @@ create table Staging.Dim_PostFixture
 		LaytimeAllowedTypeFixture_QBC	varchar(100)		null,
 		FixtureType						varchar(500)		null,
 		GroupName						varchar(500)		null,
+		SPIOffice						varchar(500)		null,
 		Type1HashValue					varbinary(16)		not null,
 		RecordStatus					int					not null
 		constraint [PK_Staging_Dim_PostFixture_QBRecId] primary key clustered 

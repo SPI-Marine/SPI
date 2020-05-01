@@ -94,6 +94,7 @@ create table Warehouse.Dim_PostFixture
 		LaytimeAllowedTypeFixture_QBC	varchar(100)		null,
 		FixtureType						varchar(500)		null,
 		GroupName						varchar(500)		null,
+		SPIOffice						varchar(500)		null,
 		Type1HashValue					varbinary(16)		not null,
 		RowCreatedDate					date				not null,
 		RowUpdatedDate					date				not null,
