@@ -13,6 +13,7 @@ Brian Boswick	01/25/2020	Added PortOrder field
 Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey
 Brian Boswick	02/11/2020	Added VesselKey
 Brian Boswick	02/21/2020	Added Direction and ProductType
+Brian Boswick	05/06/2020	Added VesselPortStatusOfficial
 ==========================================================================================================	
 */
 
@@ -48,6 +49,7 @@ create table Warehouse.Fact_VesselItinerary
 		PortOrder								tinyint				null,
 		Direction								varchar(500)		null,
 		ProductType								varchar(500)		null,
+		VesselPortStatusOfficial				varchar(50)			null,
 		NORLaycanOverUnderOriginal				int					null,			-- Metrics
 		NORLaycanOverUnderFinal					int					null,
 		ETALaycanOverUnderOriginal				int					null,

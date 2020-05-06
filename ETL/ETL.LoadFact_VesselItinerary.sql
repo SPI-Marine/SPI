@@ -22,6 +22,7 @@ Brian Boswick	01/25/2020	Added PortOrder field logic
 Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey ETL logic
 Brian Boswick	02/11/2020	Added VesselKey ETL logic
 Brian Boswick	02/21/2020	Added Direction and ProductType ETL logic
+Brian Boswick	05/06/2020	Added VesselPortStatusOfficial
 ==========================================================================================================	
 */
 
@@ -64,6 +65,7 @@ begin
 																ETAChanged,
 																DateModified,
 																PortOrder,
+																VesselPortStatusOfficial,
 																RecordStatus
 															)
 		select
@@ -95,6 +97,7 @@ begin
 				end												ETAChanged,
 				vi.DateETAWasUpdatedByOperator_BETA				DateModified,
 				portorder.PortOrder								PortOrder,
+				vi.VesselPortStatusOfficial						VesselPortStatusOfficial,
 				isnull(rs.RecordStatus, @NewRecord)				RecordStatus
 			from
 				VesselItinerary vi with (nolock)
@@ -657,6 +660,7 @@ begin
 																	PortOrder,
 																	Direction,
 																	ProductType,
+																	VesselPortStatusOfficial,
 																	NORLaycanOverUnderOriginal,
 																	NORLaycanOverUnderFinal,
 																	ETALaycanOverUnderOriginal,
@@ -707,6 +711,7 @@ begin
 					fvi.PortOrder,
 					fvi.Direction,
 					fvi.ProductType,
+					fvi.VesselPortStatusOfficial,
 					fvi.NORLaycanOverUnderOriginal,
 					fvi.NORLaycanOverUnderFinal,
 					fvi.ETALaycanOverUnderOriginal,
@@ -781,6 +786,7 @@ begin
 				PortOrder = fvi.PortOrder,
 				Direction = fvi.Direction,
 				ProductType = fvi.ProductType,
+				VesselPortStatusOfficial = fvi.VesselPortStatusOfficial,
 				RowUpdatedDate = getdate()
 			from
 				Staging.Fact_VesselItinerary fvi with (nolock)
