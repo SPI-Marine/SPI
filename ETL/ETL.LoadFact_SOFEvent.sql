@@ -83,7 +83,7 @@ begin
 								+ sof.StartTime
 							)								StartDateTimeSort,
 				null										Duration,
-				null										LaytimeUsed,
+				sof.LtUsedProrationAmtHrs_QBC				LaytimeUsed,
 				case
 					when epostfixture.DischFAC = 1 and parcel.LoadDischarge = 'Discharge'
 						then 0
@@ -229,16 +229,6 @@ begin
 									then datediff(minute, StartDate, StopDate)/60.0
 								else null
 							end;
-
-		-- Calculate LaytimeUsed
-		update
-				Staging.Fact_SOFEvent with (tablock)
-			set
-				LaytimeUsed =	ee.LtUsedProrationAmtHrs_QBC
-			from
-				SOFEvents ee with (nolock)
-					join Staging.Fact_SOFEvent fe
-						on ee.QBRecId = fe.EventAlternateKey;
 
 		-- Calculate LaytimeAllowedProrated
 		update
