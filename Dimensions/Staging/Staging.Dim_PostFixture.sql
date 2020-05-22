@@ -16,6 +16,8 @@ Brian Boswick	07/17/2019	Added OwnerParent and ChartererParent fields
 Brian Boswick	09/23/2019	Added FixtureType
 Brian Boswick	01/07/2020	Added GroupName
 Brian Boswick	02/19/2020	Added COA_Title_Admin
+Brian Boswick	05/21/2020	Added Load and Discharge Port Region
+Brian Boswick	05/22/2020	Added Product ETL logic
 ==========================================================================================================	
 */
 
@@ -41,8 +43,8 @@ create table Staging.Dim_PostFixture
 		TimeBar							decimal(18, 2)		null,
 		AddressCommissionPercent		decimal(18, 2)		null,
 		BrokerCommissionPercent			decimal(18, 2)		null,
-		LaytimeAllowedLoad				decimal(18, 2)		null,
-		LaytimeAllowedDisch				decimal(18, 2)		null,
+		LaytimeAllowedLoad				varchar(100)		null,
+		LaytimeAllowedDisch				varchar(100)		null,
 		ShincReversible					nvarchar(10)		null,
 		VesselNameSnap					nvarchar(100)		null,
 		DemurrageAmountAgreed			decimal(18, 2)		null,
@@ -94,6 +96,9 @@ create table Staging.Dim_PostFixture
 		FixtureType						varchar(500)		null,
 		GroupName						varchar(500)		null,
 		SPIOffice						varchar(500)		null,
+		LoadRegion						varchar(500)		null,
+		Product							varchar(500)		null,
+		DischargeRegion					varchar(500)		null,
 		Type1HashValue					varbinary(16)		not null,
 		RecordStatus					int					not null
 		constraint [PK_Staging_Dim_PostFixture_QBRecId] primary key clustered 

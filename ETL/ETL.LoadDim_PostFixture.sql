@@ -20,6 +20,8 @@ Brian Boswick	04/25/2019	Added LaycanCancellingOriginal, LaycanCancellingFinal_Q
 Brian Boswick	07/01/2019	Added four new fields from QB
 Brian Boswick	07/17/2019	Added OwnerParent and ChartererParent fields
 Brian Boswick	02/19/2020	Added COA_Title_Admin ETL logic
+Brian Boswick	05/21/2020	Added Load and Discharge Port Region ETL logic for RLS
+Brian Boswick	05/22/2020	Added Product ETL logic for RLS
 ==========================================================================================================	
 */
 
@@ -62,8 +64,20 @@ begin
 				fixture.TimeBar,
 				fixture.AddressCommissionPercent,
 				fixture.BrokerCommissionPercent,
-				fixture.LaytimeAllowedLoad,
-				fixture.LaytimeAllowedDisch,
+				case
+					when isnull(LaytimeBasedOn_ADMIN , '') = 'Berths'
+						then 'Varies By Berth'
+					when isnull(LaytimeBasedOn_ADMIN , '') = 'Ports'
+						then 'Varies By Port'
+					else fixture.LaytimeAllowedLoad
+				end LaytimeAllowedLoad,
+				case
+					when isnull(LaytimeBasedOn_ADMIN , '') = 'Berths'
+						then 'Varies By Berth'
+					when isnull(LaytimeBasedOn_ADMIN , '') = 'Ports'
+						then 'Varies By Port'
+					else fixture.LaytimeAllowedDisch
+				end LaytimeAllowedDisch,
 				fixture.ShincReversible,
 				fixture.VesselNameSnap,
 				fixture.DemurrageAmountAgreed,
@@ -115,6 +129,9 @@ begin
 				fixture.FixtureType,
 				chartererfullstyle.GroupNameFS GroupName,
 				office.OfficeName SPIOffice,
+				fixture.LoadPortRegion,
+				fixture.DischPortRegion,
+				null Product,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -158,7 +175,7 @@ begin
 		select @ErrorMsg = 'Staging PostFixture records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
-
+	
 	-- Generate hash values for Type 1 changes. Only Type 1 SCDs
 	begin try
 		update
@@ -236,7 +253,9 @@ begin
 																LaytimeAllowedTypeFixture_QBC,
 																FixtureType,
 																GroupName,
-																SPIOffice
+																SPIOffice,
+																LoadRegion,
+																DischargeRegion
 															)
 												);
 		
@@ -255,6 +274,51 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch
 
+	-- Update Product based on Max BLQty for fixture.  Used for RLS
+	begin try
+		with
+			MaxProduct	(
+								PostFixtureAlternateKey,
+								Product
+							)
+		as
+		(
+			select
+					parcel.RelatedSpiFixtureId PostFixtureAlternateKey,
+					max(p.ProductName) Product
+				from
+					ParcelProducts pp with (nolock)
+						join Products p with (nolock)
+							on pp.RelatedProductId = p.QBRecId
+						join Parcels parcel with (nolock)
+							on pp.QBRecId = parcel.RelatedParcelProductId
+				where
+					parcel.BLQty =	(
+										select
+												max(par.BLQty)
+											from
+												Parcels par with (nolock)
+											where
+												par.RelatedSpiFixtureId = parcel.RelatedSpiFixtureId
+									)
+				group by
+					parcel.RelatedSpiFixtureId
+		)
+
+		update
+				Staging.Dim_PostFixture
+			set
+				Product = mp.Product
+			from	
+				MaxProduct mp
+			where
+				mp.PostFixtureAlternateKey = Staging.Dim_PostFixture.PostFixtureAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating hash values - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+	
 	-- Insert new post fixtures into Warehouse table
 	begin try
 		insert
@@ -330,6 +394,9 @@ begin
 					fixture.FixtureType,
 					fixture.GroupName,
 					fixture.SPIOffice,
+					fixture.LoadRegion,
+					fixture.DischargeRegion,
+					fixture.Product,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -418,6 +485,9 @@ begin
 				FixtureType = fixture.FixtureType,
 				GroupName = fixture.GroupName,
 				SPIOffice = fixture.SPIOffice,
+				LoadRegion = fixture.LoadRegion,
+				DischargeRegion = fixture.DischargeRegion,
+				Product = fixture.Product,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -536,6 +606,9 @@ begin
 													FixtureType,
 													GroupName,
 													SPIOffice,
+													LoadRegion,
+													DischargeRegion,
+													Product,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -614,6 +687,9 @@ begin
 							'Unknown',		-- FixtureType
 							'Unknown',		-- GroupName
 							'Unknown',		-- SPIOffice
+							'Unknown',		-- LoadRegion
+							'Unknown',		-- DischargeRegion
+							'Unknown',		-- Product
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
