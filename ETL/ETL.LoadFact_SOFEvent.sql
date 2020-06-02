@@ -10,6 +10,7 @@ Brian Boswick	03/15/2019	Added LoadPortBerthKey and DischargePortBerthKey
 Brian Boswick	05/20/2019	Remove deleted records from Warehouse
 Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey ETL logic
 Brian Boswick	02/14/2020	Renamed multiple metrics
+Brian Boswick	06/02/2020	Pull event duration from Staging.SOFEvent_Durations table
 ==========================================================================================================	
 */
 
@@ -82,7 +83,7 @@ begin
 								+ ' '
 								+ sof.StartTime
 							)								StartDateTimeSort,
-				null										Duration,
+				ed.Duration									Duration,
 				sof.LtUsedProrationAmtHrs_QBC				LaytimeUsed,
 				case
 					when epostfixture.DischFAC = 1 and parcel.LoadDischarge = 'Discharge'
@@ -111,6 +112,8 @@ begin
 				parcel.ParcelProductId						ParcelProductId
 			from
 				SOFEvents sof with (nolock)
+					left join Staging.SOFEvent_Durations ed
+						on ed.EventAlternateKey = sof.QBRecId
 					left join Warehouse.Dim_Calendar startdate with (nolock)
 						on try_convert(date, sof.StartDate) = startdate.FullDate
 					left join Warehouse.Dim_Calendar stopdate with (nolock)
@@ -220,16 +223,6 @@ begin
 				StartDate = datetimefromparts(year(StartDate), month(StartDate), day(StartDate), datepart(hour, StartTime), datepart(minute, StartTime), 0, 0),
 				StopDate = datetimefromparts(year(StopDate), month(StopDate), day(StopDate), datepart(hour, StopTime), datepart(minute, StopTime), 0, 0);
 	
-		-- Calculate Duration
-		update
-				Staging.Fact_SOFEvent with (tablock)
-			set
-				Duration =	case
-								when StartDateKey > 19000000 and StopDateKey < 47000000
-									then datediff(minute, StartDate, StopDate)/60.0
-								else null
-							end;
-
 		-- Calculate LaytimeAllowedProrated
 		update
 				Staging.Fact_SOFEvent with (tablock)

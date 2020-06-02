@@ -22,6 +22,7 @@ Brian Boswick	02/10/2020	Added ProductKey ETL logic
 Brian Boswick	02/12/2020	Added ProductQuantityKey ETL logic
 Brian Boswick	02/13/2020	Renamed multiple metrics
 Brian Boswick	04/22/2020	Added CPDateKey ETL
+Brian Boswick	06/02/2020	Pull event duration from Staging.SOFEvent_Durations table
 ==========================================================================================================	
 */
 
@@ -332,25 +333,22 @@ begin
 			select
 				distinct
 					wpf.PostFixtureAlternateKey,
-					e.RelatedParcelBerthId,
-					e.QBRecId,
-					e.RelatedPortTimeEventId,
-					wevent.EventType,
-					wevent.Duration,
-					e.LtUsedProrationAmtHrs_QBC,
-					try_convert(datetime, wevent.StartDateTime, 103) StartDateTime,
-					wevent.LoadDischarge,
-					wevent.IsPumpingTime,
-					wevent.IsLaytime
+					ed.ParcelBerthAlternateKey,
+					ed.EventAlternateKey,
+					ed.EventTypeId,
+					ed.EventType,
+					ed.Duration,
+					ed.LaytimeUsedProrated,
+					ed.EventStartDateTime,
+					ed.LoadDischarge,
+					ed.IsPumpingTime,
+					ed.IsLaytime
 				from
-					Warehouse.Fact_SOFEvent wevent with (nolock)
+					Staging.SOFEvent_Durations ed with (nolock)
 						join Warehouse.Dim_PostFixture wpf with (nolock)
-							on wpf.PostFixtureKey = wevent.PostFixtureKey
-						join SOFEvents e with (nolock)
-							on wevent.EventAlternateKey = e.QBRecId
+							on wpf.PostFixtureAlternateKey = ed.PostFixtureAlternateKey
 				where
-					wevent.PostFixtureKey > 0
-					and isnull(wevent.Duration, 0) >= 0
+					ed.PostFixtureAlternateKey > 0
 		),
 		OrderedEvents	(
 							PostFixtureAlternateKey,
