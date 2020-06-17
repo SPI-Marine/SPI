@@ -97,8 +97,8 @@ create table Staging.Dim_PostFixture
 		GroupName						varchar(500)		null,
 		SPIOffice						varchar(500)		null,
 		LoadRegion						varchar(500)		null,
-		Product							varchar(500)		null,
 		DischargeRegion					varchar(500)		null,
+		Product							varchar(500)		null,
 		Type1HashValue					varbinary(16)		not null,
 		RecordStatus					int					not null
 		constraint [PK_Staging_Dim_PostFixture_QBRecId] primary key clustered 
