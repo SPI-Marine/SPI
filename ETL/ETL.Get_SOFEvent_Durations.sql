@@ -37,9 +37,10 @@ begin
 																EventTypeId,
 																EventType,
 																EventStartDateTime,
+																EventStopDateTime,
 																LoadDischarge,
-																IsPumpingTime,
 																IsLaytime,
+																IsPumpingTime,
 																LaytimeUsedProrated
 															)
 			select
@@ -57,6 +58,15 @@ begin
 											0,
 											0
 										)						EventStartDateTime,
+					datetimefromparts	(
+											year(try_convert(date, sof.StopDate)),
+											month(try_convert(date, sof.StopDate)),
+											day(try_convert(date, sof.StopDate)),
+											datepart(hour, try_convert(time, sof.StopTime)),
+											datepart(minute, try_convert(time, sof.StopTime)),
+											0,
+											0
+										)						EventStopDateTime,
 					loaddischarge.[Type]						LoadDischarge,
 					case sof.Laytime
 						when 1
@@ -81,6 +91,8 @@ begin
 				try_convert(date, sof.StartDate) is not null
 				and try_convert(date, sof.StartDate) > '1/1/1900'
 				and try_convert(time, sof.StartTime) is not null
+				and try_convert(date, sof.StopDate) > '1/1/1900'
+				and try_convert(time, sof.StopTime) is not null
 				and pb.RelatedSpiFixtureId is not null;
 
 	end try
@@ -124,7 +136,8 @@ begin
 		update
 				Staging.SOFEvent_Durations with (tablock)
 			set
-				Duration =	datediff(minute, EventStartDateTime, isnull(NextEventStartDateTime, EventStartDateTime))/60.0;
+				EventDuration = datediff(minute, EventStartDateTime, EventStopDateTime)/60.0,
+				IntraEventDuration = datediff(minute, EventStartDateTime, isnull(NextEventStartDateTime, EventStartDateTime))/60.0;;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating SOFEvent Duration - ' + error_message();

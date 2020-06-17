@@ -337,7 +337,7 @@ begin
 					ed.EventAlternateKey,
 					ed.EventTypeId,
 					ed.EventType,
-					ed.Duration,
+					ed.IntraEventDuration,
 					ed.LaytimeUsedProrated,
 					ed.EventStartDateTime,
 					ed.LoadDischarge,

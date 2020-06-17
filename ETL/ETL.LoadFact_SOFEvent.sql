@@ -83,7 +83,7 @@ begin
 								+ ' '
 								+ sof.StartTime
 							)								StartDateTimeSort,
-				ed.Duration									Duration,
+				ed.EventDuration							Duration,
 				sof.LtUsedProrationAmtHrs_QBC				LaytimeUsed,
 				case
 					when epostfixture.DischFAC = 1 and parcel.LoadDischarge = 'Discharge'
