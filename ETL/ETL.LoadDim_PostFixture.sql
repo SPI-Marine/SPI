@@ -71,7 +71,7 @@ begin
 					when isnull(LaytimeBasedOn_ADMIN , '') = 'Ports'
 						then 'Varies By Port'
 					when isnumeric(fixture.LaytimeAllowedLoad) = 1
-						then convert(varchar(100), try_convert(decimal(18, 8), fixture.LaytimeAllowedLoad))
+						then convert(varchar(100), try_convert(decimal(18, 2), fixture.LaytimeAllowedLoad))
 					else fixture.LaytimeAllowedLoad
 				end LaytimeAllowedLoad,
 				case
@@ -80,7 +80,7 @@ begin
 					when isnull(LaytimeBasedOn_ADMIN , '') = 'Ports'
 						then 'Varies By Port'
 					when isnumeric(fixture.LaytimeAllowedDisch) = 1
-						then convert(varchar(100), try_convert(decimal(18, 8), fixture.LaytimeAllowedDisch))
+						then convert(varchar(100), try_convert(decimal(18, 2), fixture.LaytimeAllowedDisch))
 					else fixture.LaytimeAllowedDisch
 				end LaytimeAllowedDisch,
 				fixture.ShincReversible,
