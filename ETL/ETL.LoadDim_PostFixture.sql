@@ -22,6 +22,7 @@ Brian Boswick	07/17/2019	Added OwnerParent and ChartererParent fields
 Brian Boswick	02/19/2020	Added COA_Title_Admin ETL logic
 Brian Boswick	05/21/2020	Added Load and Discharge Port Region ETL logic for RLS
 Brian Boswick	05/22/2020	Added Product ETL logic for RLS
+Brian Boswick	06/16/2020	Show 2 decimal places for numeric LaytimeAllowed Load/Dish fields
 ==========================================================================================================	
 */
 
@@ -69,6 +70,8 @@ begin
 						then 'Varies By Berth'
 					when isnull(LaytimeBasedOn_ADMIN , '') = 'Ports'
 						then 'Varies By Port'
+					when isnumeric(fixture.LaytimeAllowedLoad) = 1
+						then convert(varchar(100), try_convert(decimal(18, 8), fixture.LaytimeAllowedLoad))
 					else fixture.LaytimeAllowedLoad
 				end LaytimeAllowedLoad,
 				case
@@ -76,6 +79,8 @@ begin
 						then 'Varies By Berth'
 					when isnull(LaytimeBasedOn_ADMIN , '') = 'Ports'
 						then 'Varies By Port'
+					when isnumeric(fixture.LaytimeAllowedDisch) = 1
+						then convert(varchar(100), try_convert(decimal(18, 8), fixture.LaytimeAllowedDisch))
 					else fixture.LaytimeAllowedDisch
 				end LaytimeAllowedDisch,
 				fixture.ShincReversible,
