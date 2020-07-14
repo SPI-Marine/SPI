@@ -214,9 +214,7 @@ begin
 		update
 				Staging.Fact_VesselItinerary with (tablock)
 			set
-				DaysBetweenRecentETALastModified = try_convert(smallint, abs(datediff(day, vi.MostRecentETADate, vi.ETALastModifiedDate)))
-			from
-				Staging.Fact_VesselItinerary vi;
+				DaysBetweenRecentETALastModified = try_convert(smallint, abs(datediff(day, MostRecentETADate, ETALastModifiedDate)));
 
 	end try
 	begin catch
@@ -232,17 +230,15 @@ begin
 				OneWeekETA =	case
 									when isnull(OneWeekETA, '12/30/1899') = '12/30/1899'
 											and DaysBetweenRecentETALastModified between 6 and 9
-										then vi.MostRecentETADate
+										then MostRecentETADate
 									else OneWeekETA
 								end,
 				TwoWeekETA =	case
 									when isnull(TwoWeekETA, '12/30/1899') = '12/30/1899'
 											and DaysBetweenRecentETALastModified between 13 and 16
-										then vi.MostRecentETADate
+										then MostRecentETADate
 									else TwoWeekETA
-								end
-			from
-				Staging.Fact_VesselItinerary vi;
+								end;
 
 	end try
 	begin catch
@@ -259,10 +255,8 @@ begin
 				DaysOutOriginalETA = try_convert(smallint, abs(datediff(day, NORStartDate, ETAOriginalDate))),
 				DaysOutTwoWeekETA = try_convert(smallint, abs(datediff(day, NORStartDate, TwoWeekETA))),
 				DaysOutOneWeekETA = try_convert(smallint, abs(datediff(day, NORStartDate, OneWeekETA)))
-			from
-				Staging.Fact_VesselItinerary vi
 			where
-				isnull(vi.NORStartDate, '12/30/1899') > '12/30/1899';
+				isnull(NORStartDate, '12/30/1899') > '12/30/1899';
 
 	end try
 	begin catch
@@ -283,9 +277,7 @@ begin
 				ArrivedGreaterThanSevenDaysTwoWeek	=	case when DaysOutTwoWeekETA > 7 then 1 else null end,
 				ArrivedLessThanThreeDaysOneWeek		=	case when DaysOutOneWeekETA < 3 then 1 else null end,
 				ArrivedThreeToSevenDaysOneWeek		=	case when DaysOutOneWeekETA between 3 and 7 then 1 else null end,
-				ArrivedGreaterThanSevenDaysOneWeek	=	case when DaysOutOneWeekETA > 7 then 1 else null end
-			from
-				Staging.Fact_VesselItinerary vi;
+				ArrivedGreaterThanSevenDaysOneWeek	=	case when DaysOutOneWeekETA > 7 then 1 else null end;
 
 	end try
 	begin catch
