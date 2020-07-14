@@ -18,6 +18,7 @@ Brian Boswick	01/07/2020	Added GroupName
 Brian Boswick	02/19/2020	Added COA_Title_Admin
 Brian Boswick	05/21/2020	Added Load and Discharge Port Region
 Brian Boswick	05/22/2020	Added Product ETL logic
+Brian Boswick	07/13/2020	Added LaycanStatus
 ==========================================================================================================	
 */
 
@@ -99,6 +100,7 @@ create table Staging.Dim_PostFixture
 		LoadRegion						varchar(500)		null,
 		DischargeRegion					varchar(500)		null,
 		Product							varchar(500)		null,
+		LaycanStatus					varchar(100)		null,
 		Type1HashValue					varbinary(16)		not null,
 		RecordStatus					int					not null
 		constraint [PK_Staging_Dim_PostFixture_QBRecId] primary key clustered 

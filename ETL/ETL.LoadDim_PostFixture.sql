@@ -23,6 +23,7 @@ Brian Boswick	02/19/2020	Added COA_Title_Admin ETL logic
 Brian Boswick	05/21/2020	Added Load and Discharge Port Region ETL logic for RLS
 Brian Boswick	05/22/2020	Added Product ETL logic for RLS
 Brian Boswick	06/16/2020	Show 2 decimal places for numeric LaytimeAllowed Load/Dish fields
+Brian Boswick	07/13/2020	Added LaycanStatus ETL logic
 ==========================================================================================================	
 */
 
@@ -137,6 +138,7 @@ begin
 				fixture.LoadPortRegion,
 				fixture.DischPortRegion,
 				null Product,
+				null LaycanStatus,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -181,6 +183,31 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 	
+	-- Update LaycanStatus
+	begin try
+		update
+				Staging.Dim_PostFixture
+			set
+				LaycanStatus =	case
+									when LaycanCancellingFinal_QBC = LaycanCancellingOriginal
+											and LaycanCommencementFinal_QBC = LaycanCommencementOriginal
+										then 'No Change'
+									when LaycanCancellingFinal_QBC > LaycanCancellingOriginal
+										then 'Extended'
+									when LaycanCommencementFinal_QBC between LaycanCommencementOriginal and LaycanCancellingOriginal
+											and LaycanCancellingFinal_QBC between LaycanCommencementOriginal and LaycanCancellingOriginal
+										then 'Narrowed'
+									when LaycanCommencementFinal_QBC < LaycanCommencementOriginal
+										then 'Amended Earlier'
+									else null
+								end
+				;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating LaycanStatus - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+
 	-- Generate hash values for Type 1 changes. Only Type 1 SCDs
 	begin try
 		update
@@ -260,7 +287,9 @@ begin
 																GroupName,
 																SPIOffice,
 																LoadRegion,
-																DischargeRegion
+																DischargeRegion,
+																Product,
+																LaycanStatus
 															)
 												);
 		
@@ -402,6 +431,7 @@ begin
 					fixture.LoadRegion,
 					fixture.DischargeRegion,
 					fixture.Product,
+					fixture.LaycanStatus,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -493,6 +523,7 @@ begin
 				LoadRegion = fixture.LoadRegion,
 				DischargeRegion = fixture.DischargeRegion,
 				Product = fixture.Product,
+				LaycanStatus = fixture.LaycanStatus,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -614,6 +645,7 @@ begin
 													LoadRegion,
 													DischargeRegion,
 													Product,
+													LaycanStatus,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -695,6 +727,7 @@ begin
 							'Unknown',		-- LoadRegion
 							'Unknown',		-- DischargeRegion
 							'Unknown',		-- Product
+							'Unknown',		-- LaycanStatus
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
