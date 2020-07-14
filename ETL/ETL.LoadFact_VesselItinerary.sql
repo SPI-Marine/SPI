@@ -225,20 +225,24 @@ begin
 	-- Update One and Two Week ETAs
 	begin try
 		update
-				Staging.Fact_VesselItinerary with (tablock)
+				svi with (tablock)
 			set
 				OneWeekETA =	case
-									when isnull(OneWeekETA, '12/30/1899') = '12/30/1899'
-											and DaysBetweenRecentETALastModified between 6 and 9
-										then MostRecentETADate
-									else OneWeekETA
+									when isnull(wvi.OneWeekETA, '12/30/1899') = '12/30/1899'
+											and svi.DaysBetweenRecentETALastModified between 6 and 9
+										then svi.MostRecentETADate
+									else wvi.OneWeekETA
 								end,
 				TwoWeekETA =	case
-									when isnull(TwoWeekETA, '12/30/1899') = '12/30/1899'
-											and DaysBetweenRecentETALastModified between 13 and 16
-										then MostRecentETADate
-									else TwoWeekETA
-								end;
+									when isnull(wvi.TwoWeekETA, '12/30/1899') = '12/30/1899'
+											and svi.DaysBetweenRecentETALastModified between 13 and 16
+										then svi.MostRecentETADate
+									else wvi.TwoWeekETA
+								end
+			from
+				Staging.Fact_VesselItinerary svi
+					join Warehouse.Fact_VesselItinerary wvi
+						on svi.VesselItineraryAlternateKey = wvi.VesselItineraryAlternateKey;
 
 	end try
 	begin catch
