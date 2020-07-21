@@ -3,21 +3,21 @@ go
 set quoted_identifier on;
 go
 
-drop procedure if exists ETL.LoadFact_Invoice;
+drop procedure if exists ETL.LoadFact_SPIInvoiceRegistry;
 go
 
 /*
 ==========================================================================================================
 Author:			Brian Boswick
 Create date:	04/24/2020
-Description:	Creates the LoadFact_Invoice stored procedure
+Description:	Creates the LoadFact_SPIInvoiceRegistry stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 ==========================================================================================================	
 */
 
-create procedure ETL.LoadFact_Invoice
+create procedure ETL.LoadFact_SPIInvoiceRegistry
 as
 begin
 	set nocount on;
@@ -25,8 +25,8 @@ begin
 	declare	@ErrorMsg		varchar(1000);
 
 	-- Clear Staging table
-	if object_id(N'Staging.Fact_Invoice', 'U') is not null
-		truncate table Staging.Fact_Invoice;
+	if object_id(N'Staging.Fact_SPIInvoiceRegistry', 'U') is not null
+		truncate table Staging.Fact_SPIInvoiceRegistry;
 
 	begin try
 		with MaxProducts	(
@@ -106,7 +106,7 @@ begin
 		)
 
 		insert
-				Staging.Fact_Invoice with (tablock)
+				Staging.Fact_SPIInvoiceRegistry with (tablock)
 		select
 			distinct
 				ir.RecordID											InvoiceAlternateKey,
@@ -177,13 +177,13 @@ begin
 	end catch	
 	
 	-- Clear Warehouse table
-	if object_id(N'Warehouse.Fact_Invoice', 'U') is not null
-		truncate table Warehouse.Fact_Invoice;
+	if object_id(N'Warehouse.Fact_SPIInvoiceRegistry', 'U') is not null
+		truncate table Warehouse.Fact_SPIInvoiceRegistry;
 
 	-- Insert new events into Warehouse table
 	begin try
 		insert
-				Warehouse.Fact_Invoice with (tablock)
+				Warehouse.Fact_SPIInvoiceRegistry with (tablock)
 			select
 					inv.InvoiceAlternateKey,
 					inv.InvoiceDateKey,
@@ -210,7 +210,7 @@ begin
 					inv.InvoiceAmount,
 					getdate() RowStartDate
 				from
-					Staging.Fact_Invoice inv;
+					Staging.Fact_SPIInvoiceRegistry inv;
 	end try
 	begin catch
 		select @ErrorMsg = 'Loading Warehouse - ' + error_message();

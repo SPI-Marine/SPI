@@ -2,18 +2,19 @@
 ==========================================================================================================
 Author:			Brian Boswick
 Create date:	04/24/2020
-Description:	Creates the Staging.Fact_Invoice table
+Description:	Creates the Warehouse.Fact_SPIInvoiceRegistry table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 ==========================================================================================================	
 */
 
-drop table if exists Staging.Fact_Invoice;
+drop table if exists Warehouse.Fact_SPIInvoiceRegistry;
 go
 
-create table Staging.Fact_Invoice
+create table Warehouse.Fact_SPIInvoiceRegistry
 	(
+		InvoiceKey												int					not null identity(1, 1),
 		InvoiceAlternateKey										int					not null,
 		InvoiceDateKey											int					not null,
 		InvoiceDueDateKey										int					not null,
@@ -37,9 +38,10 @@ create table Staging.Fact_Invoice
 		OwnerFormula											varchar(100)		null,
 		InvoiceGeneratedBy										varchar(100)		null,
 		InvoiceAmount											decimal(18, 5)		null,		-- Metrics
-		constraint [PK_Staging_Fact_Invoice_AltKey] primary key clustered 
+		RowCreatedDate											date				not null,
+		constraint [PK_Warehouse_Fact_SPIInvoiceRegistry_Key] primary key clustered 
 		(
-			InvoiceAlternateKey asc
+			InvoiceKey asc
 		)
 			with 
 				(pad_index = off, statistics_norecompute = off, ignore_dup_key = off, allow_row_locks = on, allow_page_locks = on) 
