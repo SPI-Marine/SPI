@@ -64,6 +64,7 @@ begin
 				fixture.CPForm,
 				fixture.DemurrageRate,
 				fixture.TimeBar,
+				null										HoseOffDateFinal,
 				fixture.AddressCommissionPercent,
 				fixture.BrokerCommissionPercent,
 				case
@@ -200,11 +201,73 @@ begin
 									when LaycanCommencementFinal_QBC < LaycanCommencementOriginal
 										then 'Amended Earlier'
 									else null
-								end
-				;
+								end;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating LaycanStatus - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+
+	-- Update HoseOffDateFinal
+	begin try
+		-- Get Hose Off event dates per post fixture
+		with
+			HoseOffEvents(PostFixtureAlternateKey, HoseOffEventDate)
+		as
+		(
+			select
+					pb.RelatedSpiFixtureId PostFixtureAlternateKey,
+					convert(date, evt.StartDate) HoseOffEventDate
+				from
+					ParcelBerths pb (nolock)
+						left join	(
+										select
+												*
+											from
+												SOFEvents e (nolock)
+											where
+												e.RelatedPortTimeEventId = 260
+									) evt
+							on pb.QBRecId = evt.RelatedParcelBerthId
+				where
+					pb.RelatedSpiFixtureId is not null
+		),
+		-- Get ratios of events with dates to total number of discharge berths
+			EventDateRatios(PostFixtureAlternateKey, DateCount, EventCount, MaxHoseOffEvent)
+		as
+		(
+			select
+					evt.PostFixtureAlternateKey,
+					count(evt.HoseOffEventDate) DateCount,
+					count(1) EventCount,
+					max(evt.HoseOffEventDate) MaxHoseOffEvent
+				from
+					HoseOffEvents evt
+				group by
+					evt.PostFixtureAlternateKey
+		)
+
+		update
+				spf
+			set
+				HoseOffDateFinal =	case
+										when edr.DateCount <> edr.EventCount
+											then	case
+														when spf.FixtureStatus = 'Complete Pending Demurrage'
+															then edr.MaxHoseOffEvent
+														else null
+													end
+										when edr.DateCount = edr.EventCount
+											then edr.MaxHoseOffEvent
+										else null
+									end
+			from
+				Staging.Dim_PostFixture spf
+					join EventDateRatios edr
+						on spf.PostFixtureAlternateKey = edr.PostFixtureAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating HoseOffDateFinal - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch
 
@@ -231,6 +294,7 @@ begin
 																CPForm,
 																convert(nvarchar(30), DemurrageRate),
 																convert(nvarchar(30), TimeBar),
+																convert(nvarchar(30), HoseOffDateFinal),
 																convert(nvarchar(30), AddressCommissionPercent),
 																convert(nvarchar(30), BrokerCommissionPercent),
 																convert(nvarchar(30), LaytimeAllowedLoad),
@@ -373,6 +437,7 @@ begin
 					fixture.CPForm,
 					fixture.DemurrageRate,
 					fixture.TimeBar,
+					fixture.HoseOffDateFinal,
 					fixture.AddressCommissionPercent,
 					fixture.BrokerCommissionPercent,
 					fixture.LaytimeAllowedLoad,
@@ -465,6 +530,7 @@ begin
 				CPForm = fixture.CPForm,
 				DemurrageRate = fixture.DemurrageRate,
 				TimeBar = fixture.TimeBar,
+				HoseOffDateFinal = fixture.HoseOffDateFinal,
 				AddressCommissionPercent = fixture.AddressCommissionPercent,
 				BrokerCommissionPercent = fixture.BrokerCommissionPercent,
 				LaytimeAllowedLoad = fixture.LaytimeAllowedLoad,
@@ -587,6 +653,7 @@ begin
 													CPForm,
 													DemurrageRate,
 													TimeBar,
+													HoseOffDateFinal,
 													AddressCommissionPercent,
 													BrokerCommissionPercent,
 													LaytimeAllowedLoad,
@@ -669,6 +736,7 @@ begin
 							'Unknown',		-- CPForm
 							0.0,			-- DemurrageRate
 							0.0,			-- TimeBar
+							'12/30/1899',	-- HoseOffDateFinal
 							0.0,			-- AddressCommissionPercent
 							0.0,			-- BrokerCommissionPercent
 							0.0,			-- LaytimeAllowedLoad

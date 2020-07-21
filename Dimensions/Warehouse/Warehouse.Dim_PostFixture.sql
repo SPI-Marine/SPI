@@ -19,6 +19,7 @@ Brian Boswick	02/19/2020	Added COA_Title_Admin
 Brian Boswick	05/21/2020	Added Load and Discharge Port Region
 Brian Boswick	05/22/2020	Added Product ETL logic
 Brian Boswick	07/13/2020	Added LaycanStatus
+Brian Boswick	07/20/2020	Added HoseOffDateFinal
 ==========================================================================================================	
 */
 
@@ -43,6 +44,7 @@ create table Warehouse.Dim_PostFixture
 		CPForm							nvarchar(250)		null,
 		DemurrageRate					decimal(18, 2)		null,
 		TimeBar							decimal(18, 2)		null,
+		HoseOffDateFinal				date				null,
 		AddressCommissionPercent		decimal(18, 2)		null,
 		BrokerCommissionPercent			decimal(18, 2)		null,
 		LaytimeAllowedLoad				varchar(100)		null,
