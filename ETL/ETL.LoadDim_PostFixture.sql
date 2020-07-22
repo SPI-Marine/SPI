@@ -24,6 +24,8 @@ Brian Boswick	05/21/2020	Added Load and Discharge Port Region ETL logic for RLS
 Brian Boswick	05/22/2020	Added Product ETL logic for RLS
 Brian Boswick	06/16/2020	Show 2 decimal places for numeric LaytimeAllowed Load/Dish fields
 Brian Boswick	07/13/2020	Added LaycanStatus ETL logic
+Brian Boswick	07/20/2020	Added HoseOffDateFinal ETL logic
+Brian Boswick	07/22/2020	Added FrtRateProjection ETL logic
 ==========================================================================================================	
 */
 
@@ -140,6 +142,7 @@ begin
 				fixture.DischPortRegion,
 				null Product,
 				null LaycanStatus,
+				fixture.FrtRateProjection,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -353,7 +356,8 @@ begin
 																LoadRegion,
 																DischargeRegion,
 																Product,
-																LaycanStatus
+																LaycanStatus,
+																FrtRateProjection
 															)
 												);
 		
@@ -497,6 +501,7 @@ begin
 					fixture.DischargeRegion,
 					fixture.Product,
 					fixture.LaycanStatus,
+					fixture.FrtRateProjection,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -590,6 +595,7 @@ begin
 				DischargeRegion = fixture.DischargeRegion,
 				Product = fixture.Product,
 				LaycanStatus = fixture.LaycanStatus,
+				FrtRateProjection = fixture.FrtRateProjection,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -713,6 +719,7 @@ begin
 													DischargeRegion,
 													Product,
 													LaycanStatus,
+													FrtRateProjection,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -796,6 +803,7 @@ begin
 							'Unknown',		-- DischargeRegion
 							'Unknown',		-- Product
 							'Unknown',		-- LaycanStatus
+							0.0,			-- FrtRateProjection
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
