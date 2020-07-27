@@ -38,6 +38,7 @@ begin
 																ValidatedBySPIDateKey,
 																InvoiceSentToChartererDateKey,
 																VerifiedByChartererDateKey,
+																PostFixtureKey,
 																OwnerInvoiceNumber,
 																OwnerInvoiceAttachment,
 																Currency,
@@ -53,6 +54,7 @@ begin
 				isnull(vbs.DateKey, 47001231)		ValidatedBySPIDateKey,
 				isnull(istc.DateKey, 47001231)		InvoiceSentToChartererDateKey,
 				isnull(vbc.DateKey, 47001231)		VerifiedByChartererDateKey,
+				isnull(pf.PostFixtureKey, -1)		PostFixtureKey,
 				oi.OwnerInvoiceNumber				OwnerInvoiceNumber,
 				oi.OwnerInvoiceAttachment			OwnerInvoiceAttachment,
 				oi.Currency							Currency,
@@ -61,6 +63,8 @@ begin
 				oi.InvoiceDueAmount					InvoiceDueAmount
 			from
 				OwnerInvoice oi with (nolock)
+					left join Warehouse.Dim_PostFixture pf
+						on pf.PostFixtureAlternateKey = oi.RelatedSPIFixtureID
 					left join Warehouse.Dim_Calendar oid with (nolock)
 						on convert(date, oi.OwnerInvoiceDate) = oid.FullDate
 					left join Warehouse.Dim_Calendar orfp with (nolock)
@@ -94,6 +98,7 @@ begin
 																ValidatedBySPIDateKey,
 																InvoiceSentToChartererDateKey,
 																VerifiedByChartererDateKey,
+																PostFixtureKey,
 																OwnerInvoiceNumber,
 																OwnerInvoiceAttachment,
 																Currency,
@@ -110,6 +115,7 @@ begin
 					soi.ValidatedBySPIDateKey,
 					soi.InvoiceSentToChartererDateKey,
 					soi.VerifiedByChartererDateKey,
+					soi.PostFixtureKey,
 					soi.OwnerInvoiceNumber,
 					soi.OwnerInvoiceAttachment,
 					soi.Currency,

@@ -22,6 +22,7 @@ create table Warehouse.Fact_OwnerInvoice
 		ValidatedBySPIDateKey				int					not null,
 		InvoiceSentToChartererDateKey		int					not null,
 		VerifiedByChartererDateKey			int					not null,
+		PostFixtureKey						int					not null,
 		OwnerInvoiceNumber					varchar(150)		null,		-- Degenerate Dimension Attributes
 		OwnerInvoiceAttachment				varchar(5000)		null,
 		Currency							varchar(50)			null,
