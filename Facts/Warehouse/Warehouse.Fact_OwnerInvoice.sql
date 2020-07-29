@@ -28,6 +28,10 @@ create table Warehouse.Fact_OwnerInvoice
 		Currency							varchar(50)			null,
 		InvoiceType							varchar(50)			null,
 		InternalInvoiceNotes				varchar(5000)		null,
+		VerifiedByChartererDate				date				null,
+		ValidatedBySPIDate					date				null,
+		InvoiceReceivedBySPIDate			date				null,
+		InvoiceSentToChartererDate			date				null,
 		InvoiceDueAmount					decimal(20, 8)		null,		-- Metrics
 		RowCreatedDate						datetime			not null,	-- ETL fields
 		constraint [PK_Warehouse_Fact_OwnerInvoice_OwnerInvoiceKey] primary key clustered 

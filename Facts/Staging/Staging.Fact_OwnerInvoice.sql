@@ -27,6 +27,10 @@ create table Staging.Fact_OwnerInvoice
 		Currency							varchar(50)			null,
 		InvoiceType							varchar(50)			null,
 		InternalInvoiceNotes				varchar(5000)		null,
+		VerifiedByChartererDate				date				null,
+		ValidatedBySPIDate					date				null,
+		InvoiceReceivedBySPIDate			date				null,
+		InvoiceSentToChartererDate			date				null,
 		InvoiceDueAmount					decimal(20, 8)		null,		-- Metrics
 		constraint [PK_Staging_Fact_OwnerInvoice_AltKey] primary key clustered 
 		(

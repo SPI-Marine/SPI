@@ -44,6 +44,10 @@ begin
 																Currency,
 																InvoiceType,
 																InternalInvoiceNotes,
+																VerifiedByChartererDate,
+																ValidatedBySPIDate,
+																InvoiceReceivedBySPIDate,
+																InvoiceSentToChartererDate,
 																InvoiceDueAmount
 															)	
 		select
@@ -60,6 +64,10 @@ begin
 				oi.Currency							Currency,
 				oi.InvoiceType						InvoiceType,
 				oi.InternalInvoiceNotes				InternalInvoiceNotes,
+				oi.DateVerifiedbyCharterer			VerifiedByChartererDate,
+				oi.DateValidatedbySPI				ValidatedBySPIDate,
+				oi.DateInvoiceReceivedbySPI			InvoiceReceivedBySPIDate,
+				oi.DateInvoiceSenttoCharterer		InvoiceSentToChartererDate,
 				oi.InvoiceDueAmount					InvoiceDueAmount
 			from
 				OwnerInvoice oi with (nolock)
@@ -104,6 +112,10 @@ begin
 																Currency,
 																InvoiceType,
 																InternalInvoiceNotes,
+																VerifiedByChartererDate,
+																ValidatedBySPIDate,
+																InvoiceReceivedBySPIDate,
+																InvoiceSentToChartererDate,
 																InvoiceDueAmount,
 																RowCreatedDate
 															)
@@ -121,6 +133,10 @@ begin
 					soi.Currency,
 					soi.InvoiceType,
 					soi.InternalInvoiceNotes,
+					soi.VerifiedByChartererDate,
+					soi.ValidatedBySPIDate,
+					soi.InvoiceReceivedBySPIDate,
+					soi.InvoiceSentToChartererDate,
 					soi.InvoiceDueAmount,
 					getdate()
 				from
