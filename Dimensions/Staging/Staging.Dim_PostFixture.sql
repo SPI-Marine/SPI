@@ -21,6 +21,7 @@ Brian Boswick	05/22/2020	Added Product ETL logic
 Brian Boswick	07/13/2020	Added LaycanStatus
 Brian Boswick	07/20/2020	Added HoseOffDateFinal
 Brian Boswick	07/22/2020	Added FrtRateProjection
+Brian Boswick	07/28/2020	Added VoyageSummaryReportComments
 ==========================================================================================================	
 */
 
@@ -105,6 +106,7 @@ create table Staging.Dim_PostFixture
 		Product							varchar(500)		null,
 		LaycanStatus					varchar(100)		null,
 		FrtRateProjection				decimal(18, 6)		null,
+		VoyageSummaryReportComments		varchar(1000)		null,
 		Type1HashValue					varbinary(16)		not null,
 		RecordStatus					int					not null
 		constraint [PK_Staging_Dim_PostFixture_QBRecId] primary key clustered 

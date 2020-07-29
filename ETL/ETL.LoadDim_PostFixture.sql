@@ -65,7 +65,7 @@ begin
 				fixture.CPDate,
 				fixture.CPForm,
 				fixture.DemurrageRate,
-				fixture.TimeBar,
+				replace(fixture.TimeBar, ',', '')			TimeBar,
 				null										HoseOffDateFinal,
 				fixture.AddressCommissionPercent,
 				fixture.BrokerCommissionPercent,
@@ -143,33 +143,34 @@ begin
 				null Product,
 				null LaycanStatus,
 				fixture.FrtRateProjection,
+				fixture.VoyageSummaryReportComments_ADMIN,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
-				PostFixtures fixture
-					left join FullStyles ownerfullstyle
+				PostFixtures fixture (nolock)
+					left join FullStyles ownerfullstyle (nolock)
 						on fixture.RelatedOwnerFullStyle = ownerfullstyle.QBRecId
-					left join OwnerParents ownerparent
+					left join OwnerParents ownerparent (nolock)
 						on ownerparent.QBRecId = ownerfullstyle.RelatedOwnerParentId
-					left join FullStyles chartererfullstyle
+					left join FullStyles chartererfullstyle (nolock)
 						on chartererfullstyle.QBRecId = fixture.RelatedChartererFullStyle
-					left join ChartererParents chartererparent
+					left join ChartererParents chartererparent (nolock)
 						on chartererparent.QBRecId = chartererfullstyle.RelatedChartererParentId
-					left join TeamMembers brokername
+					left join TeamMembers brokername (nolock)
 						on rtrim(ltrim(brokername.EmailAddress)) = rtrim(ltrim(fixture.RelatedBroker))
-					left join SPICOA coa
+					left join SPICOA coa (nolock)
 						on coa.RecordID = fixture.RelatedSPICOAId
-					left join SPIOffices office
+					left join SPIOffices office (nolock)
 						on office.QBRecId = fixture.RelatedSPIOfficeID
 					left join	(
 									select
 											tm.EmailAddress,
 											r.[Name] RegionName
 										from
-											TeamMembers tm
-												join SpiOffices o
+											TeamMembers tm (nolock)
+												join SpiOffices o (nolock)
 													on o.QBRecId = tm.RelatedSPIOfficeId
-												join SPIRegions r
+												join SPIRegions r (nolock)
 													on r.QBRecId = o.RelatedSpiRegionId
 								) region
 						on region.EmailAddress = fixture.RelatedBroker
@@ -178,7 +179,7 @@ begin
 											@ExistingRecord RecordStatus,
 											PostFixtureAlternateKey
 										from
-											Warehouse.Dim_PostFixture
+											Warehouse.Dim_PostFixture (nolock)
 								) rs
 						on rs.PostFixtureAlternateKey = fixture.QBRecId;
 	end try
@@ -190,7 +191,7 @@ begin
 	-- Update LaycanStatus
 	begin try
 		update
-				Staging.Dim_PostFixture
+				Staging.Dim_PostFixture with (tablock)
 			set
 				LaycanStatus =	case
 									when LaycanCancellingFinal_QBC = LaycanCancellingOriginal
@@ -357,7 +358,8 @@ begin
 																DischargeRegion,
 																Product,
 																LaycanStatus,
-																FrtRateProjection
+																FrtRateProjection,
+																VoyageSummaryReportComments
 															)
 												);
 		
@@ -366,7 +368,7 @@ begin
 			set
 				RecordStatus += @Type1Change
 			from
-				Warehouse.Dim_PostFixture wpf
+				Warehouse.Dim_PostFixture wpf (nolock)
 			where
 				wpf.PostFixtureAlternateKey = Staging.Dim_PostFixture.PostFixtureAlternateKey
 				and wpf.Type1HashValue <> Staging.Dim_PostFixture.Type1HashValue;
@@ -408,7 +410,7 @@ begin
 		)
 
 		update
-				Staging.Dim_PostFixture
+				Staging.Dim_PostFixture with (tablock)
 			set
 				Product = mp.Product
 			from	
@@ -502,12 +504,13 @@ begin
 					fixture.Product,
 					fixture.LaycanStatus,
 					fixture.FrtRateProjection,
+					fixture.VoyageSummaryReportComments,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
 					'Y' IsCurrentRow
 				from
-					Staging.Dim_PostFixture fixture
+					Staging.Dim_PostFixture fixture (nolock)
 				where
 					fixture.RecordStatus & @NewRecord = @NewRecord;
 	end try
@@ -596,10 +599,11 @@ begin
 				Product = fixture.Product,
 				LaycanStatus = fixture.LaycanStatus,
 				FrtRateProjection = fixture.FrtRateProjection,
+				VoyageSummaryReportComments = fixture.VoyageSummaryReportComments,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
-				Staging.Dim_PostFixture fixture
+				Staging.Dim_PostFixture fixture (nolock)
 			where
 				RecordStatus & @ExistingRecord = @ExistingRecord
 				and fixture.PostFixtureAlternateKey = Warehouse.Dim_PostFixture.PostFixtureAlternateKey
@@ -720,6 +724,7 @@ begin
 													Product,
 													LaycanStatus,
 													FrtRateProjection,
+													VoyageSummaryReportComments,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -804,6 +809,7 @@ begin
 							'Unknown',		-- Product
 							'Unknown',		-- LaycanStatus
 							0.0,			-- FrtRateProjection
+							'Unknown',		-- VoyageSummaryReportComments
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
