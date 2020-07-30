@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey ETL logic
+Brian Boswick	07/29/2020	Added COAKey
 ==========================================================================================================	
 */
 
@@ -59,6 +60,7 @@ begin
 					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					isnull(wch.ChartererKey, -1)								ChartererKey,
 					isnull(wo.OwnerKey, -1)										OwnerKey,
+					isnull(coa.COAKey, -1)										COAKey,
 					'Freight'													ChargeType,
 					null														ChargeDescription,
 					null														ParcelNumber,
@@ -117,6 +119,8 @@ begin
 							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 						left join PostFixtures epostfixture with (nolock)
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+						left join Warehouse.Dim_COA coa (nolock)
+							on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
 						left join FullStyles fs with (nolock)
 							on epostfixture.RelatedChartererFullStyle = fs.QBRecId
 						left join Warehouse.Dim_Owner wo with (nolock)
@@ -181,6 +185,7 @@ begin
 					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					isnull(wch.ChartererKey, -1)								ChartererKey,
 					isnull(wo.OwnerKey, -1)										OwnerKey,
+					isnull(coa.COAKey, -1)										COAKey,
 					case
 						when parcel.DemurrageAgreedAmount_QBC = 0.0
 								and epostfixture.ZeroDemurrage = 1
@@ -288,6 +293,8 @@ begin
 							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 						left join PostFixtures epostfixture with (nolock)
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+						left join Warehouse.Dim_COA coa
+							on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
 						left join FullStyles fs with (nolock)
 							on epostfixture.RelatedChartererFullStyle = fs.QBRecId
 						left join Warehouse.Dim_Owner wo with (nolock)
@@ -357,6 +364,7 @@ begin
 					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					isnull(wch.ChartererKey, -1)								ChartererKey,
 					isnull(wo.OwnerKey, -1)										OwnerKey,
+					isnull(coa.COAKey, -1)										COAKey,
 					chargetype.ChargeType										ChargeType,
 					charge.[Description]										ChargeDescription,
 					null														ParcelNumber,
@@ -434,6 +442,8 @@ begin
 							on wpostfixture.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
 						left join PostFixtures epostfixture with (nolock)
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+						left join Warehouse.Dim_COA coa
+							on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
 						left join FullStyles fs with (nolock)
 							on epostfixture.RelatedChartererFullStyle = fs.QBRecId
 						left join Warehouse.Dim_Owner wo with (nolock)
@@ -499,6 +509,7 @@ begin
 					isnull(firsteventdate.DateKey, -1)														FirstLoadEventDateKey,
 					isnull(wch.ChartererKey, -1)															ChartererKey,
 					isnull(wo.OwnerKey, -1)																	OwnerKey,
+					isnull(coa.COAKey, -1)																	COAKey,
 					chargetype.ChargeType																	ChargeType,		
 					addcharges.[Description]																ChargeDescription,
 					null																					ParcelNumber,
@@ -564,6 +575,8 @@ begin
 							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 						left join PostFixtures epostfixture with (nolock)
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+						left join Warehouse.Dim_COA coa
+							on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
 						left join FullStyles fs with (nolock)
 							on epostfixture.RelatedChartererFullStyle = fs.QBRecId
 						left join Warehouse.Dim_Owner wo with (nolock)
@@ -655,6 +668,7 @@ begin
 					finance.FirstLoadEventDateKey,
 					finance.ChartererKey,
 					finance.OwnerKey,
+					finance.COAKey,
 					finance.ChargeType,
 					finance.ChargeDescription,
 					finance.ParcelNumber,

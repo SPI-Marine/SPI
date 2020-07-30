@@ -6,6 +6,7 @@ Description:	Creates the Staging.Fact_OwnerInvoice table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	07/29/2020	Added COAKey
 ==========================================================================================================	
 */
 
@@ -22,6 +23,7 @@ create table Staging.Fact_OwnerInvoice
 		InvoiceSentToChartererDateKey		int					not null,
 		VerifiedByChartererDateKey			int					not null,
 		PostFixtureKey						int					not null,
+		COAKey								int					not null,
 		OwnerInvoiceNumber					varchar(150)		null,		-- Degenerate Dimension Attributes
 		OwnerInvoiceAttachment				varchar(5000)		null,
 		Currency							varchar(50)			null,

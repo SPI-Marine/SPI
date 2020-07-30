@@ -14,6 +14,7 @@ Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey
 Brian Boswick	02/11/2020	Added VesselKey
 Brian Boswick	02/21/2020	Added Direction and ProductType
 Brian Boswick	05/06/2020	Added VesselPortStatusOfficial
+Brian Boswick	07/29/2020	Added COAKey
 ==========================================================================================================	
 */
 
@@ -31,6 +32,7 @@ create table Staging.Fact_VesselItinerary
 		ChartererKey							int					not null,
 		OwnerKey								int					not null,
 		VesselKey								int					not null,
+		COAKey									int					not null,
 		ItineraryPortType						varchar(50)			null,			-- Degenerate Dimension Attributes
 		Comments								varchar(500)		null,
 		NORStartDate							date				null,

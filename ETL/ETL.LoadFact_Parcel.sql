@@ -18,6 +18,7 @@ Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey ETL logic
 Brian Boswick	02/11/2020	Added VesselKey ETL logic
 Brian Boswick	02/14/2020	Added ProductQuantityKey ETL logic
 Brian Boswick	02/20/2020	Added BunkerCharge ETL logic
+Brian Boswick	07/29/2020	Added COAKey
 ==========================================================================================================	
 */
 
@@ -51,6 +52,7 @@ begin
 														OwnerKey,
 														VesselKey,
 														ProductQuantityKey,
+														COAKey,
 														OutTurnQty,
 														ShipLoadedQty,
 														ShipDischargeQty,
@@ -82,6 +84,7 @@ begin
 				isnull(wo.OwnerKey, -1)							OwnerKey,
 				isnull(v.VesselKey, -1)							VesselKey,
 				-1												ProductQuantityKey,
+				isnull(coa.COAKey, -1)							COAKey,
 				p.OutTurnQty,
 				p.ShipLoadedQty,
 				p.ShipDischargeQty,
@@ -133,6 +136,8 @@ begin
 						on bld.FullDate = convert(date, p.BillLadingDate)
 					left join PostFixtures pf with (nolock)
 						on p.RelatedSpiFixtureId = pf.QBRecId
+					left join Warehouse.Dim_COA coa (nolock)
+						on coa.COAAlternateKey = pf.RelatedSPICOAId
 					left join FullStyles fs with (nolock)
 						on pf.RelatedChartererFullStyle = fs.QBRecId
 					left join Warehouse.Dim_Owner wo with (nolock)
@@ -494,6 +499,7 @@ begin
 															OwnerKey,
 															VesselKey,
 															ProductQuantityKey,
+															COAKey,
 															OutTurnQty,
 															ShipLoadedQty,
 															ShipDischargeQty,
@@ -530,6 +536,7 @@ begin
 					sfp.OwnerKey,
 					sfp.VesselKey,
 					sfp.ProductQuantityKey,
+					sfp.COAKey,
 					sfp.OutTurnQty,
 					sfp.ShipLoadedQty,
 					sfp.ShipDischargeQty,

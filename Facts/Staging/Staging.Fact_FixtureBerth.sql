@@ -12,6 +12,7 @@ Brian Boswick	02/10/2020	Added ProductKey
 Brian Boswick	02/12/2020	Added ProductQuantityKey
 Brian Boswick	02/13/2020	Renamed multiple metrics
 Brian Boswick	04/22/2020	Added CPDateKey
+Brian Boswick	07/29/2020	Added COAKey
 ==========================================================================================================	
 */
 
@@ -36,6 +37,7 @@ create table Staging.Fact_FixtureBerth
 		ProductKey												int					not null,
 		ProductQuantityKey										int					not null,
 		CPDateKey												int					not null,
+		COAKey													int					not null,
 		LoadDischarge											varchar(50)			null,		-- Degenerate Dimension Attributes
 		ProductType												nvarchar(100)		null,
 		ParcelQuantityTShirtSize								varchar(50)			null,

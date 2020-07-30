@@ -14,6 +14,7 @@ Description:	Creates the LoadFact_SPIInvoiceRegistry stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	07/29/2020	Added COAKey
 ==========================================================================================================	
 */
 
@@ -119,10 +120,9 @@ begin
 				isnull(product.ProductKey, -1)						ProductKey,
 				-1													OwnerKey,
 				-1													ChartererKey,
-				--isnull(own.OwnerKey, -1)							OwnerKey,
-				--isnull(wch.ChartererKey, -1)						ChartererKey,
 				isnull(pq.ProductQuantityKey, -1)					ProductQuantityKey,
 				isnull(cpdate.DateKey, 18991230)					CPDateKey,
+				isnull(coa.COAKey, -1)								COAKey,
 				ir.InvoiceNumberOfficial_INVOICE					InvoiceNumber,
 				ir.InvoiceType_ADMIN								InvoiceType,
 				ir.InvoiceTo_INVOICE								InvoiceTo,
@@ -140,6 +140,8 @@ begin
 						on pf.PostFixtureAlternateKey = ir.RelatedSPIFixtureID
 					join PostFixtures epf with (nolock)
 						on pf.PostFixtureAlternateKey = epf.QBRecId
+					left join Warehouse.Dim_COA coa (nolock)
+						on coa.COAAlternateKey = epf.RelatedSPICOAId
 					left join MaxProducts loadproduct with (nolock)
 						on loadproduct.PostFixtureAlternateKey = ir.RelatedSPIFixtureID
 							and loadproduct.LoadDischarge = 'Load'
@@ -152,12 +154,6 @@ begin
 						on dischport.PortAlternateKey = dischproduct.PortAlternateKey
 					left join FullStyles cfs with (nolock)
 						on epf.RelatedChartererFullStyle = cfs.QBRecId
-					--left join FullStyles ofs with (nolock)
-					--	on epf.RelatedOwnerFullStyle = ofs.QBRecId
-					--left join Warehouse.Dim_Owner own with (nolock)
-					--	on own.OwnerAlternateKey = cfs.RelatedOwnerParentId
-					--left join Warehouse.Dim_Charterer wch with (nolock)
-					--	on wch.ChartererAlternateKey = cfs.RelatedChartererParentID
 					left join Warehouse.Dim_Calendar cpdate with (nolock)
 						on cpdate.FullDate = convert(date, pf.CPDate)
 					left join Warehouse.Dim_Calendar invdate with (nolock)
@@ -197,6 +193,7 @@ begin
 					inv.ChartererKey,
 					inv.ProductQuantityKey,
 					inv.CPDateKey,
+					inv.COAKey,
 					inv.InvoiceNumber,
 					inv.InvoiceType,
 					inv.InvoiceTo,

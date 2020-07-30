@@ -11,6 +11,7 @@ Brian Boswick	05/20/2019	Remove deleted records from Warehouse
 Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey ETL logic
 Brian Boswick	02/14/2020	Renamed multiple metrics
 Brian Boswick	06/02/2020	Pull event duration from Staging.SOFEvent_Durations table
+Brian Boswick	07/29/2020	Added COAKey
 ==========================================================================================================	
 */
 
@@ -52,6 +53,7 @@ begin
 				isnull(portberth.PortBerthKey, -1)			PortBerthKey,
 				isnull(wch.ChartererKey, -1)				ChartererKey,
 				isnull(wo.OwnerKey, -1)						OwnerKey,
+				isnull(coa.COAKey, -1)						COAKey,
 				sof.LaytimeProationType						ProrationType,
 				eventtype.EventNameReports					EventType,
 				case sof.Laytime
@@ -112,7 +114,7 @@ begin
 				parcel.ParcelProductId						ParcelProductId
 			from
 				SOFEvents sof with (nolock)
-					left join Staging.SOFEvent_Durations ed
+					left join Staging.SOFEvent_Durations ed (nolock)
 						on ed.EventAlternateKey = sof.QBRecId
 					left join Warehouse.Dim_Calendar startdate with (nolock)
 						on try_convert(date, sof.StartDate) = startdate.FullDate
@@ -165,6 +167,8 @@ begin
 						on wpostfixture.PostFixtureAlternateKey = parcel.PostFixtureAlternateKey
 					left join PostFixtures epostfixture with (nolock)
 						on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+					left join Warehouse.Dim_COA coa (nolock)
+						on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
 					left join FullStyles fs with (nolock)
 						on epostfixture.RelatedChartererFullStyle = fs.QBRecId
 					left join Warehouse.Dim_Owner wo with (nolock)
@@ -296,6 +300,7 @@ begin
 					evt.PortBerthKey,
 					evt.ChartererKey,
 					evt.OwnerKey,
+					evt.COAKey,
 					evt.ProrationType,
 					evt.EventType,
 					evt.IsLaytime,

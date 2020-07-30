@@ -23,6 +23,7 @@ Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey ETL logic
 Brian Boswick	02/11/2020	Added VesselKey ETL logic
 Brian Boswick	02/21/2020	Added Direction and ProductType ETL logic
 Brian Boswick	05/06/2020	Added VesselPortStatusOfficial
+Brian Boswick	07/29/2020	Added COAKey
 ==========================================================================================================	
 */
 
@@ -51,6 +52,7 @@ begin
 																ChartererKey,
 																OwnerKey,
 																VesselKey,
+																COAKey,
 																ItineraryPortType,
 																Comments,
 																NORStartDate,
@@ -79,6 +81,7 @@ begin
 				isnull(wch.ChartererKey, -1)					ChartererKey,
 				isnull(wo.OwnerKey, -1)							OwnerKey,
 				isnull(v.VesselKey, -1)							VesselKey,
+				isnull(coa.COAKey, -1)							COAKey,
 				vi.ItineraryPortType							ItineraryPortType,
 				vi.Comments										Comments,
 				firstnorevent.FirstNOREventDate					NORStartDate,
@@ -166,6 +169,8 @@ begin
 						on wvi.VesselItineraryAlternateKey = vi.RecordID
 					left join PostFixtures pf with (nolock)
 						on vi.RelatedSpiFixtureId = pf.QBRecId
+					left join Warehouse.Dim_COA coa (nolock)
+						on coa.COAAlternateKey = pf.RelatedSPICOAId
 					left join FullStyles fs with (nolock)
 						on pf.RelatedChartererFullStyle = fs.QBRecId
 					left join Warehouse.Dim_Owner wo with (nolock)
@@ -639,6 +644,7 @@ begin
 																	ChartererKey,
 																	OwnerKey,
 																	VesselKey,
+																	COAKey,
 																	ItineraryPortType,
 																	Comments,
 																	NORStartDate,
@@ -690,6 +696,7 @@ begin
 					fvi.ChartererKey,
 					fvi.OwnerKey,
 					fvi.VesselKey,
+					fvi.COAKey,
 					fvi.ItineraryPortType,
 					fvi.Comments,
 					fvi.NORStartDate,
@@ -753,6 +760,7 @@ begin
 				ChartererKey = fvi.ChartererKey,
 				OwnerKey = fvi.OwnerKey,
 				VesselKey = fvi.VesselKey,
+				COAKey = fvi.COAKey,
 				ItineraryPortType = fvi.ItineraryPortType,
 				Comments = fvi.Comments,
 				NORStartDate = fvi.NORStartDate,

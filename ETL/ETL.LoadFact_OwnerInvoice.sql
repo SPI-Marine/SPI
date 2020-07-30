@@ -14,6 +14,7 @@ Description:	Creates the LoadFact_OwnerInvoice stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	07/29/2020	Added COAKey
 ==========================================================================================================	
 */
 
@@ -39,6 +40,7 @@ begin
 																InvoiceSentToChartererDateKey,
 																VerifiedByChartererDateKey,
 																PostFixtureKey,
+																COAKey,
 																OwnerInvoiceNumber,
 																OwnerInvoiceAttachment,
 																Currency,
@@ -59,6 +61,7 @@ begin
 				isnull(istc.DateKey, 47001231)		InvoiceSentToChartererDateKey,
 				isnull(vbc.DateKey, 47001231)		VerifiedByChartererDateKey,
 				isnull(pf.PostFixtureKey, -1)		PostFixtureKey,
+				isnull(coa.COAKey, -1)				COAKey,
 				oi.OwnerInvoiceNumber				OwnerInvoiceNumber,
 				oi.OwnerInvoiceAttachment			OwnerInvoiceAttachment,
 				oi.Currency							Currency,
@@ -71,7 +74,11 @@ begin
 				oi.InvoiceDueAmount					InvoiceDueAmount
 			from
 				OwnerInvoice oi with (nolock)
-					left join Warehouse.Dim_PostFixture pf
+					left join PostFixtures epf (nolock)
+						on epf.QBRecId = oi.RelatedSPIFixtureID
+					left join Warehouse.Dim_COA coa (nolock)
+						on coa.COAAlternateKey = epf.RelatedSPICOAId
+					left join Warehouse.Dim_PostFixture pf (nolock)
 						on pf.PostFixtureAlternateKey = oi.RelatedSPIFixtureID
 					left join Warehouse.Dim_Calendar oid with (nolock)
 						on convert(date, oi.OwnerInvoiceDate) = oid.FullDate
@@ -107,6 +114,7 @@ begin
 																InvoiceSentToChartererDateKey,
 																VerifiedByChartererDateKey,
 																PostFixtureKey,
+																COAKey,
 																OwnerInvoiceNumber,
 																OwnerInvoiceAttachment,
 																Currency,
@@ -128,6 +136,7 @@ begin
 					soi.InvoiceSentToChartererDateKey,
 					soi.VerifiedByChartererDateKey,
 					soi.PostFixtureKey,
+					soi.COAKey,
 					soi.OwnerInvoiceNumber,
 					soi.OwnerInvoiceAttachment,
 					soi.Currency,

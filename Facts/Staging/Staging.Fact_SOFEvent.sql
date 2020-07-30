@@ -8,6 +8,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey
 Brian Boswick	02/14/2020	Renamed multiple metrics
+Brian Boswick	07/29/2020	Added COAKey
 ==========================================================================================================	
 */
 
@@ -30,6 +31,7 @@ create table Staging.Fact_SOFEvent
 		PortBerthKey			int					not null,
 		ChartererKey			int					not null,
 		OwnerKey				int					not null,
+		COAKey					int					not null,
 		ProrationType			nvarchar(100)		null,		-- Degenerate Dimension Attributes
 		EventType				nvarchar(250)		null,
 		IsLaytime				char(1)				null,

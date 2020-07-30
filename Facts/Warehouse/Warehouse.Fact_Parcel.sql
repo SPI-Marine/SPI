@@ -12,6 +12,7 @@ Brian Boswick	02/05/2020	Added ChartererKey and OwnerKey
 Brian Boswick	02/11/2020	Added VesselKey
 Brian Boswick	02/14/2020	Added ProductQuantityKey
 Brian Boswick	02/20/2020	Added BunkerCharge
+Brian Boswick	07/29/2020	Added COAKey
 ==========================================================================================================	
 */
 
@@ -37,6 +38,7 @@ create table Warehouse.Fact_Parcel
 		OwnerKey								int					not null,
 		VesselKey								int					not null,
 		ProductQuantityKey						int					not null,
+		COAKey									int					not null,
 		OutTurnQty								decimal(18, 6)		null,			-- Metrics
 		ShipLoadedQty							decimal(18, 6)		null,
 		ShipDischargeQty						decimal(18, 6)		null,

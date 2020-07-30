@@ -23,6 +23,7 @@ Brian Boswick	02/12/2020	Added ProductQuantityKey ETL logic
 Brian Boswick	02/13/2020	Renamed multiple metrics
 Brian Boswick	04/22/2020	Added CPDateKey ETL
 Brian Boswick	06/02/2020	Pull event duration from Staging.SOFEvent_Durations table
+Brian Boswick	07/29/2020	Added COAKey
 ==========================================================================================================	
 */
 
@@ -177,6 +178,7 @@ begin
 												OwnerKey,
 												ProductKey,
 												ProductQuantityKey,
+												COAKey,
 												LoadDischarge,
 												ParcelQuantity,
 												LaytimeAllowed
@@ -199,6 +201,7 @@ begin
 					isnull(wo.OwnerKey, -1)						OwnerKey,
 					-1											ProductKey,
 					isnull(pq.ProductQuantityKey, -1)			ProductQuantityKey,
+					isnull(coa.COAKey, -1)						COAKey,
 					ufb.LoadDischarge							LoadDischarge,
 					ufb.ParcelQuantity							ParcelQuantity,
 					ufb.LaytimeAllowed							LaytimeAllowed
@@ -210,6 +213,8 @@ begin
 							on CPDate.FullDate = wpostfixture.CPDate
 						left join PostFixtures epostfixture with (nolock)
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
+						left join Warehouse.Dim_COA coa (nolock)
+							on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
 						left join Warehouse.Dim_Vessel vessel with (nolock)
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
 						left join ParcelPorts pp with (nolock)
@@ -2155,6 +2160,7 @@ begin
 					sfb.ProductKey,
 					sfb.ProductQuantityKey,
 					sfb.CPDateKey,
+					sfb.COAKey,
 					sfb.LoadDischarge,
 					sfb.ProductType,
 					sfb.ParcelQuantityTShirtSize,

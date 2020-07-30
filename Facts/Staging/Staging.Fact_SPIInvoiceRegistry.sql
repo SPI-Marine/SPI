@@ -6,6 +6,7 @@ Description:	Creates the Staging.Fact_SPIInvoiceRegistry table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	07/29/2020	Added COAKey
 ==========================================================================================================	
 */
 
@@ -26,6 +27,7 @@ create table Staging.Fact_SPIInvoiceRegistry
 		ChartererKey											int					not null,
 		ProductQuantityKey										int					not null,
 		CPDateKey												int					not null,
+		COAKey													int					not null,
 		InvoiceNumber											varchar(50)			null,		-- Degenerate Dimension Attributes
 		InvoiceType												varchar(50)			null,
 		InvoiceTo												varchar(500)		null,
