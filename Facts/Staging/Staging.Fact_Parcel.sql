@@ -13,6 +13,7 @@ Brian Boswick	02/11/2020	Added VesselKey
 Brian Boswick	02/14/2020	Added ProductQuantityKey
 Brian Boswick	02/20/2020	Added BunkerCharge
 Brian Boswick	07/29/2020	Added COAKey
+Brian Boswick	07/30/2020	Added NOR/Hose Off dates for load/discharge ports
 ==========================================================================================================	
 */
 
@@ -54,7 +55,9 @@ create table Staging.Fact_Parcel
 		DischargeLaytimeUsed					decimal(18, 6)		null,
 		BunkerCharge							decimal(18, 6)		null,
 		LoadNORStartDate						date				null,
+		LoadLastHoseOffDate						date				null,
 		DischargeNORStartDate					date				null,
+		DischargeLastHoseOffDate				date				null,
 		TotalLoadBerthBLQty						decimal(18, 6)		null,			-- ETL fields
 		TotalDischargeBerthBLQty				decimal(18, 6)		null,
 		LoadPortAlternateKey					int					null,

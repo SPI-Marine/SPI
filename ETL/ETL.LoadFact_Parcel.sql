@@ -19,6 +19,7 @@ Brian Boswick	02/11/2020	Added VesselKey ETL logic
 Brian Boswick	02/14/2020	Added ProductQuantityKey ETL logic
 Brian Boswick	02/20/2020	Added BunkerCharge ETL logic
 Brian Boswick	07/29/2020	Added COAKey
+Brian Boswick	07/30/2020	Added NOR/Hose Off dates for load/discharge ports
 ==========================================================================================================	
 */
 
@@ -369,7 +370,9 @@ begin
 				Staging.Fact_Parcel with (tablock)
 			set
 				LoadNORStartDate = firstloadnorevent.FirstNOREventDate,
-				DischargeNORStartDate = firstdischargenorevent.FirstNOREventDate
+				LoadLastHoseOffDate = lastloadhoseoffevent.LastHoseOffEventDate,
+				DischargeNORStartDate = firstdischargenorevent.FirstNOREventDate,
+				DischargeLastHoseOffDate = lastdischargehoseoffevent.LastHoseOffEventDate
 			from
 				Staging.Fact_Parcel sfp
 					left join	(
@@ -388,13 +391,36 @@ begin
 												join PostFixtures pf with (nolock)
 													on pf.QBRecId = pb.RelatedSpiFixtureId
 												where
-													pet.EventNameReports like 'NOR Tend%'
+													pet.QBRecId = 219	-- NOR
 													and pp.[Type] = 'Load'
 												group by
 													pf.QBRecId, pp.RelatedPortId
 								) firstloadnorevent
 						on firstloadnorevent.PostFixtureAlternateKey = sfp.PostFixtureAlternateKey
 							and firstloadnorevent.RelatedPortID = sfp.LoadPortAlternateKey
+					left join	(
+									select
+											pf.QBRecId			PostFixtureAlternateKey,
+											pp.RelatedPortId	RelatedPortID,
+											max(e.StartDate)	LastHoseOffEventDate
+										from
+											SOFEvents e with (nolock)
+												join PortEventTimes pet with (nolock)
+													on pet.QBRecId = e.RelatedPortTimeEventId
+												join ParcelBerths pb with (nolock)
+													on pb.QBRecId = e.RelatedParcelBerthId
+												join ParcelPorts pp with (nolock)
+													on pp.QBRecId = pb.RelatedLDPId
+												join PostFixtures pf with (nolock)
+													on pf.QBRecId = pb.RelatedSpiFixtureId
+												where
+													pet.QBRecId = 260	-- Hose Off Event
+													and pp.[Type] = 'Load'
+												group by
+													pf.QBRecId, pp.RelatedPortId
+								) lastloadhoseoffevent
+						on lastloadhoseoffevent.PostFixtureAlternateKey = sfp.PostFixtureAlternateKey
+							and lastloadhoseoffevent.RelatedPortID = sfp.LoadPortAlternateKey
 					left join	(
 									select
 											pf.QBRecId			PostFixtureAlternateKey,
@@ -411,13 +437,36 @@ begin
 												join PostFixtures pf with (nolock)
 													on pf.QBRecId = pb.RelatedSpiFixtureId
 												where
-													pet.EventNameReports like 'NOR Tend%'
+													pet.QBRecId = 219	-- NOR
 													and pp.[Type] = 'Discharge'
 												group by
 													pf.QBRecId, pp.RelatedPortId
 								) firstdischargenorevent
 						on firstdischargenorevent.PostFixtureAlternateKey = sfp.PostFixtureAlternateKey
 							and firstdischargenorevent.RelatedPortID = sfp.DischargePortAlternateKey
+					left join	(
+									select
+											pf.QBRecId			PostFixtureAlternateKey,
+											pp.RelatedPortId	RelatedPortID,
+											max(e.StartDate)	LastHoseOffEventDate
+										from
+											SOFEvents e with (nolock)
+												join PortEventTimes pet with (nolock)
+													on pet.QBRecId = e.RelatedPortTimeEventId
+												join ParcelBerths pb with (nolock)
+													on pb.QBRecId = e.RelatedParcelBerthId
+												join ParcelPorts pp with (nolock)
+													on pp.QBRecId = pb.RelatedLDPId
+												join PostFixtures pf with (nolock)
+													on pf.QBRecId = pb.RelatedSpiFixtureId
+												where
+													pet.QBRecId = 260	-- Hose Off Event
+													and pp.[Type] = 'Discharge'
+												group by
+													pf.QBRecId, pp.RelatedPortId
+								) lastdischargehoseoffevent
+						on lastdischargehoseoffevent.PostFixtureAlternateKey = sfp.PostFixtureAlternateKey
+							and lastdischargehoseoffevent.RelatedPortID = sfp.DischargePortAlternateKey
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating NOR start dates for load/discharge ports - ' + error_message();
@@ -516,7 +565,9 @@ begin
 															DischargeLaytimeUsed,
 															BunkerCharge,
 															LoadNORStartDate,
+															LoadLastHoseOffDate,
 															DischargeNORStartDate,
+															DischargeLastHoseOffDate,
 															RowCreatedDate
 														)
 			select
@@ -552,8 +603,10 @@ begin
 					sfp.DischargeLaytimeAllowed,
 					sfp.DischargeLaytimeUsed,
 					sfp.BunkerCharge,
-					LoadNORStartDate,
+					sfp.LoadNORStartDate,
+					sfp.LoadLastHoseOffDate,
 					sfp.DischargeNORStartDate,
+					sfp.DischargeLastHoseOffDate,
 					getdate()
 				from
 					Staging.Fact_Parcel sfp with (nolock);
