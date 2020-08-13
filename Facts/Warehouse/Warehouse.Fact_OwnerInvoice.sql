@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	07/29/2020	Added COAKey
+Brian Boswick	07/29/2020	Added InvoiceStatus
 ==========================================================================================================	
 */
 
@@ -34,6 +35,7 @@ create table Warehouse.Fact_OwnerInvoice
 		ValidatedBySPIDate					date				null,
 		InvoiceReceivedBySPIDate			date				null,
 		InvoiceSentToChartererDate			date				null,
+		InvoiceStatus						varchar(100)		null,
 		InvoiceDueAmount					decimal(20, 8)		null,		-- Metrics
 		RowCreatedDate						datetime			not null,	-- ETL fields
 		constraint [PK_Warehouse_Fact_OwnerInvoice_OwnerInvoiceKey] primary key clustered 

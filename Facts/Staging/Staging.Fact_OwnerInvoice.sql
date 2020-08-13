@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	07/29/2020	Added COAKey
+Brian Boswick	07/29/2020	Added InvoiceStatus
 ==========================================================================================================	
 */
 
@@ -33,6 +34,7 @@ create table Staging.Fact_OwnerInvoice
 		ValidatedBySPIDate					date				null,
 		InvoiceReceivedBySPIDate			date				null,
 		InvoiceSentToChartererDate			date				null,
+		InvoiceStatus						varchar(100)		null,
 		InvoiceDueAmount					decimal(20, 8)		null,		-- Metrics
 		constraint [PK_Staging_Fact_OwnerInvoice_AltKey] primary key clustered 
 		(

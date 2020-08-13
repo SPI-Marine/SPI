@@ -15,6 +15,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	07/29/2020	Added COAKey
+Brian Boswick	07/29/2020	Added InvoiceStatus
 ==========================================================================================================	
 */
 
@@ -50,6 +51,7 @@ begin
 																ValidatedBySPIDate,
 																InvoiceReceivedBySPIDate,
 																InvoiceSentToChartererDate,
+																InvoiceStatus,
 																InvoiceDueAmount
 															)	
 		select
@@ -71,6 +73,7 @@ begin
 				oi.DateValidatedbySPI				ValidatedBySPIDate,
 				oi.DateInvoiceReceivedbySPI			InvoiceReceivedBySPIDate,
 				oi.DateInvoiceSenttoCharterer		InvoiceSentToChartererDate,
+				oi.InvoiceStatus_ADMIN				InvoiceStatus,
 				oi.InvoiceDueAmount					InvoiceDueAmount
 			from
 				OwnerInvoice oi with (nolock)
@@ -124,6 +127,7 @@ begin
 																ValidatedBySPIDate,
 																InvoiceReceivedBySPIDate,
 																InvoiceSentToChartererDate,
+																InvoiceStatus,
 																InvoiceDueAmount,
 																RowCreatedDate
 															)
@@ -146,6 +150,7 @@ begin
 					soi.ValidatedBySPIDate,
 					soi.InvoiceReceivedBySPIDate,
 					soi.InvoiceSentToChartererDate,
+					soi.InvoiceStatus,
 					soi.InvoiceDueAmount,
 					getdate()
 				from
