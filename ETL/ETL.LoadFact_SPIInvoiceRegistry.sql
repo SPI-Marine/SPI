@@ -136,9 +136,9 @@ begin
 				replace(ir.InvoiceAmountSnapShot_ADMIN, ',', '')	InvoiceAmount
 			from
 				InvoiceRegistry ir with (nolock)
-					join Warehouse.Dim_PostFixture pf with (nolock)
+					left join Warehouse.Dim_PostFixture pf with (nolock)
 						on pf.PostFixtureAlternateKey = ir.RelatedSPIFixtureID
-					join PostFixtures epf with (nolock)
+					left join PostFixtures epf with (nolock)
 						on pf.PostFixtureAlternateKey = epf.QBRecId
 					left join Warehouse.Dim_COA coa (nolock)
 						on coa.COAAlternateKey = epf.RelatedSPICOAId
