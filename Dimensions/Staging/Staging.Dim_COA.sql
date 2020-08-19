@@ -6,6 +6,7 @@ Description:	Creates the Staging.Dim_COA table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	08/10/2020	Added Charterer/Owner info
 ==========================================================================================================	
 */
 
@@ -27,8 +28,13 @@ create table Staging.Dim_COA
 		RenewalDeclareByDate		date				null,
 		ContractCommencementDate	date				null,
 		ContractCancellingDate		date				null,
-		Type1HashValue			varbinary(16)		not null,
-		RecordStatus			int					not null
+		ChartererParent				varchar(150)		null,
+		OwnerParent					varchar(150)		null,
+		ChartererFullStyle			varchar(150)		null,
+		OwnerFullStyle				varchar(150)		null,
+		BrokerRegion				varchar(150)		null,
+		Type1HashValue				varbinary(16)		not null,
+		RecordStatus				int					not null
 		constraint [PK_Staging_Dim_COA_QBRecId] primary key clustered 
 		(
 			COAAlternateKey asc

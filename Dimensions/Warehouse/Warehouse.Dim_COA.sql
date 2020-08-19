@@ -6,6 +6,7 @@ Description:	Creates the Warehouse.Dim_COA table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	08/10/2020	Added Charterer/Owner info
 ==========================================================================================================	
 */
 
@@ -28,6 +29,11 @@ create table Warehouse.Dim_COA
 		RenewalDeclareByDate		date				null,
 		ContractCommencementDate	date				null,
 		ContractCancellingDate		date				null,
+		ChartererParent				varchar(150)		null,
+		OwnerParent					varchar(150)		null,
+		ChartererFullStyle			varchar(150)		null,
+		OwnerFullStyle				varchar(150)		null,
+		BrokerRegion				varchar(150)		null,
 		Type1HashValue				varbinary(16)		not null,
 		RowCreatedDate				date				not null,
 		RowUpdatedDate				date				not null,

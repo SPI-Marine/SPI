@@ -6,6 +6,7 @@ Description:	Creates the LoadDim_COA stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	08/10/2020	Added Charterer/Owner info
 ==========================================================================================================	
 */
 
@@ -47,10 +48,25 @@ begin
 				coa.RenewalDate_DeclareBy,
 				coa.ContractCancelling,
 				coa.ContractCancelling,
+				chartparent.ChartererParentName,
+				ownerparent.OwnerParentName,
+				chartfs.FullStyleName ChartererFullStyle,
+				ownerfs.FullStyleName OwnerFullStyle,
+				reg.[Name]	BrokerRegion,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
 				SPICOA coa with (nolock)
+					left join SPIRegions reg (nolock)
+						on reg.QBRecId = coa.RelatedSPIRegionID_ADMIN
+					left join FullStyles ownerfs
+						on ownerfs.QBRecId = coa.RelatedOwnerFullStyleID
+					left join FullStyles chartfs
+						on chartfs.QBRecId = coa.RelatedChartererFullStyleID
+					left join OwnerParents ownerparent
+						on ownerparent.QBRecId = ownerfs.RelatedOwnerParentId
+					left join ChartererParents chartparent
+						on chartparent.QBRecId = chartfs.RelatedChartererParentID
 					left join	(
 									select
 											@ExistingRecord RecordStatus,
@@ -85,7 +101,12 @@ begin
 																AddendumCommencementDate,
 																RenewalDeclareByDate,
 																ContractCommencementDate,
-																ContractCancellingDate
+																ContractCancellingDate,
+																ChartererParent,
+																OwnerParent,
+																ChartererFullStyle,
+																OwnerFullStyle,
+																BrokerRegion
 															)
 												);
 		
@@ -122,6 +143,11 @@ begin
 					coa.RenewalDeclareByDate,
 					coa.ContractCommencementDate,
 					coa.ContractCancellingDate,
+					coa.ChartererParent,
+					coa.OwnerParent,
+					coa.ChartererFullStyle,
+					coa.OwnerFullStyle,
+					coa.BrokerRegion,
 					coa.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -153,6 +179,11 @@ begin
 				RenewalDeclareByDate = coa.RenewalDeclareByDate,
 				ContractCommencementDate = coa.ContractCommencementDate,
 				ContractCancellingDate = coa.ContractCancellingDate,
+				ChartererParent = coa.ChartererParent,
+				OwnerParent = coa.OwnerParent,
+				ChartererFullStyle = coa.ChartererFullStyle,
+				OwnerFullStyle = coa.OwnerFullStyle,
+				BrokerRegion = coa.BrokerRegion,
 				Type1HashValue = coa.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -214,6 +245,11 @@ begin
 															RenewalDeclareByDate,
 															ContractCommencementDate,
 															ContractCancellingDate,
+															ChartererParent,
+															OwnerParent,
+															ChartererFullStyle,
+															OwnerFullStyle,
+															BrokerRegion,
 															Type1HashValue,
 															RowCreatedDate,
 															RowUpdatedDate,
@@ -235,6 +271,11 @@ begin
 							'12/30/1899',	-- RenewalDeclareByDate,
 							'12/30/1899',	-- ContractCommencementDate,
 							'12/30/1899',	-- ContractCancellingDate,
+							'Unknown',		-- ChartererParent
+							'Unknown',		-- OwnerParent
+							'Unknown',		-- ChartererFullStyle
+							'Unknown',		-- OwnerFullStyle
+							'Unknown',		-- OwnerFullStyle
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
