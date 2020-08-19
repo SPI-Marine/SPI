@@ -6,6 +6,7 @@ Description:	Creates the Warehouse.Dim_Owner table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	08/13/2020	Source data from FullStyles table
 ==========================================================================================================	
 */
 
@@ -16,7 +17,11 @@ create table Warehouse.Dim_Owner
 	(
 		OwnerKey					int					not null identity(1, 1),
 		OwnerAlternateKey			int					not null,
-		OwnerName					varchar(500)		not null,
+		FullStyleName				varchar(500)		null,
+		OwnerParentName				varchar(500)		null,
+		[Type]						varchar(500)		null,
+		[Address]					varchar(500)		null,
+		GroupName					varchar(500)		null,
 		Type1HashValue				varbinary(16)		not null,
 		RowCreatedDate				date				not null,
 		RowUpdatedDate				date				not null,

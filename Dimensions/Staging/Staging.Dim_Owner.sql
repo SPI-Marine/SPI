@@ -6,6 +6,7 @@ Description:	Creates the Staging.Dim_Owner table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	08/13/2020	Source data from FullStyles table
 ==========================================================================================================	
 */
 
@@ -15,7 +16,11 @@ go
 create table Staging.Dim_Owner
 	(
 		OwnerAlternateKey		int					not null,
-		OwnerName				varchar(500)		not null,
+		FullStyleName			varchar(500)		null,
+		OwnerParentName			varchar(500)		null,
+		[Type]					varchar(500)		null,
+		[Address]				varchar(500)		null,
+		GroupName				varchar(500)		null,
 		Type1HashValue			varbinary(16)		not null,
 		RecordStatus			int					not null
 		constraint [PK_Staging_Dim_Owner_QBRecId] primary key clustered 

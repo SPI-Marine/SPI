@@ -1,3 +1,11 @@
+set ansi_nulls on;
+go
+set quoted_identifier on;
+go
+
+drop procedure if exists ETL.LoadDim_Owner;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -6,16 +14,9 @@ Description:	Creates the LoadDim_Owner stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	08/13/2020	Source data from FullStyles table
 ==========================================================================================================	
 */
-
-set ansi_nulls on;
-go
-set quoted_identifier on;
-go
-
-drop procedure if exists ETL.LoadDim_Owner;
-go
 
 create procedure ETL.LoadDim_Owner
 as
@@ -34,20 +35,28 @@ begin
 		insert
 				Staging.Dim_Owner with (tablock)
 		select
-				ownerparent.QBRecId,
+				fs.QBRecId,
+				fs.FullStyleName,
 				ownerparent.OwnerParentName,
+				fs.[Type],
+				fs.[Address],
+				fs.GroupNameFS,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
-				OwnerParents ownerparent with (nolock)
+				FullStyles fs (nolock)
+					left join OwnerParents ownerparent with (nolock)
+						on fs.RelatedOwnerParentId = ownerparent.QBRecId
 					left join	(
 									select
 											@ExistingRecord RecordStatus,
 											OwnerAlternateKey
 										from
-											Warehouse.Dim_Owner with (tablock)
+											Warehouse.Dim_Owner with (nolock)
 								) rs
-						on ownerparent.QBRecId = rs.OwnerAlternateKey;
+						on fs.QBRecId = rs.OwnerAlternateKey
+			where
+				fs.[Type] = 'Owner';
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging Owner records - ' + error_message();
@@ -62,7 +71,13 @@ begin
 				-- Type 1 SCD
 				Type1HashValue =	hashbytes	(
 													'MD2',
-													OwnerName
+													concat	(
+																FullStyleName,
+																OwnerParentName,
+																[Type],
+																[Address],
+																GroupName
+															)
 												);
 		
 		update
@@ -86,7 +101,11 @@ begin
 				Warehouse.Dim_Owner with (tablock)
 			select
 					wo.OwnerAlternateKey,
-					wo.OwnerName,
+					wo.FullStyleName,
+					wo.OwnerParentName,
+					wo.[Type],
+					wo.[Address],
+					wo.GroupName,
 					wo.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -106,7 +125,11 @@ begin
 		update
 				Warehouse.Dim_Owner with (tablock)
 			set
-				OwnerName = so.OwnerName,
+				FullStyleName = so.FullStyleName,
+				OwnerParentName = so.OwnerParentName,
+				[Type] = so.[Type],
+				[Address] = so.[Address],
+				GroupName = so.GroupName,
 				Type1HashValue = so.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -130,9 +153,9 @@ begin
 								select
 										1
 									from
-										OwnerParents op with (nolock)
+										FullStyles fs with (nolock)
 									where
-										op.QBRecId = OwnerAlternateKey
+										fs.QBRecId = OwnerAlternateKey
 							);
 	end try
 	begin catch
@@ -156,7 +179,11 @@ begin
 					Warehouse.Dim_Owner with (tablock)	(
 															OwnerKey,
 															OwnerAlternateKey,
-															OwnerName,
+															FullStyleName,
+															OwnerParentName,
+															[Type],
+															[Address],
+															GroupName,
 															Type1HashValue,
 															RowCreatedDate,
 															RowUpdatedDate,
@@ -166,7 +193,11 @@ begin
 				values	(
 							-1,				-- OwnerKey
 							-1,				-- OwnerAlternateKey
-							'Unknown',		-- OwnerName
+							'Unknown',		-- FullStyleName
+							'Unknown',		-- OwnerParentName
+							'Unknown',		-- [Type]
+							'Unknown',		-- [Address]
+							'Unknown',		-- GroupName
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate

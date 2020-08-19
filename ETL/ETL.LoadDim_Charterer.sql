@@ -1,3 +1,11 @@
+set ansi_nulls on;
+go
+set quoted_identifier on;
+go
+
+drop procedure if exists ETL.LoadDim_Charterer;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -6,16 +14,9 @@ Description:	Creates the stored procedure LoadDim_Charterer
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	08/13/2020	Source data from FullStyles table
 ==========================================================================================================	
 */
-
-set ansi_nulls on;
-go
-set quoted_identifier on;
-go
-
-drop procedure if exists ETL.LoadDim_Charterer;
-go
 
 create procedure ETL.LoadDim_Charterer
 as
@@ -34,13 +35,18 @@ begin
 		insert
 				Staging.Dim_Charterer with (tablock)
 		select
-				charterer.QBRecId,
+				fs.QBRecId,
+				fs.FullStyleName,
 				charterer.ChartererParentName,
-				charterer.[Type],
+				fs.[Type],
+				fs.[Address],
+				fs.GroupNameFS,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
-				ChartererParents charterer with (nolock)
+				FullStyles fs (nolock)
+					left join ChartererParents charterer with (nolock)
+						on fs.RelatedChartererParentID = charterer.QBRecId
 					left join	(
 									select
 											@ExistingRecord RecordStatus,
@@ -48,7 +54,9 @@ begin
 										from
 											Warehouse.Dim_Charterer with (nolock)
 								) rs
-						on rs.ChartererAlternateKey = charterer.QBRecId;
+						on rs.ChartererAlternateKey = fs.QBRecId
+			where
+				fs.[Type] = 'Charterer';
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging Charterer records - ' + error_message();
@@ -64,8 +72,11 @@ begin
 				Type1HashValue =	hashbytes	(
 													'MD2',
 													concat	(
-																ChartererName,
-																ChartererType
+																FullStyleName,
+																ChartererParentName,
+																[Type],
+																[Address],
+																GroupName
 															)
 												);
 		
@@ -90,8 +101,11 @@ begin
 				Warehouse.Dim_Charterer  with (tablock)
 			select
 					charterer.ChartererAlternateKey,
-					charterer.ChartererName,
-					charterer.ChartererType,
+					charterer.FullStyleName,
+					charterer.ChartererParentName,
+					charterer.[Type],
+					charterer.[Address],
+					charterer.GroupName,
 					charterer.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -111,8 +125,11 @@ begin
 		update
 				Warehouse.Dim_Charterer with (tablock)
 			set
-				ChartererName = charterer.ChartererName,
-				ChartererType = charterer.ChartererType,
+				FullStyleName = charterer.FullStyleName,
+				ChartererParentName = charterer.ChartererParentName,
+				[Type] = charterer.[Type],
+				[Address] = charterer.[Address],
+				GroupName = charterer.GroupName,
 				Type1HashValue = [Charterer].Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -136,9 +153,9 @@ begin
 								select
 										1
 									from
-										ChartererParents cp with (nolock)
+										FullStyles fs with (nolock)
 									where
-										cp.QBRecId = ChartererAlternateKey
+										fs.QBRecId = ChartererAlternateKey
 							);
 	end try
 	begin catch
@@ -162,8 +179,11 @@ begin
 					Warehouse.Dim_Charterer with (tablock)	(
 																ChartererKey,
 																ChartererAlternateKey,
-																ChartererName,
-																ChartererType,
+																FullStyleName,
+																ChartererParentName,
+																[Type],
+																[Address],
+																GroupName,
 																Type1HashValue,
 																RowCreatedDate,
 																RowUpdatedDate,
@@ -173,8 +193,11 @@ begin
 				values	(
 							-1,				-- ChartererKey
 							-1,				-- ChartererAlternateKey
-							'Unknown',		-- ChartererName
-							'Unknown',		-- ChartererType
+							'Unknown',		-- FullStyleName
+							'Unknown',		-- ChartererParentName
+							'Unknown',		-- [Type]
+							'Unknown',		-- [Address]
+							'Unknown',		-- GroupName
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate

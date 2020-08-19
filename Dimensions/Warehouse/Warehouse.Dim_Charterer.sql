@@ -6,6 +6,7 @@ Description:	Creates the Warehouse.Dim_Charterer table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	08/13/2020	Source data from FullStyles table
 ==========================================================================================================	
 */
 
@@ -16,8 +17,11 @@ create table Warehouse.Dim_Charterer
 	(
 		ChartererKey				int					not null identity(1, 1),
 		ChartererAlternateKey		int					not null,
-		ChartererName				varchar(500)		not null,
-		ChartererType				varchar(250)		null,
+		FullStyleName				varchar(500)		null,
+		ChartererParentName			varchar(500)		null,
+		[Type]						varchar(500)		null,
+		[Address]					varchar(500)		null,
+		GroupName					varchar(500)		null,
 		Type1HashValue				varbinary(16)		not null,
 		RowCreatedDate				date				not null,
 		RowUpdatedDate				date				not null,
