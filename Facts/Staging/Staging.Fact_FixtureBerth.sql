@@ -13,6 +13,7 @@ Brian Boswick	02/12/2020	Added ProductQuantityKey
 Brian Boswick	02/13/2020	Renamed multiple metrics
 Brian Boswick	04/22/2020	Added CPDateKey
 Brian Boswick	07/29/2020	Added COAKey
+Brian Boswick	08/19/2020	Added DischargePortBerthKey, LoadBerthKey
 ==========================================================================================================	
 */
 
@@ -26,11 +27,13 @@ create table Staging.Fact_FixtureBerth
 		BerthAlternateKey										int					not null,
 		LoadDischargeAlternateKey								int					not null,
 		ParcelBerthAlternateKey									int					not null,
+		DischargePortBerthKey									int					not null,
 		PortBerthKey											int					not null,
 		PostFixtureKey											int					not null,
 		VesselKey												int					not null,
 		FirstEventDateKey										int					not null,
 		LoadPortKey												int					not null,
+		LoadBerthKey											int					not null,
 		DischargePortKey										int					not null,
 		ChartererKey											int					not null,
 		OwnerKey												int					not null,

@@ -24,6 +24,7 @@ Brian Boswick	02/13/2020	Renamed multiple metrics
 Brian Boswick	04/22/2020	Added CPDateKey ETL
 Brian Boswick	06/02/2020	Pull event duration from Staging.SOFEvent_Durations table
 Brian Boswick	07/29/2020	Added COAKey
+Brian Boswick	08/19/2020	Added DischargePortBerthKey, LoadBerthKey
 ==========================================================================================================	
 */
 
@@ -167,12 +168,14 @@ begin
 												BerthAlternateKey,
 												LoadDischargeAlternateKey,
 												ParcelBerthAlternateKey,
+												DischargePortBerthKey,
 												PortBerthKey,
 												PostFixtureKey,
 												VesselKey,
 												FirstEventDateKey,
 												CPDateKey,
 												LoadPortKey,
+												LoadBerthKey,
 												DischargePortKey,
 												ChartererKey,
 												OwnerKey,
@@ -185,26 +188,28 @@ begin
 											)
 			select
 				distinct
-					ufb.PostFixtureAlternateKey					PostFixtureAlternateKey,
-					isnull(ufb.PortAlternateKey, -1)			PortAlternateKey,
-					isnull(ufb.BerthAlternateKey, -1)			BerthAlternateKey,
-					ufb.LoadDischargeAlternateKey				LoadDischargeAlternateKey,
-					isnull(ufb.ParcelBerthAlternateKey, -1)		ParcelBerthAlternateKey,
-					isnull(portberth.PortBerthKey, -1)			PortBerthKey,
-					isnull(wpostfixture.PostFixtureKey, -1)		PostFixtureKey,
-					isnull(vessel.VesselKey, -1)				VesselKey,
-					-1											FirstEventDateKey,
-					isnull(CPDate.DateKey, -1)					CPDateKey,
-					isnull(wloadport.PortKey, -1)				LoadPortKey,
-					isnull(wdischport.PortKey, -1)				DischargePortKey,
-					isnull(wch.ChartererKey, -1)				ChartererKey,
-					isnull(wo.OwnerKey, -1)						OwnerKey,
-					-1											ProductKey,
-					isnull(pq.ProductQuantityKey, -1)			ProductQuantityKey,
-					isnull(coa.COAKey, -1)						COAKey,
-					ufb.LoadDischarge							LoadDischarge,
-					ufb.ParcelQuantity							ParcelQuantity,
-					ufb.LaytimeAllowed							LaytimeAllowed
+					ufb.PostFixtureAlternateKey								PostFixtureAlternateKey,
+					isnull(ufb.PortAlternateKey, -1)						PortAlternateKey,
+					isnull(ufb.BerthAlternateKey, -1)						BerthAlternateKey,
+					ufb.LoadDischargeAlternateKey							LoadDischargeAlternateKey,
+					isnull(ufb.ParcelBerthAlternateKey, -1)					ParcelBerthAlternateKey,
+					isnull(dischportberth.PortBerthKey, -1)					DischargePortBerthKey,
+					isnull(portberth.PortBerthKey, -1)						PortBerthKey,
+					isnull(wpostfixture.PostFixtureKey, -1)					PostFixtureKey,
+					isnull(vessel.VesselKey, -1)							VesselKey,
+					-1														FirstEventDateKey,
+					isnull(CPDate.DateKey, -1)								CPDateKey,
+					isnull(wloadport.PortKey, -1)							LoadPortKey,
+					isnull(loadberth.BerthKey, -1)							LoadBerthKey,
+					isnull(wdischport.PortKey, -1)							DischargePortKey,
+					isnull(wch.ChartererKey, -1)							ChartererKey,
+					isnull(wo.OwnerKey, -1)									OwnerKey,
+					-1														ProductKey,
+					isnull(pq.ProductQuantityKey, -1)						ProductQuantityKey,
+					isnull(coa.COAKey, -1)									COAKey,
+					ufb.LoadDischarge										LoadDischarge,
+					ufb.ParcelQuantity										ParcelQuantity,
+					ufb.LaytimeAllowed										LaytimeAllowed
 				from
 					AggregatedParcelQuantity ufb
 						left join Warehouse.Dim_PostFixture wpostfixture with (nolock)
@@ -228,6 +233,13 @@ begin
 						left join Warehouse.Dim_PortBerth portberth with (nolock)
 							on portberth.PortAlternateKey = ufb.PortAlternateKey
 								and portberth.BerthAlternateKey = ufb.BerthAlternateKey
+						left join Warehouse.Dim_PortBerth dischportberth with (nolock)
+							on dischportberth.PortAlternateKey = ufb.PortAlternateKey
+								and dischportberth.BerthAlternateKey = ufb.BerthAlternateKey
+								and ufb.LoadDischarge = 'Discharge'
+						left join Warehouse.Dim_Berth loadberth with (nolock)
+							on loadberth.BerthAlternateKey = ufb.BerthAlternateKey
+								and ufb.LoadDischarge = 'Load'
 						left join FullStyles fs with (nolock)
 							on epostfixture.RelatedChartererFullStyle = fs.QBRecId
 						left join Warehouse.Dim_Owner wo with (nolock)
@@ -2149,11 +2161,13 @@ begin
 					sfb.BerthAlternateKey,
 					sfb.LoadDischargeAlternateKey,
 					sfb.ParcelBerthAlternateKey,
+					sfb.DischargePortBerthKey,
 					sfb.PortBerthKey,
 					sfb.PostFixtureKey,
 					sfb.VesselKey,
 					sfb.FirstEventDateKey,
 					sfb.LoadPortKey,
+					sfb.LoadBerthKey,
 					sfb.DischargePortKey,
 					sfb.ChartererKey,
 					sfb.OwnerKey,
