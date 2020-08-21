@@ -14,6 +14,7 @@ Brian Boswick	02/13/2020	Renamed multiple metrics
 Brian Boswick	04/22/2020	Added CPDateKey
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	08/19/2020	Added DischargePortBerthKey, LoadBerthKey
+Brian Boswick	08/21/2020	Renamed ProductQuantityKey to ProductFixtureBerthQuantityKey
 ==========================================================================================================	
 */
 
@@ -38,7 +39,7 @@ create table Staging.Fact_FixtureBerth
 		ChartererKey											int					not null,
 		OwnerKey												int					not null,
 		ProductKey												int					not null,
-		ProductQuantityKey										int					not null,
+		ProductFixtureBerthQuantityKey							int					not null,
 		CPDateKey												int					not null,
 		COAKey													int					not null,
 		LoadDischarge											varchar(50)			null,		-- Degenerate Dimension Attributes

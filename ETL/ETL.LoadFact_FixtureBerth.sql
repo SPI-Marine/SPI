@@ -25,6 +25,7 @@ Brian Boswick	04/22/2020	Added CPDateKey ETL
 Brian Boswick	06/02/2020	Pull event duration from Staging.SOFEvent_Durations table
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	08/19/2020	Added DischargePortBerthKey, LoadBerthKey
+Brian Boswick	08/21/2020	Renamed ProductQuantityKey to ProductFixtureBerthQuantityKey
 ==========================================================================================================	
 */
 
@@ -180,7 +181,7 @@ begin
 												ChartererKey,
 												OwnerKey,
 												ProductKey,
-												ProductQuantityKey,
+												ProductFixtureBerthQuantityKey,
 												COAKey,
 												LoadDischarge,
 												ParcelQuantity,
@@ -205,7 +206,7 @@ begin
 					isnull(wch.ChartererKey, -1)							ChartererKey,
 					isnull(wo.OwnerKey, -1)									OwnerKey,
 					-1														ProductKey,
-					isnull(pq.ProductQuantityKey, -1)						ProductQuantityKey,
+					isnull(pq.ProductQuantityKey, -1)						ProductFixtureBerthQuantityKey,
 					isnull(coa.COAKey, -1)									COAKey,
 					ufb.LoadDischarge										LoadDischarge,
 					ufb.ParcelQuantity										ParcelQuantity,
@@ -2172,7 +2173,7 @@ begin
 					sfb.ChartererKey,
 					sfb.OwnerKey,
 					sfb.ProductKey,
-					sfb.ProductQuantityKey,
+					sfb.ProductFixtureBerthQuantityKey,
 					sfb.CPDateKey,
 					sfb.COAKey,
 					sfb.LoadDischarge,
