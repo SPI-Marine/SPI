@@ -14,6 +14,7 @@ Brian Boswick	02/14/2020	Added ProductQuantityKey
 Brian Boswick	02/20/2020	Added BunkerCharge
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	07/30/2020	Added NOR/Hose Off dates for load/discharge ports
+Brian Boswick	08/21/2020	Changed ProductQuantityKey logic to aggregate to Fixture level
 ==========================================================================================================	
 */
 
@@ -37,7 +38,7 @@ create table Staging.Fact_Parcel
 		ChartererKey							int					not null,
 		OwnerKey								int					not null,
 		VesselKey								int					not null,
-		ProductQuantityKey						int					not null,
+		ProductFixtureQuantityKey				int					not null,
 		COAKey									int					not null,
 		OutTurnQty								decimal(18, 6)		null,			-- Metrics
 		ShipLoadedQty							decimal(18, 6)		null,

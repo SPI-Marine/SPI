@@ -20,6 +20,7 @@ Brian Boswick	02/14/2020	Added ProductQuantityKey ETL logic
 Brian Boswick	02/20/2020	Added BunkerCharge ETL logic
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	07/30/2020	Added NOR/Hose Off dates for load/discharge ports
+Brian Boswick	08/21/2020	Changed ProductQuantityKey logic to aggregate to Fixture level
 ==========================================================================================================	
 */
 
@@ -52,7 +53,7 @@ begin
 														ChartererKey,
 														OwnerKey,
 														VesselKey,
-														ProductQuantityKey,
+														ProductFixtureQuantityKey,
 														COAKey,
 														OutTurnQty,
 														ShipLoadedQty,
@@ -84,7 +85,7 @@ begin
 				isnull(wch.ChartererKey, -1)					ChartererKey,
 				isnull(wo.OwnerKey, -1)							OwnerKey,
 				isnull(v.VesselKey, -1)							VesselKey,
-				-1												ProductQuantityKey,
+				-1												ProductFixtureQuantityKey,
 				isnull(coa.COAKey, -1)							COAKey,
 				p.OutTurnQty,
 				p.ShipLoadedQty,
@@ -320,6 +321,22 @@ begin
 					group by
 						wpf.PostFixtureKey,
 						wdischberth.BerthKey
+			),
+			AggregateFixtureBLQty	(
+										PostFixtureKey,
+										TotalFixtureBLQty
+									)
+			as
+			(
+				select
+						wpf.PostFixtureKey,
+						sum(p.BLQty) TotalFixtureBLQty
+					from
+						Parcels p with (nolock)
+							join Warehouse.Dim_PostFixture wpf with (nolock)
+								on wpf.PostFixtureAlternateKey = p.RelatedSpiFixtureId
+					group by
+						wpf.PostFixtureKey
 			)
 		
 		update
@@ -327,22 +344,22 @@ begin
 			set
 				TotalLoadBerthBLQty = lt.TotalBerthBLQty,
 				TotalDischargeBerthBLQty = dt.TotalBerthBLQty,
-				ProductQuantityKey = coalesce(lpq.ProductQuantityKey, dpq.ProductQuantityKey, -1)
+				ProductFixtureQuantityKey = isnull(dpq.ProductQuantityKey, -1)
 			from
 				Staging.Fact_Parcel sfp
 					left join AggregateLoadTotalBerthBLQty lt
 						on sfp.PostFixtureKey = lt.PostFixtureKey
 							and sfp.LoadBerthKey = lt.BerthKey
-					left join Warehouse.Dim_ProductQuantity lpq
-						on convert(decimal(18, 2), lt.TotalBerthBLQty) between lpq.MinimumQuantity and lpq.MaximumQuantity
 					left join AggregateDischargeBerthBLQty dt
 						on sfp.PostFixtureKey = dt.PostFixtureKey
 							and sfp.DischargeBerthKey = dt.BerthKey
+					left join AggregateFixtureBLQty fpq
+						on fpq.PostFixtureKey = sfp.PostFixtureKey
 					left join Warehouse.Dim_ProductQuantity dpq
-						on convert(decimal(18, 2), dt.TotalBerthBLQty) between dpq.MinimumQuantity and dpq.MaximumQuantity;
+						on convert(decimal(18, 2), fpq.TotalFixtureBLQty) between dpq.MinimumQuantity and dpq.MaximumQuantity;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating Berth BL Quantity metrics - ' + error_message();
+		select @ErrorMsg = 'Updating Berth/Fixture BL Quantity metrics - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 	
@@ -547,7 +564,7 @@ begin
 															ChartererKey,
 															OwnerKey,
 															VesselKey,
-															ProductQuantityKey,
+															ProductFixtureQuantityKey,
 															COAKey,
 															OutTurnQty,
 															ShipLoadedQty,
@@ -586,7 +603,7 @@ begin
 					sfp.ChartererKey,
 					sfp.OwnerKey,
 					sfp.VesselKey,
-					sfp.ProductQuantityKey,
+					sfp.ProductFixtureQuantityKey,
 					sfp.COAKey,
 					sfp.OutTurnQty,
 					sfp.ShipLoadedQty,
