@@ -28,6 +28,7 @@ create table Staging.Fact_SPIInvoiceRegistry
 		ProductQuantityKey										int					not null,
 		CPDateKey												int					not null,
 		COAKey													int					not null,
+		TimeChartererKey										int					not null,
 		InvoiceNumber											varchar(50)			null,		-- Degenerate Dimension Attributes
 		InvoiceType												varchar(50)			null,
 		InvoiceTo												varchar(500)		null,
@@ -38,6 +39,8 @@ create table Staging.Fact_SPIInvoiceRegistry
 		ChartererFormula										varchar(100)		null,
 		OwnerFormula											varchar(100)		null,
 		InvoiceGeneratedBy										varchar(100)		null,
+		CreditAppliedAgainstInvoiceNumber						varchar(100)		null,
+		CurrencyInvoice											varchar(100)		null,
 		InvoiceAmount											decimal(18, 5)		null,		-- Metrics
 		constraint [PK_Staging_Fact_SPIInvoiceRegistry_AltKey] primary key clustered 
 		(

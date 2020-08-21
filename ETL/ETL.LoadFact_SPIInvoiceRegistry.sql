@@ -123,6 +123,7 @@ begin
 				isnull(pq.ProductQuantityKey, -1)					ProductQuantityKey,
 				isnull(cpdate.DateKey, 18991230)					CPDateKey,
 				isnull(coa.COAKey, -1)								COAKey,
+				isnull(tc.TimeChartererKey, -1)						TimeChartererKey,
 				ir.InvoiceNumberOfficial_INVOICE					InvoiceNumber,
 				ir.InvoiceType_ADMIN								InvoiceType,
 				ir.InvoiceTo_INVOICE								InvoiceTo,
@@ -133,9 +134,13 @@ begin
 				ir.ChartererFormula_INVOICE							ChartererFormula,
 				ir.OwnerFormula_INVOICE								OwnerFormula,
 				ir.InvoiceGeneratedBy_ADMIN							InvoiceGeneratedBy,
+				ir.CreditAppliedAgainstInvoiceNumber				CreditAppliedAgainstInvoiceNumber,
+				ir.Currency_INVOICE									CurrencyInvoice,
 				replace(ir.InvoiceAmountSnapShot_ADMIN, ',', '')	InvoiceAmount
 			from
 				InvoiceRegistry ir with (nolock)
+					left join Warehouse.Dim_TimeCharterer tc (nolock)
+						on tc.TimeChartererAlternateKey = ir.RelatedSPITimeChartererID
 					left join Warehouse.Dim_PostFixture pf with (nolock)
 						on pf.PostFixtureAlternateKey = ir.RelatedSPIFixtureID
 					left join PostFixtures epf with (nolock)
@@ -194,6 +199,7 @@ begin
 					inv.ProductQuantityKey,
 					inv.CPDateKey,
 					inv.COAKey,
+					inv.TimeChartererKey,
 					inv.InvoiceNumber,
 					inv.InvoiceType,
 					inv.InvoiceTo,
@@ -204,6 +210,8 @@ begin
 					inv.ChartererFormula,
 					inv.OwnerFormula,
 					inv.InvoiceGeneratedBy,
+					inv.CreditAppliedAgainstInvoiceNumber,
+					inv.CurrencyInvoice,
 					inv.InvoiceAmount,
 					getdate() RowStartDate
 				from
