@@ -53,7 +53,7 @@ begin
 														ChartererKey,
 														OwnerKey,
 														VesselKey,
-														ProductFixtureQuantityKey,
+														ProductPortQuantityKey,
 														COAKey,
 														OutTurnQty,
 														ShipLoadedQty,
@@ -85,7 +85,7 @@ begin
 				isnull(wch.ChartererKey, -1)					ChartererKey,
 				isnull(wo.OwnerKey, -1)							OwnerKey,
 				isnull(v.VesselKey, -1)							VesselKey,
-				-1												ProductFixtureQuantityKey,
+				-1												ProductPortQuantityKey,
 				isnull(coa.COAKey, -1)							COAKey,
 				p.OutTurnQty,
 				p.ShipLoadedQty,
@@ -322,21 +322,51 @@ begin
 						wpf.PostFixtureKey,
 						wdischberth.BerthKey
 			),
-			AggregateFixtureBLQty	(
+			AggregateLoadPortBLQty	(
 										PostFixtureKey,
-										TotalFixtureBLQty
+										PortKey,
+										TotalPortBLQty
 									)
 			as
 			(
 				select
 						wpf.PostFixtureKey,
-						sum(p.BLQty) TotalFixtureBLQty
+						wloadport.PortKey,
+						sum(p.BLQty) TotalPortBLQty
 					from
 						Parcels p with (nolock)
+							join ParcelPorts loadport (nolock)
+								on loadport.QBRecId = p.RelatedLoadPortID
+							join Warehouse.Dim_Port wloadport (nolock)
+								on wloadport.PortAlternateKey = loadport.RelatedPortId
 							join Warehouse.Dim_PostFixture wpf with (nolock)
 								on wpf.PostFixtureAlternateKey = p.RelatedSpiFixtureId
 					group by
-						wpf.PostFixtureKey
+						wpf.PostFixtureKey,
+						wloadport.PortKey
+			),
+			AggregateDischargePortBLQty	(
+											PostFixtureKey,
+											PortKey,
+											TotalPortBLQty
+										)
+			as
+			(
+				select
+						wpf.PostFixtureKey,
+						wdischport.PortKey,
+						sum(p.BLQty) TotalPortBLQty
+					from
+						Parcels p with (nolock)
+							join ParcelPorts dischport (nolock)
+								on dischport.QBRecId = p.RelatedDischPortId
+							join Warehouse.Dim_Port wdischport (nolock)
+								on wdischport.PortAlternateKey = dischport.RelatedPortId
+							join Warehouse.Dim_PostFixture wpf with (nolock)
+								on wpf.PostFixtureAlternateKey = p.RelatedSpiFixtureId
+					group by
+						wpf.PostFixtureKey,
+						wdischport.PortKey
 			)
 		
 		update
@@ -344,7 +374,7 @@ begin
 			set
 				TotalLoadBerthBLQty = lt.TotalBerthBLQty,
 				TotalDischargeBerthBLQty = dt.TotalBerthBLQty,
-				ProductFixtureQuantityKey = isnull(dpq.ProductQuantityKey, -1)
+				ProductPortQuantityKey = coalesce(lpq.ProductQuantityKey, dpq.ProductQuantityKey, -1)
 			from
 				Staging.Fact_Parcel sfp
 					left join AggregateLoadTotalBerthBLQty lt
@@ -353,10 +383,16 @@ begin
 					left join AggregateDischargeBerthBLQty dt
 						on sfp.PostFixtureKey = dt.PostFixtureKey
 							and sfp.DischargeBerthKey = dt.BerthKey
-					left join AggregateFixtureBLQty fpq
-						on fpq.PostFixtureKey = sfp.PostFixtureKey
+					left join AggregateLoadPortBLQty lppq
+						on lppq.PostFixtureKey = sfp.PostFixtureKey
+							and lppq.PortKey = sfp.LoadPortKey
+					left join AggregateDischargePortBLQty dppq
+						on dppq.PostFixtureKey = sfp.PostFixtureKey
+							and dppq.PortKey = sfp.DischargePortKey
 					left join Warehouse.Dim_ProductQuantity dpq
-						on convert(decimal(18, 2), fpq.TotalFixtureBLQty) between dpq.MinimumQuantity and dpq.MaximumQuantity;
+						on convert(decimal(18, 2), dppq.TotalPortBLQty) between dpq.MinimumQuantity and dpq.MaximumQuantity
+					left join Warehouse.Dim_ProductQuantity lpq
+						on convert(decimal(18, 2), lppq.TotalportBLQty) between lpq.MinimumQuantity and lpq.MaximumQuantity;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating Berth/Fixture BL Quantity metrics - ' + error_message();
@@ -564,7 +600,7 @@ begin
 															ChartererKey,
 															OwnerKey,
 															VesselKey,
-															ProductFixtureQuantityKey,
+															ProductPortQuantityKey,
 															COAKey,
 															OutTurnQty,
 															ShipLoadedQty,
@@ -603,7 +639,7 @@ begin
 					sfp.ChartererKey,
 					sfp.OwnerKey,
 					sfp.VesselKey,
-					sfp.ProductFixtureQuantityKey,
+					sfp.ProductPortQuantityKey,
 					sfp.COAKey,
 					sfp.OutTurnQty,
 					sfp.ShipLoadedQty,

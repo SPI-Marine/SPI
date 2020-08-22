@@ -38,7 +38,7 @@ create table Staging.Fact_Parcel
 		ChartererKey							int					not null,
 		OwnerKey								int					not null,
 		VesselKey								int					not null,
-		ProductFixtureQuantityKey				int					not null,
+		ProductPortQuantityKey					int					not null,
 		COAKey									int					not null,
 		OutTurnQty								decimal(18, 6)		null,			-- Metrics
 		ShipLoadedQty							decimal(18, 6)		null,
