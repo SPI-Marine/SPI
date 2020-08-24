@@ -171,6 +171,9 @@ begin
 						on product.ProductAlternateKey = loadproduct.ProductAlternateKey
 					left join Warehouse.Dim_ProductQuantity pq with (nolock)
 						on loadproduct.Qty between pq.MinimumQuantity and pq.MaximumQuantity
+			where
+				ir.InvoiceNumberOfficial_INVOICE not like '%draft%'
+				and isnull(cast(replace(ir.InvoiceAmountSnapShot_ADMIN, ',', '') as numeric(20, 6)), 0.0) <> 0.0
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging Invoice records - ' + error_message();
