@@ -15,6 +15,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	07/29/2020	Added COAKey
+Brian Boswick	08/27/2020	Added InvoiceTypeCategory
 ==========================================================================================================	
 */
 
@@ -136,6 +137,7 @@ begin
 				ir.InvoiceGeneratedBy_ADMIN							InvoiceGeneratedBy,
 				ir.CreditAppliedAgainstInvoiceNumber				CreditAppliedAgainstInvoiceNumber,
 				ir.Currency_INVOICE									CurrencyInvoice,
+				ir.InvoiceTypeCategory_ADMIN						InvoiceTypeCategory,
 				replace(ir.InvoiceAmountSnapShot_ADMIN, ',', '')	InvoiceAmount
 			from
 				InvoiceRegistry ir with (nolock)
@@ -215,6 +217,7 @@ begin
 					inv.InvoiceGeneratedBy,
 					inv.CreditAppliedAgainstInvoiceNumber,
 					inv.CurrencyInvoice,
+					inv.InvoiceTypeCategory,
 					inv.InvoiceAmount,
 					getdate() RowStartDate
 				from

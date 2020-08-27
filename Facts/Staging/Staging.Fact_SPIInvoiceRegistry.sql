@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	07/29/2020	Added COAKey
+Brian Boswick	08/27/2020	Added InvoiceTypeCategory
 ==========================================================================================================	
 */
 
@@ -41,6 +42,7 @@ create table Staging.Fact_SPIInvoiceRegistry
 		InvoiceGeneratedBy										varchar(100)		null,
 		CreditAppliedAgainstInvoiceNumber						varchar(100)		null,
 		CurrencyInvoice											varchar(100)		null,
+		InvoiceTypeCategory										varchar(100)		null,
 		InvoiceAmount											decimal(18, 5)		null,		-- Metrics
 		constraint [PK_Staging_Fact_SPIInvoiceRegistry_AltKey] primary key clustered 
 		(
