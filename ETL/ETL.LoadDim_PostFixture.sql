@@ -27,6 +27,7 @@ Brian Boswick	07/13/2020	Added LaycanStatus ETL logic
 Brian Boswick	07/20/2020	Added HoseOffDateFinal ETL logic
 Brian Boswick	07/22/2020	Added FrtRateProjection ETL logic
 Brian Boswick	07/09/2020	Removed COA fields
+Brian Boswick	09/01/2020	Added SPIInitialDemurrageEstimate
 ==========================================================================================================	
 */
 
@@ -117,6 +118,16 @@ begin
 				fixture.P2FixtureRefNum,
 				fixture.VesselFixedOfficial,
 				fixture.LaycanCommencementOriginal,
+				coa.RecordID,
+				coa.[Status],
+				coa.SPICOADate,
+				coa.AddendumDate,
+				coa.AddendumExpiryDate,
+				coa.AddendumCommencementDate,
+				coa.RenewalDate_DeclareBy,
+				coa.ContractCommencement,
+				coa.ContractCancelling,
+				coa.COA_Title_Admin,
 				fixture.LaycanCancelOrig,
 				fixture.Laycan_Cancelling_Final_QBC,
 				fixture.Laycan_Commencement_Final_QBC,
@@ -135,6 +146,7 @@ begin
 				null LaycanStatus,
 				fixture.FrtRateProjection,
 				fixture.VoyageSummaryReportComments_ADMIN,
+				fixture.SPIInitialDemurrageEstimate,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -149,6 +161,8 @@ begin
 						on chartererparent.QBRecId = chartererfullstyle.RelatedChartererParentId
 					left join TeamMembers brokername (nolock)
 						on rtrim(ltrim(brokername.EmailAddress)) = rtrim(ltrim(fixture.RelatedBroker))
+					left join SPICOA coa (nolock)
+						on coa.RecordID = fixture.RelatedSPICOAId
 					left join SPIOffices office (nolock)
 						on office.QBRecId = fixture.RelatedSPIOfficeID
 					left join	(
@@ -321,6 +335,16 @@ begin
 																P2FixtureRefNum,
 																VesselFixedOfficial,
 																LaycanCommencementOriginal,
+																SPI_COA_Number,
+																COA_Status,
+																COA_Date,
+																COA_AddendumDate,
+																COA_AddendumExpiryDate,
+																COA_AddendumCommencementDate,
+																COA_RenewalDateDeclareBy,
+																COA_ContractCommencement,
+																COA_ContractCancelling,
+																COA_Title_Admin,
 																LaycanCancellingOriginal,
 																LaycanCancellingFinal_QBC,
 																LaycanCommencementFinal_QBC,
@@ -338,7 +362,8 @@ begin
 																Product,
 																LaycanStatus,
 																FrtRateProjection,
-																VoyageSummaryReportComments
+																VoyageSummaryReportComments,
+																SPIInitialDemurrageEstimate
 															)
 												);
 		
@@ -456,6 +481,16 @@ begin
 					fixture.P2FixtureRefNum,
 					fixture.VesselFixedOfficial,
 					fixture.LaycanCommencementOriginal,
+					fixture.SPI_COA_Number,
+					fixture.COA_Status,
+					fixture.COA_Date,
+					fixture.COA_AddendumDate,
+					fixture.COA_AddendumExpiryDate,
+					fixture.COA_AddendumCommencementDate,
+					fixture.COA_RenewalDateDeclareBy,
+					fixture.COA_ContractCommencement,
+					fixture.COA_ContractCancelling,
+					fixture.COA_Title_Admin,
 					fixture.LaycanCancellingOriginal,
 					fixture.LaycanCancellingFinal_QBC,
 					fixture.LaycanCommencementFinal_QBC,
@@ -474,6 +509,7 @@ begin
 					fixture.LaycanStatus,
 					fixture.FrtRateProjection,
 					fixture.VoyageSummaryReportComments,
+					fixture.SPIInitialDemurrageEstimate,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -541,6 +577,16 @@ begin
 				P2FixtureRefNum = fixture.P2FixtureRefNum,
 				VesselFixedOfficial = fixture.VesselFixedOfficial,
 				LaycanCommencementOriginal = fixture.LaycanCommencementOriginal,
+				SPI_COA_Number = fixture.SPI_COA_Number,
+				COA_Status = fixture.[COA_Status],
+				COA_Date = fixture.COA_Date,
+				COA_AddendumDate = fixture.COA_AddendumDate,
+				COA_AddendumExpiryDate = fixture.COA_AddendumExpiryDate,
+				COA_AddendumCommencementDate = fixture.COA_AddendumCommencementDate,
+				COA_RenewalDateDeclareBy = fixture.COA_RenewalDateDeclareBy,
+				COA_ContractCommencement = fixture.COA_ContractCommencement,
+				COA_ContractCancelling = fixture.COA_ContractCancelling,
+				COA_Title_Admin = fixture.COA_Title_Admin,
 				LaycanCancellingOriginal = fixture.LaycanCancellingOriginal,
 				LaycanCancellingFinal_QBC = fixture.LaycanCancellingFinal_QBC,
 				LaycanCommencementFinal_QBC = fixture.LaycanCommencementFinal_QBC,
@@ -559,6 +605,7 @@ begin
 				LaycanStatus = fixture.LaycanStatus,
 				FrtRateProjection = fixture.FrtRateProjection,
 				VoyageSummaryReportComments = fixture.VoyageSummaryReportComments,
+				SPIInitialDemurrageEstimate = fixture.SPIInitialDemurrageEstimate,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -656,6 +703,16 @@ begin
 													P2FixtureRefNum,
 													VesselFixedOfficial,
 													LaycanCommencementOriginal,
+													SPI_COA_Number,
+													COA_Status,
+													COA_Date,
+													COA_AddendumDate,
+													COA_AddendumExpiryDate,
+													COA_AddendumCommencementDate,
+													COA_RenewalDateDeclareBy,
+													COA_ContractCommencement,
+													COA_ContractCancelling,
+													COA_Title_Admin,
 													LaycanCancellingOriginal,
 													LaycanCancellingFinal_QBC,
 													LaycanCommencementFinal_QBC,
@@ -674,6 +731,7 @@ begin
 													LaycanStatus,
 													FrtRateProjection,
 													VoyageSummaryReportComments,
+													SPIInitialDemurrageEstimate,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -731,6 +789,16 @@ begin
 							'Unknown',		-- P2FixtureRefNum
 							'Unknown',		-- VesselFixedOfficial
 							'12/30/1899',	-- LaycanCommencementOriginal
+							0,				-- SPI_COA_Number
+							'12/30/1899',	-- COA_Status
+							'12/30/1899',	-- COA_Date
+							'12/30/1899',	-- COA_AddendumDate
+							'12/30/1899',	-- COA_AddendumExpiryDate
+							'12/30/1899',	-- COA_AddendumCommencementDate
+							'12/30/1899',	-- COA_RenewalDateDeclareBy
+							'12/30/1899',	-- COA_ContractCommencement
+							'12/30/1899',	-- COA_ContractCancelling
+							'Unknown',		-- COA_Title_Admin
 							'12/30/1899',	-- LaycanCancellingOriginal
 							'12/30/1899',	-- LaycanCancellingFinal_QBC
 							'12/30/1899',	-- LaycanCommencementFinal_QBC
@@ -749,6 +817,7 @@ begin
 							'Unknown',		-- LaycanStatus
 							0.0,			-- FrtRateProjection
 							'Unknown',		-- VoyageSummaryReportComments
+							0.0,			-- SPIInitialDemurrageEstimate
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
