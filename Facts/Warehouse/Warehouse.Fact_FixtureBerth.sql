@@ -15,6 +15,7 @@ Brian Boswick	04/22/2020	Added CPDateKey
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	08/19/2020	Added DischargePortBerthKey, LoadBerthKey
 Brian Boswick	08/21/2020	Renamed ProductQuantityKey to ProductFixtureBerthQuantityKey
+Brian Boswick	08/28/2020	Added LoadPortBerthKey
 ==========================================================================================================	
 */
 
@@ -29,6 +30,7 @@ create table Warehouse.Fact_FixtureBerth
 		BerthAlternateKey										int					not null,
 		LoadDischargeAlternateKey								int					not null,
 		ParcelBerthAlternateKey									int					not null,
+		LoadPortBerthKey										int					not null,
 		DischargePortBerthKey									int					not null,
 		PortBerthKey											int					not null,
 		PostFixtureKey											int					not null,
