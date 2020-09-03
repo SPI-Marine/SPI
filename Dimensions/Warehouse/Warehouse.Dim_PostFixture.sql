@@ -23,6 +23,7 @@ Brian Boswick	07/20/2020	Added HoseOffDateFinal
 Brian Boswick	07/22/2020	Added FrtRateProjection
 Brian Boswick	07/28/2020	Added VoyageSummaryReportComments
 Brian Boswick	07/09/2020	Removed COA fields
+Brian Boswick	09/01/2020	Added SPIInitialDemurrageEstimate
 ==========================================================================================================	
 */
 
@@ -81,6 +82,16 @@ create table Warehouse.Dim_PostFixture
 		P2FixtureRefNum					nvarchar(100)		null,
 		VesselFixedOfficial				nvarchar(100)		null,
 		LaycanCommencementOriginal		date				null,
+		SPI_COA_Number					int					null,
+		COA_Status						varchar(50)			null,
+		COA_Date						date				null,
+		COA_AddendumDate				date				null,
+		COA_AddendumExpiryDate			date				null,
+		COA_AddendumCommencementDate	date				null,
+		COA_RenewalDateDeclareBy		date				null,
+		COA_ContractCommencement		date				null,
+		COA_ContractCancelling			date				null,
+		COA_Title_Admin					varchar(500)		null,
 		LaycanCancellingOriginal		date				null,
 		LaycanCancellingFinal_QBC		date				null,
 		LaycanCommencementFinal_QBC		date				null,
@@ -99,6 +110,7 @@ create table Warehouse.Dim_PostFixture
 		LaycanStatus					varchar(100)		null,
 		FrtRateProjection				decimal(18, 6)		null,
 		VoyageSummaryReportComments		varchar(1000)		null,
+		SPIInitialDemurrageEstimate		decimal(18, 6)		null,
 		Type1HashValue					varbinary(16)		not null,
 		RowCreatedDate					date				not null,
 		RowUpdatedDate					date				not null,
