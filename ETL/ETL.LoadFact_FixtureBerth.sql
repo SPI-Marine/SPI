@@ -26,6 +26,7 @@ Brian Boswick	06/02/2020	Pull event duration from Staging.SOFEvent_Durations tab
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	08/19/2020	Added DischargePortBerthKey, LoadBerthKey
 Brian Boswick	08/21/2020	Renamed ProductQuantityKey to ProductFixtureBerthQuantityKey
+Brian Boswick	08/28/2020	Added LoadPortBerthKey
 ==========================================================================================================	
 */
 
@@ -169,6 +170,7 @@ begin
 												BerthAlternateKey,
 												LoadDischargeAlternateKey,
 												ParcelBerthAlternateKey,
+												LoadPortBerthKey,
 												DischargePortBerthKey,
 												PortBerthKey,
 												PostFixtureKey,
@@ -194,6 +196,7 @@ begin
 					isnull(ufb.BerthAlternateKey, -1)						BerthAlternateKey,
 					ufb.LoadDischargeAlternateKey							LoadDischargeAlternateKey,
 					isnull(ufb.ParcelBerthAlternateKey, -1)					ParcelBerthAlternateKey,
+					isnull(loadportberth.PortBerthKey, -1)					LoadPortBerthKey,
 					isnull(dischportberth.PortBerthKey, -1)					DischargePortBerthKey,
 					isnull(portberth.PortBerthKey, -1)						PortBerthKey,
 					isnull(wpostfixture.PostFixtureKey, -1)					PostFixtureKey,
@@ -234,6 +237,10 @@ begin
 						left join Warehouse.Dim_PortBerth portberth with (nolock)
 							on portberth.PortAlternateKey = ufb.PortAlternateKey
 								and portberth.BerthAlternateKey = ufb.BerthAlternateKey
+						left join Warehouse.Dim_PortBerth loadportberth with (nolock)
+							on loadportberth.PortAlternateKey = ufb.PortAlternateKey
+								and loadportberth.BerthAlternateKey = ufb.BerthAlternateKey
+								and ufb.LoadDischarge = 'Load'
 						left join Warehouse.Dim_PortBerth dischportberth with (nolock)
 							on dischportberth.PortAlternateKey = ufb.PortAlternateKey
 								and dischportberth.BerthAlternateKey = ufb.BerthAlternateKey
@@ -2162,6 +2169,7 @@ begin
 					sfb.BerthAlternateKey,
 					sfb.LoadDischargeAlternateKey,
 					sfb.ParcelBerthAlternateKey,
+					sfb.LoadPortBerthKey,
 					sfb.DischargePortBerthKey,
 					sfb.PortBerthKey,
 					sfb.PostFixtureKey,
