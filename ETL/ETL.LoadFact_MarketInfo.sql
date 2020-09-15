@@ -60,8 +60,8 @@ begin
 				isnull(commdate.DateKey, -1)		CommencementDateKey,
 				isnull(canceldate.DateKey, -1)		CancellingDateKey,
 				isnull(v.VesselKey, -1)				VesselKey,
-				isnull(o.OwnerKey, -1)				OwnerKey,
-				isnull(ch.ChartererKey, -1)			ChartererKey,
+				isnull(o.OwnerParentKey, -1)		OwnerParentKey,
+				isnull(ch.ChartererParentKey, -1)	ChartererParentKey,
 				isnull(pq.ProductQuantityKey, -1)	ProductQuantityKey,
 				loadport2.PortName					LoadPort2,
 				dischport2.PortName					DischargePort2,
@@ -93,10 +93,10 @@ begin
 						on canceldate.FullDate = convert(date, mi.Cancelling)
 					left join Warehouse.Dim_Vessel v with (nolock)
 						on v.VesselAlternateKey = mi.RelatedVesselID
-					left join Warehouse.Dim_Owner o with (nolock)
-						on o.OwnerAlternateKey = mi.RelatedOwnerLinkID
-					left join Warehouse.Dim_Charterer ch with (nolock)
-						on ch.ChartererAlternateKey = mi.RelatedChartererID
+					left join Warehouse.Dim_OwnerParent o with (nolock)
+						on o.OwnerParentAlternateKey = mi.RelatedOwnerLinkID
+					left join Warehouse.Dim_ChartererParent ch with (nolock)
+						on ch.ChartererParentAlternateKey = mi.RelatedChartererID
 					left join Warehouse.Dim_ProductQuantity pq with (nolock)
 						on convert(decimal(18, 4), mi.ProductQuantity_ENTRY) between pq.MinimumQuantity and pq.MaximumQuantity;
 	end try
