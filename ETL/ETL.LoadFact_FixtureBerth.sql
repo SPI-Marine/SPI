@@ -255,7 +255,9 @@ begin
 						left join Warehouse.Dim_Charterer wch with (nolock)
 							on wch.ChartererAlternateKey = fs.RelatedChartererParentID
 						left join Warehouse.Dim_ProductQuantity pq with (nolock)
-							on convert(decimal(18, 4), ufb.ParcelQuantity) between pq.MinimumQuantity and pq.MaximumQuantity;
+							on convert(decimal(18, 4), ufb.ParcelQuantity) between pq.MinimumQuantity and pq.MaximumQuantity
+				where
+					isnull(fs.FullStyleName, '') <> 'ABC Charterer';
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging FixtureBerth records - ' + error_message();
