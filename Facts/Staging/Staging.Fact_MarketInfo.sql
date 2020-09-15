@@ -22,8 +22,8 @@ create table Staging.Fact_MarketInfo
 		CommencementDateKey						int					not null,
 		CancellingDateKey						int					not null,
 		VesselKey								int					not null,
-		OwnerKey								int					not null,
-		ChartererKey							int					not null,
+		OwnerParentKey							int					not null,
+		ChartererParentKey						int					not null,
 		ProductQuantityKey						int					not null,
 		LoadPort2								varchar(500)		null,		-- Degenerate Dimension Attributes
 		DischargePort2							varchar(500)		null,
