@@ -257,7 +257,8 @@ begin
 						left join Warehouse.Dim_ProductQuantity pq with (nolock)
 							on convert(decimal(18, 4), ufb.ParcelQuantity) between pq.MinimumQuantity and pq.MaximumQuantity
 				where
-					isnull(fs.FullStyleName, '') <> 'ABC Charterer';
+					isnull(fs.FullStyleName, '') <> 'ABC Charterer'
+					and wpostfixture.FixtureStatus <> 'Cancelled';
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging FixtureBerth records - ' + error_message();
@@ -1717,10 +1718,10 @@ begin
 				fbe with (tablock)
 			set
 				TimeToCountPumpingRate =	case										
-											when isnull(fbed.TimeToCountPumpingTime, 0.0) > 0
-												then isnull(fbe.ParcelQuantity/fbed.TimeToCountPumpingTime, 0)
-											else 0
-										end
+												when isnull(fbed.TimeToCountPumpingTime, 0.0) > 0
+													then isnull(fbe.ParcelQuantity/fbed.TimeToCountPumpingTime, 0)
+												else 0
+											end
 			from
 				(
 					select
