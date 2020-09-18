@@ -27,6 +27,7 @@ Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	08/19/2020	Added DischargePortBerthKey, LoadBerthKey
 Brian Boswick	08/21/2020	Renamed ProductQuantityKey to ProductFixtureBerthQuantityKey
 Brian Boswick	08/28/2020	Added LoadPortBerthKey
+Brian Boswick	09/18/2020	Removed Pump Rates > 2500 from average calcualtion
 ==========================================================================================================	
 */
 
@@ -2091,7 +2092,13 @@ begin
 					avg(fb.TimeToCountCommenceLoad_CompleteLoad)					AverageTimeToCountCommenceLoad_CompleteLoad,
 					avg(fb.TimeToCountCommenceDischarge_CompleteDischarge)			AverageTimeToCountCommenceDischarge_CompleteDischarge,
 					avg(fb.TimeToCountPumpingTime)									AverageLayTimePumpingTime,
-					avg(fb.TimeToCountPumpingRate)									AverageLayTimePumpingRate,
+					avg	(
+							case
+								when fb.TimeToCountPumpingRate > 2500
+									then null
+								else fb.TimeToCountPumpingRate
+							end
+						)															AverageLayTimePumpingRate,
 					avg(fb.LaytimeUsed)												AverageLaytimeUsed,
 					avg(fb.LaytimeAllowed)											AverageLaytimeAllowed,
 					avg(fb.PumpTime)												AveragePumpTime
