@@ -184,7 +184,9 @@ begin
 										from
 											Warehouse.Dim_PostFixture (nolock)
 								) rs
-						on rs.PostFixtureAlternateKey = fixture.QBRecId;
+						on rs.PostFixtureAlternateKey = fixture.QBRecId
+			where
+				isnull(fixture.FixtureStatus, '') not like '%TEST%';
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging PostFixture records - ' + error_message();

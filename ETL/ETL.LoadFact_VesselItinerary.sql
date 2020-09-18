@@ -53,6 +53,7 @@ begin
 																OwnerKey,
 																VesselKey,
 																COAKey,
+																DirectionKey,
 																ItineraryPortType,
 																Comments,
 																NORStartDate,
@@ -82,6 +83,7 @@ begin
 				isnull(wo.OwnerKey, -1)							OwnerKey,
 				isnull(v.VesselKey, -1)							VesselKey,
 				isnull(coa.COAKey, -1)							COAKey,
+				-1												DirectionKey,
 				vi.ItineraryPortType							ItineraryPortType,
 				vi.Comments										Comments,
 				firstnorevent.FirstNOREventDate					NORStartDate,
@@ -570,7 +572,8 @@ begin
 		update
 				Staging.Fact_VesselItinerary with (tablock)
 			set
-				Direction = wlp.Area
+				Direction = wlp.Area,
+				DirectionKey = lp.PortKey
 			from
 				LastDischargePort lp
 					join Warehouse.Dim_Port wlp
@@ -645,6 +648,7 @@ begin
 																	OwnerKey,
 																	VesselKey,
 																	COAKey,
+																	DirectionKey,
 																	ItineraryPortType,
 																	Comments,
 																	NORStartDate,
@@ -697,6 +701,7 @@ begin
 					fvi.OwnerKey,
 					fvi.VesselKey,
 					fvi.COAKey,
+					fvi.DirectionKey,
 					fvi.ItineraryPortType,
 					fvi.Comments,
 					fvi.NORStartDate,
@@ -761,6 +766,7 @@ begin
 				OwnerKey = fvi.OwnerKey,
 				VesselKey = fvi.VesselKey,
 				COAKey = fvi.COAKey,
+				DirectionKey = fvi.DirectionKey,
 				ItineraryPortType = fvi.ItineraryPortType,
 				Comments = fvi.Comments,
 				NORStartDate = fvi.NORStartDate,
