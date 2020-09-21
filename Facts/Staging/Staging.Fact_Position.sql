@@ -1,3 +1,6 @@
+drop table if exists Staging.Fact_Position;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -11,9 +14,6 @@ Brian Boswick	02/12/2020	Added Direction and ShippingArea
 Brian Boswick	09/21/2020	Changed OwnerKey to OwnerParentKey
 ==========================================================================================================	
 */
-
-drop table if exists Staging.Fact_Position;
-go
 
 create table Staging.Fact_Position
 	(
