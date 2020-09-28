@@ -21,6 +21,7 @@ Brian Boswick	02/20/2020	Added BunkerCharge ETL logic
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	07/30/2020	Added NOR/Hose Off dates for load/discharge ports
 Brian Boswick	08/21/2020	Changed ProductQuantityKey logic to aggregate to Fixture level
+Brian Boswick	09/28/2020	Added BaseFreightPMT and BunkerAdjustmentPMT ETL logic
 ==========================================================================================================	
 */
 
@@ -514,11 +515,13 @@ begin
 		(
 			select
 					ac.RelatedSPIFixtureId		PostFixtureAlternateKey,
-					sum(ac.Amount)			BunkerCharge
+					sum(ac.Amount)				BunkerCharge
 				from
 					AdditionalCharges ac with (nolock)
+						join AdditionalChargeType chgtype
+							on chgtype.RecordID = ac.RelatedAdditionalChargeType
 				where
-					ac.[Type] = 'Bunker Adjustment'
+					chgtype.ChargeType = 'Bunker Adjustment'
 				group by
 					ac.RelatedSPIFixtureId
 		)
@@ -538,6 +541,21 @@ begin
 	end try
 	begin catch
 		select @ErrorMsg = 'Calculating BunkerCharge - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+	
+	-- Calculate BaseFreightPMT/BunkerAdjustmentPMT for the Parcel
+	begin try
+		update
+				Staging.Fact_Parcel with (tablock)
+			set
+				BaseFreightPMT = ParcelFreightAmountQBC/BLQty,
+				BunkerAdjustmentPMT = BunkerCharge/BLQty
+			where
+				BLQty > 0;
+	end try
+	begin catch
+		select @ErrorMsg = 'Calculating BaseFreightPMT/BunkerAdjustmentPMT - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch
 	
@@ -581,6 +599,8 @@ begin
 															DischargeLaytimeAllowed,
 															DischargeLaytimeUsed,
 															BunkerCharge,
+															BaseFreightPMT,
+															BunkerAdjustmentPMT,
 															LoadNORStartDate,
 															LoadLastHoseOffDate,
 															DischargeNORStartDate,
@@ -620,6 +640,8 @@ begin
 					sfp.DischargeLaytimeAllowed,
 					sfp.DischargeLaytimeUsed,
 					sfp.BunkerCharge,
+					sfp.BaseFreightPMT,
+					sfp.BunkerAdjustmentPMT,
 					sfp.LoadNORStartDate,
 					sfp.LoadLastHoseOffDate,
 					sfp.DischargeNORStartDate,

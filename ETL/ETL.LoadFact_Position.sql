@@ -16,6 +16,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/10/2020	Added OwnerKey ETL logic
 Brian Boswick	02/12/2020	Added Direction and ShippingArea ETL logic
+Brian Boswick	09/21/2020	Changed OwnerKey to OwnerParentKey and repointed to Dim_OwnerParent
 ==========================================================================================================	
 */
 
@@ -42,7 +43,7 @@ begin
 															VesselKey,
 															OpenDateKey,
 															EndDateKey,
-															OwnerKey,
+															OwnerParentKey,
 															Comments,
 															StatusCalculation,
 															LastCargo,
@@ -59,7 +60,7 @@ begin
 				isnull(v.VesselKey, -1)				VesselKey,
 				isnull(od.DateKey, -1)				OpenDateKey,
 				isnull(ed.DateKey, -1)				EndDateKey,
-				isnull(o.OwnerKey, -1)				OwnerKey,
+				isnull(o.OwnerParentKey, -1)		OwnerParentKey,
 				p.Comments							Comments,
 				p.StatusCalculation_ADMIN			StatusCalculation,
 				p.LastCargo							LastCargo,
@@ -81,8 +82,8 @@ begin
 						on prod.ProductAlternateKey = p.RelatedProductID
 					left join Warehouse.Dim_Port dischport with (nolock)
 						on dischport.PortName = isnull(p.Direction, '')
-					left join Warehouse.Dim_Owner o with (nolock)
-						on o.OwnerAlternateKey = p.RelatedOwnerParentID
+					left join Warehouse.Dim_OwnerParent o with (nolock)
+						on o.OwnerParentAlternateKey = p.RelatedOwnerParentID
 					left join ShippingAreas sa with (nolock)
 						on sa.QBRecId = p.RelatedShippingAreaID_P;
 	end try
@@ -106,7 +107,7 @@ begin
 															VesselKey,
 															OpenDateKey,
 															EndDateKey,
-															OwnerKey,
+															OwnerParentKey,
 															Comments,
 															StatusCalculation,
 															LastCargo,
@@ -124,7 +125,7 @@ begin
 					sp.VesselKey,
 					sp.OpenDateKey,
 					sp.EndDateKey,
-					sp.OwnerKey,
+					sp.OwnerParentKey,
 					sp.Comments,
 					sp.StatusCalculation,
 					sp.LastCargo,

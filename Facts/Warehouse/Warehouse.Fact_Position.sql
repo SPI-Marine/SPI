@@ -1,3 +1,6 @@
+drop table if exists Warehouse.Fact_Position;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -8,11 +11,9 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/10/2020	Added OwnerKey ETL logic
 Brian Boswick	02/12/2020	Added Direction and ShippingArea
+Brian Boswick	09/21/2020	Changed OwnerKey to OwnerParentKey
 ==========================================================================================================	
 */
-
-drop table if exists Warehouse.Fact_Position;
-go
 
 create table Warehouse.Fact_Position
 	(
@@ -24,7 +25,7 @@ create table Warehouse.Fact_Position
 		VesselKey								int					not null,
 		OpenDateKey								int					not null,
 		EndDateKey								int					not null,
-		OwnerKey								int					not null,
+		OwnerParentKey							int					not null,
 		Comments								varchar(500)		null,		-- Degenerate Dimension Attributes
 		StatusCalculation						varchar(500)		null,
 		LastCargo								varchar(500)		null,
