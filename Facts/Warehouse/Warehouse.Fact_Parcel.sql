@@ -15,6 +15,7 @@ Brian Boswick	02/20/2020	Added BunkerCharge
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	07/30/2020	Added NOR/Hose Off dates for load/discharge ports
 Brian Boswick	08/21/2020	Changed ProductQuantityKey logic to aggregate to Fixture level
+Brian Boswick	09/28/2020	Added BaseFreightPMT and BunkerAdjustmentPMT fields
 ==========================================================================================================	
 */
 
@@ -56,6 +57,8 @@ create table Warehouse.Fact_Parcel
 		DischargeLaytimeAllowed					decimal(18, 6)		null,
 		DischargeLaytimeUsed					decimal(18, 6)		null,
 		BunkerCharge							decimal(18, 6)		null,
+		BaseFreightPMT							decimal(18, 6)		null,
+		BunkerAdjustmentPMT						decimal(18, 6)		null,
 		LoadNORStartDate						date				null,
 		LoadLastHoseOffDate						date				null,
 		DischargeNORStartDate					date				null,
