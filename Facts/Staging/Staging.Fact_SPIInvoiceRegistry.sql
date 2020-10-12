@@ -8,6 +8,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	08/27/2020	Added InvoiceTypeCategory
+Brian Boswick	10/01/2020	Added RegionFormula
 ==========================================================================================================	
 */
 
@@ -36,6 +37,7 @@ create table Staging.Fact_SPIInvoiceRegistry
 		InvoiceStatus											varchar(100)		null,
 		VesselFormula											varchar(100)		null,
 		OfficeFormula											varchar(100)		null,
+		RegionFormula											varchar(100)		null,
 		BrokerFormula											varchar(100)		null,
 		ChartererFormula										varchar(100)		null,
 		OwnerFormula											varchar(100)		null,
