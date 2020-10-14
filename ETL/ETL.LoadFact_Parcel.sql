@@ -22,6 +22,7 @@ Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	07/30/2020	Added NOR/Hose Off dates for load/discharge ports
 Brian Boswick	08/21/2020	Changed ProductQuantityKey logic to aggregate to Fixture level
 Brian Boswick	09/28/2020	Added BaseFreightPMT and BunkerAdjustmentPMT ETL logic
+Brian Boswick	10/12/2020	Added SupplierName/ReceiverName
 ==========================================================================================================	
 */
 
@@ -66,6 +67,8 @@ begin
 														DemurrageAgreedAmount_QBC,
 														DemurrageClaimAmount_QBC,
 														DeadfreightQty,
+														SupplierName,
+														ReceiverName,
 														LoadPortAlternateKey,
 														DischargePortAlternateKey,
 														PostFixtureAlternateKey
@@ -98,6 +101,8 @@ begin
 				p.DemurrageAgreedAmount_QBC,
 				p.DemurrageClaimAmount_QBC,
 				p.DeadfreightQty,
+				p.SupplierName,
+				p.ReceiverName,
 				wdloadport.PortAlternateKey						LoadPortAlternateKey,
 				wddischport.PortAlternateKey					DischargePortAlternateKey,
 				wdpostfixture.PostFixtureAlternateKey
@@ -605,6 +610,8 @@ begin
 															LoadLastHoseOffDate,
 															DischargeNORStartDate,
 															DischargeLastHoseOffDate,
+															SupplierName,
+															ReceiverName,
 															RowCreatedDate
 														)
 			select
@@ -646,6 +653,8 @@ begin
 					sfp.LoadLastHoseOffDate,
 					sfp.DischargeNORStartDate,
 					sfp.DischargeLastHoseOffDate,
+					sfp.SupplierName,
+					sfp.ReceiverName,
 					getdate()
 				from
 					Staging.Fact_Parcel sfp with (nolock);
