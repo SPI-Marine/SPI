@@ -1,3 +1,6 @@
+drop table if exists Staging.Fact_VesselItinerary;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -15,11 +18,9 @@ Brian Boswick	02/11/2020	Added VesselKey
 Brian Boswick	02/21/2020	Added Direction and ProductType
 Brian Boswick	05/06/2020	Added VesselPortStatusOfficial
 Brian Boswick	07/29/2020	Added COAKey
+Brian Boswick	10/12/2020	Added ETAEndOriginal
 ==========================================================================================================	
 */
-
-drop table if exists Staging.Fact_VesselItinerary;
-go
 
 create table Staging.Fact_VesselItinerary
 	(
@@ -39,6 +40,7 @@ create table Staging.Fact_VesselItinerary
 		NORStartDate							date				null,
 		ETAOriginalDate							date				null,
 		ETAOriginalCreateDate					date				null,
+		ETAEndOriginal							date				null,
 		TwoWeekETA								date				null,
 		OneWeekETA								date				null,
 		MostRecentETADate						date				null,
