@@ -23,6 +23,8 @@ Brian Boswick	07/30/2020	Added NOR/Hose Off dates for load/discharge ports
 Brian Boswick	08/21/2020	Changed ProductQuantityKey logic to aggregate to Fixture level
 Brian Boswick	09/28/2020	Added BaseFreightPMT and BunkerAdjustmentPMT ETL logic
 Brian Boswick	10/12/2020	Added SupplierName/ReceiverName
+Brian Boswick	10/15/2020	Adjusted Product Quantity calculation to include Nominated Quantity when
+							BL Quantity is not available
 ==========================================================================================================	
 */
 
@@ -292,7 +294,7 @@ begin
 				select
 						wpf.PostFixtureKey,
 						wloadberth.BerthKey,
-						sum(p.BLQty) TotalBerthBLQty
+						sum(coalesce(p.NominatedQty, p.BLQty, 0.0)) TotalBerthBLQty
 					from
 						Parcels p with (nolock)
 							join ParcelBerths loadberth with (nolock)
@@ -315,7 +317,7 @@ begin
 				select
 						wpf.PostFixtureKey,
 						wdischberth.BerthKey,
-						sum(p.BLQty) TotalBerthBLQty
+						sum(coalesce(p.NominatedQty, p.BLQty, 0.0)) TotalBerthBLQty
 					from
 						Parcels p with (nolock)
 							join ParcelBerths dischberth with (nolock)
@@ -336,7 +338,7 @@ begin
 			(
 				select
 						wpf.PostFixtureKey,
-						sum(p.BLQty) TotalFixtureBLQty
+						sum(coalesce(p.NominatedQty, p.BLQty, 0.0)) TotalFixtureBLQty
 					from
 						Parcels p with (nolock)
 							join Warehouse.Dim_PostFixture wpf with (nolock)
