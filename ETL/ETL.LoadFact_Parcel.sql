@@ -294,7 +294,13 @@ begin
 				select
 						wpf.PostFixtureKey,
 						wloadberth.BerthKey,
-						sum(coalesce(p.NominatedQty, p.BLQty, 0.0)) TotalBerthBLQty
+						sum	(
+								case
+									when isnull(p.BLQty, 0.0) = 0.0
+										then p.NominatedQty
+									else p.BLQty
+								end
+							) TotalBerthBLQty
 					from
 						Parcels p with (nolock)
 							join ParcelBerths loadberth with (nolock)
@@ -317,7 +323,13 @@ begin
 				select
 						wpf.PostFixtureKey,
 						wdischberth.BerthKey,
-						sum(coalesce(p.NominatedQty, p.BLQty, 0.0)) TotalBerthBLQty
+						sum	(
+								case
+									when isnull(p.BLQty, 0.0) = 0.0
+										then p.NominatedQty
+									else p.BLQty
+								end
+							) TotalBerthBLQty
 					from
 						Parcels p with (nolock)
 							join ParcelBerths dischberth with (nolock)
@@ -338,7 +350,13 @@ begin
 			(
 				select
 						wpf.PostFixtureKey,
-						sum(coalesce(p.NominatedQty, p.BLQty, 0.0)) TotalFixtureBLQty
+						sum	(
+								case
+									when isnull(p.BLQty, 0.0) = 0.0
+										then p.NominatedQty
+									else p.BLQty
+								end
+							) TotalFixtureBLQty
 					from
 						Parcels p with (nolock)
 							join Warehouse.Dim_PostFixture wpf with (nolock)
