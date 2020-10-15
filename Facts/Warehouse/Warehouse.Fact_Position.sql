@@ -26,7 +26,7 @@ create table Warehouse.Fact_Position
 		OpenDateKey								int					not null,
 		EndDateKey								int					not null,
 		OwnerParentKey							int					not null,
-		Comments								varchar(500)		null,		-- Degenerate Dimension Attributes
+		Comments								varchar(5000)		null,		-- Degenerate Dimension Attributes
 		StatusCalculation						varchar(500)		null,
 		LastCargo								varchar(500)		null,
 		FOFSA									varchar(500)		null,

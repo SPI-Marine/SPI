@@ -24,6 +24,7 @@ Brian Boswick	02/11/2020	Added VesselKey ETL logic
 Brian Boswick	02/21/2020	Added Direction and ProductType ETL logic
 Brian Boswick	05/06/2020	Added VesselPortStatusOfficial
 Brian Boswick	07/29/2020	Added COAKey
+Brian Boswick	10/12/2020	Added ETAEndOriginal
 ==========================================================================================================	
 */
 
@@ -59,6 +60,7 @@ begin
 																NORStartDate,
 																ETAOriginalDate,
 																ETAOriginalCreateDate,
+																ETAEndOriginal,
 																MostRecentETADate,
 																ETALastModifiedDate,
 																LoadDischarge,
@@ -89,6 +91,7 @@ begin
 				firstnorevent.FirstNOREventDate					NORStartDate,
 				vi.ETAStartOriginal_ADMIN						ETAOriginalDate,
 				vi.OriginalETACreatedOn_ADMIN					ETAOriginalCreateDate,
+				loaddischarge.ETAEndOriginal					ETAEndOriginal,
 				coalesce(vi.ETAStart, wvi.MostRecentETADate)	MostRecentETADate,
 				vi.DateETAWasUpdatedByOperator_BETA				ETALastModifiedDate,
 				loaddischarge.[Type]							LoadDischarge,
@@ -654,6 +657,7 @@ begin
 																	NORStartDate,
 																	ETAOriginalDate,
 																	ETAOriginalCreateDate,
+																	ETAEndOriginal,
 																	TwoWeekETA,
 																	OneWeekETA,
 																	MostRecentETADate,
@@ -707,6 +711,7 @@ begin
 					fvi.NORStartDate,
 					fvi.ETAOriginalDate,
 					fvi.ETAOriginalCreateDate,
+					fvi.ETAEndOriginal,
 					fvi.TwoWeekETA,
 					fvi.OneWeekETA,
 					fvi.MostRecentETADate,

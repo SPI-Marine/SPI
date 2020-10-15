@@ -69,8 +69,8 @@ begin
 				fixture.DemurrageRate,
 				replace(fixture.TimeBar, ',', '')			TimeBar,
 				null										HoseOffDateFinal,
-				fixture.AddressCommissionPercent,
-				fixture.BrokerCommissionPercent,
+				try_convert(decimal(18, 4), fixture.AddressCommissionPercent)/100.0,
+				try_convert(decimal(18, 4), fixture.BrokerCommissionPercent)/100.0,
 				case
 					when isnull(LaytimeBasedOn_ADMIN , '') = 'Berths'
 						then 'Varies By Berth'
