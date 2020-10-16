@@ -1,3 +1,6 @@
+drop table if exists Staging.Fact_MarketInfo;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -6,11 +9,10 @@ Description:	Creates the Staging.Fact_MarketInfo table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	02/20/2020	Added BasisDataEntry
+Brian Boswick	10/16/2020	Added PandC
 ==========================================================================================================	
 */
-
-drop table if exists Staging.Fact_MarketInfo;
-go
 
 create table Staging.Fact_MarketInfo
 	(
@@ -31,6 +33,7 @@ create table Staging.Fact_MarketInfo
 		MarketInfoType							varchar(500)		null,
 		Unit									varchar(50)			null,
 		BasisDataEntry							varchar(500)		null,
+		PandC									varchar(50)			null,
 		FreightRatePayment						numeric(18, 5)		null,		-- Metrics
 		ProductQuantity							numeric(18, 5)		null,
 		constraint [PK_Staging_Fact_MarketInfo_AltKey] primary key clustered 

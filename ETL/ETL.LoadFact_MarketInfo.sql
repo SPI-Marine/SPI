@@ -14,6 +14,8 @@ Description:	Creates the LoadFact_MarketInfo stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	02/20/2020	Added BasisDataEntry
+Brian Boswick	10/16/2020	Added PandC
 ==========================================================================================================	
 */
 
@@ -48,6 +50,7 @@ begin
 															MarketInfoType,
 															Unit,
 															BasisDataEntry,
+															PandC,
 															FreightRatePayment,
 															ProductQuantity
 														)
@@ -69,6 +72,7 @@ begin
 				mi.[Type]							MarketInfoType,
 				mi.Unit								Unit,
 				mi.BasisDataEntry					BasisDataEntry,
+				mi.PandC							PandC,
 				mi.FreightRatePMTEntry				FreightRatePayment,
 				mi.ProductQuantity_ENTRY			ProductQuantity
 			from
@@ -130,6 +134,7 @@ begin
 																MarketInfoType,
 																Unit,
 																BasisDataEntry,
+																PandC,
 																FreightRatePayment,
 																ProductQuantity,
 																RowCreatedDate
@@ -152,6 +157,7 @@ begin
 					fmi.MarketInfoType,
 					fmi.Unit,
 					fmi.BasisDataEntry,
+					fmi.PandC,
 					fmi.FreightRatePayment,
 					fmi.ProductQuantity,
 					getdate()

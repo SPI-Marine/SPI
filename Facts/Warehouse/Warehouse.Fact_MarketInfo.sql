@@ -1,3 +1,6 @@
+drop table if exists Warehouse.Fact_MarketInfo;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -7,11 +10,9 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/20/2020	Added BasisDataEntry
+Brian Boswick	10/16/2020	Added PandC
 ==========================================================================================================	
 */
-
-drop table if exists Warehouse.Fact_MarketInfo;
-go
 
 create table Warehouse.Fact_MarketInfo
 	(
@@ -33,6 +34,7 @@ create table Warehouse.Fact_MarketInfo
 		MarketInfoType							varchar(500)		null,
 		Unit									varchar(50)			null,
 		BasisDataEntry							varchar(500)		null,
+		PandC									varchar(50)			null,
 		FreightRatePayment						numeric(18, 5)		null,		-- Metrics
 		ProductQuantity							numeric(18, 5)		null,
 		RowCreatedDate							datetime			not null,
