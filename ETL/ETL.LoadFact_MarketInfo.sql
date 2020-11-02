@@ -16,6 +16,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/20/2020	Added BasisDataEntry
 Brian Boswick	10/16/2020	Added PandC
+Brian Boswick	11/01/2020	Added LastModifiedBy
 ==========================================================================================================	
 */
 
@@ -51,6 +52,7 @@ begin
 															Unit,
 															BasisDataEntry,
 															PandC,
+															LastModifiedBy,
 															FreightRatePayment,
 															ProductQuantity
 														)
@@ -73,6 +75,7 @@ begin
 				mi.Unit								Unit,
 				mi.BasisDataEntry					BasisDataEntry,
 				mi.PandC							PandC,
+				mi.LastModifiedBy					LastModifiedBy,
 				mi.FreightRatePMTEntry				FreightRatePayment,
 				mi.ProductQuantity_ENTRY			ProductQuantity
 			from
@@ -135,6 +138,7 @@ begin
 																Unit,
 																BasisDataEntry,
 																PandC,
+																LastModifiedBy,
 																FreightRatePayment,
 																ProductQuantity,
 																RowCreatedDate
@@ -158,6 +162,7 @@ begin
 					fmi.Unit,
 					fmi.BasisDataEntry,
 					fmi.PandC,
+					fmi.LastModifiedBy,
 					fmi.FreightRatePayment,
 					fmi.ProductQuantity,
 					getdate()

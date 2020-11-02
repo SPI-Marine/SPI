@@ -11,6 +11,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/20/2020	Added BasisDataEntry
 Brian Boswick	10/16/2020	Added PandC
+Brian Boswick	11/01/2020	Added LastModifiedBy
 ==========================================================================================================	
 */
 
@@ -34,6 +35,7 @@ create table Staging.Fact_MarketInfo
 		Unit									varchar(50)			null,
 		BasisDataEntry							varchar(500)		null,
 		PandC									varchar(50)			null,
+		LastModifiedBy							varchar(250)		null,
 		FreightRatePayment						numeric(18, 5)		null,		-- Metrics
 		ProductQuantity							numeric(18, 5)		null,
 		constraint [PK_Staging_Fact_MarketInfo_AltKey] primary key clustered 
