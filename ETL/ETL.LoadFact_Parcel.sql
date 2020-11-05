@@ -25,6 +25,7 @@ Brian Boswick	09/28/2020	Added BaseFreightPMT and BunkerAdjustmentPMT ETL logic
 Brian Boswick	10/12/2020	Added SupplierName/ReceiverName
 Brian Boswick	10/15/2020	Adjusted Product Quantity calculation to include Nominated Quantity when
 							BL Quantity is not available
+Brian Boswick	11/05/2020	Modified ETL for new quantity ranges
 ==========================================================================================================	
 */
 
@@ -382,7 +383,8 @@ begin
 					left join AggregateFixtureBLQty fpq
 						on fpq.PostFixtureKey = sfp.PostFixtureKey
 					left join Warehouse.Dim_ProductQuantity dpq
-						on convert(decimal(18, 2), fpq.TotalFixtureBLQty) between dpq.MinimumQuantity and dpq.MaximumQuantity;
+						on convert(decimal(18, 2), fpq.TotalFixtureBLQty) >= dpq.MinimumQuantity
+							and convert(decimal(18, 2), fpq.TotalFixtureBLQty) < dpq.MaximumQuantity;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating Berth/Fixture BL Quantity metrics - ' + error_message();

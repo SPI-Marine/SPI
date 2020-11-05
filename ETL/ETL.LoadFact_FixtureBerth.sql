@@ -29,6 +29,7 @@ Brian Boswick	08/21/2020	Renamed ProductQuantityKey to ProductFixtureBerthQuanti
 Brian Boswick	08/28/2020	Added LoadPortBerthKey
 Brian Boswick	09/18/2020	Removed Pump Rates > 2500 from average calcualtion
 Brian Boswick	10/22/2020	Added BerthPumpRate
+Brian Boswick	11/05/2020	Modified ETL for new quantity ranges
 ==========================================================================================================	
 */
 
@@ -257,7 +258,8 @@ begin
 						left join Warehouse.Dim_Charterer wch with (nolock)
 							on wch.ChartererAlternateKey = fs.RelatedChartererParentID
 						left join Warehouse.Dim_ProductQuantity pq with (nolock)
-							on convert(decimal(18, 4), ufb.ParcelQuantity) between pq.MinimumQuantity and pq.MaximumQuantity
+							on convert(decimal(18, 4), ufb.ParcelQuantity) >= pq.MinimumQuantity
+								and convert(decimal(18, 4), ufb.ParcelQuantity) < pq.MaximumQuantity
 				where
 					isnull(fs.FullStyleName, '') <> 'ABC Charterer'
 					and wpostfixture.FixtureStatus <> 'Cancelled';

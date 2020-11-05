@@ -17,6 +17,7 @@ Developer		Date		Change
 Brian Boswick	02/20/2020	Added BasisDataEntry
 Brian Boswick	10/16/2020	Added PandC
 Brian Boswick	11/01/2020	Added LastModifiedBy
+Brian Boswick	11/05/2020	Modified ETL for new quantity ranges
 ==========================================================================================================	
 */
 
@@ -105,7 +106,8 @@ begin
 					left join Warehouse.Dim_ChartererParent ch with (nolock)
 						on ch.ChartererParentAlternateKey = mi.RelatedChartererID
 					left join Warehouse.Dim_ProductQuantity pq with (nolock)
-						on convert(decimal(18, 4), mi.ProductQuantity_ENTRY) between pq.MinimumQuantity and pq.MaximumQuantity;
+						on convert(decimal(18, 4), mi.ProductQuantity_ENTRY) >= pq.MinimumQuantity
+							and convert(decimal(18, 4), mi.ProductQuantity_ENTRY) < pq.MaximumQuantity;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging MarketInfo records - ' + error_message();
