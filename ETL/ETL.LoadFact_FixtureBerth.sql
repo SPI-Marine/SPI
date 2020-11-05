@@ -28,6 +28,8 @@ Brian Boswick	08/19/2020	Added DischargePortBerthKey, LoadBerthKey
 Brian Boswick	08/21/2020	Renamed ProductQuantityKey to ProductFixtureBerthQuantityKey
 Brian Boswick	08/28/2020	Added LoadPortBerthKey
 Brian Boswick	09/18/2020	Removed Pump Rates > 2500 from average calcualtion
+Brian Boswick	10/22/2020	Added BerthPumpRate
+Brian Boswick	11/05/2020	Modified ETL for new quantity ranges
 ==========================================================================================================	
 */
 
@@ -256,7 +258,8 @@ begin
 						left join Warehouse.Dim_Charterer wch with (nolock)
 							on wch.ChartererAlternateKey = fs.RelatedChartererParentID
 						left join Warehouse.Dim_ProductQuantity pq with (nolock)
-							on convert(decimal(18, 4), ufb.ParcelQuantity) between pq.MinimumQuantity and pq.MaximumQuantity
+							on convert(decimal(18, 4), ufb.ParcelQuantity) >= pq.MinimumQuantity
+								and convert(decimal(18, 4), ufb.ParcelQuantity) < pq.MaximumQuantity
 				where
 					isnull(fs.FullStyleName, '') <> 'ABC Charterer'
 					and wpostfixture.FixtureStatus <> 'Cancelled';
@@ -1808,6 +1811,39 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+	-- Update BerthPumpRate
+	begin try
+		update
+				fb with (tablock)
+			set
+				BerthPumpRate =	case										
+									when isnull(fbed.PumpTime, 0.0) > 0
+										then isnull(fb.ParcelQuantity/fbed.PumpTime, 0)
+									else 0
+								end
+			from
+				Staging.Fact_FixtureBerth fb
+					left join	(
+									select
+											sum(fbe.Duration)				PumpTime,
+											fbe.PostFixtureAlternateKey		PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey		ParcelBerthAlternateKey
+										from
+											Staging.Fact_FixtureBerthEvents fbe with (nolock)
+										where
+											fbe.IsPumpingTime = 'Y'
+										group by
+											fbe.PostFixtureAlternateKey,
+											fbe.ParcelBerthAlternateKey
+								) fbed
+						on fbed.PostFixtureAlternateKey = fb.PostFixtureAlternateKey
+							and fbed.ParcelBerthAlternateKey = fb.ParcelBerthAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating BerthPumpRate - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
 	-- Update ParcelQuantityTShirtSize
 	begin try
 		update
@@ -2261,6 +2297,7 @@ begin
 					sfb.LaytimeAllowed,
 					sfb.AverageLaytimeAllowed,
 					sfb.PumpTime,
+					sfb.BerthPumpRate,
 					sfb.AveragePumpTime,
 					sfb.WithinLaycanOriginal,
 					sfb.LaycanOverUnderOriginal,

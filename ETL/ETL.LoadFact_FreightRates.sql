@@ -15,6 +15,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/12/2020	Added ProductQuantityKey ETL logic
+Brian Boswick	11/05/2020	Modified ETL for new quantity ranges
 ==========================================================================================================	
 */
 
@@ -54,7 +55,8 @@ begin
 					left join Warehouse.Dim_Calendar rd with (nolock)
 						on rd.FullDate = convert(date, fr.DateReported)
 					left join Warehouse.Dim_ProductQuantity pq with (nolock)
-							on convert(decimal(18, 4), fr.ProductQty) between pq.MinimumQuantity and pq.MaximumQuantity;
+						on convert(decimal(18, 4), fr.ProductQty) >= pq.MinimumQuantity
+							and convert(decimal(18, 4), fr.ProductQty) < pq.MaximumQuantity;
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging FreightRates records - ' + error_message();

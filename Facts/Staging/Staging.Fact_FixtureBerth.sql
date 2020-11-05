@@ -16,6 +16,7 @@ Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	08/19/2020	Added DischargePortBerthKey, LoadBerthKey
 Brian Boswick	08/21/2020	Renamed ProductQuantityKey to ProductFixtureBerthQuantityKey
 Brian Boswick	08/28/2020	Added LoadPortBerthKey
+Brian Boswick	10/22/2020	Added BerthPumpRate
 ==========================================================================================================	
 */
 
@@ -111,6 +112,7 @@ create table Staging.Fact_FixtureBerth
 		LaytimeAllowed											decimal(20, 8)		null,
 		AverageLaytimeAllowed									decimal(20, 8)		null,
 		PumpTime												decimal(20, 8)		null,
+		BerthPumpRate											decimal(20, 8)		null,
 		AveragePumpTime											decimal(20, 8)		null,
 		WithinLaycanOriginal									smallint			null,
 		LaycanOverUnderOriginal									decimal(18,6)		null,

@@ -16,6 +16,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	08/27/2020	Added InvoiceTypeCategory
+Brian Boswick	11/05/2020	Modified ETL for new quantity ranges
 ==========================================================================================================	
 */
 
@@ -173,7 +174,8 @@ begin
 					left join Warehouse.Dim_Product product with (nolock)
 						on product.ProductAlternateKey = loadproduct.ProductAlternateKey
 					left join Warehouse.Dim_ProductQuantity pq with (nolock)
-						on loadproduct.Qty between pq.MinimumQuantity and pq.MaximumQuantity
+						on loadproduct.Qty >= pq.MinimumQuantity
+							and loadproduct.Qty < pq.MaximumQuantity
 			where
 				ir.InvoiceNumberOfficial_INVOICE not like '%draft%'
 				and isnull(cast(replace(ir.InvoiceAmountSnapShot_ADMIN, ',', '') as numeric(20, 6)), 0.0) <> 0.0
