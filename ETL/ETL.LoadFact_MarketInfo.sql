@@ -54,6 +54,7 @@ begin
 															BasisDataEntry,
 															PandC,
 															LastModifiedBy,
+															Comments,
 															FreightRatePayment,
 															ProductQuantity
 														)
@@ -77,6 +78,7 @@ begin
 				mi.BasisDataEntry					BasisDataEntry,
 				mi.PandC							PandC,
 				mi.LastModifiedBy					LastModifiedBy,
+				mi.Notes							Comments,
 				mi.FreightRatePMTEntry				FreightRatePayment,
 				mi.ProductQuantity_ENTRY			ProductQuantity
 			from
@@ -141,6 +143,7 @@ begin
 																BasisDataEntry,
 																PandC,
 																LastModifiedBy,
+																Comments,
 																FreightRatePayment,
 																ProductQuantity,
 																RowCreatedDate
@@ -165,6 +168,7 @@ begin
 					fmi.BasisDataEntry,
 					fmi.PandC,
 					fmi.LastModifiedBy,
+					fmi.Comments,
 					fmi.FreightRatePayment,
 					fmi.ProductQuantity,
 					getdate()
