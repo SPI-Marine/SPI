@@ -18,6 +18,7 @@ Brian Boswick	02/20/2020	Added BasisDataEntry
 Brian Boswick	10/16/2020	Added PandC
 Brian Boswick	11/01/2020	Added LastModifiedBy
 Brian Boswick	11/05/2020	Modified ETL for new quantity ranges
+Brian Boswick	11/13/2020	Added Comments
 ==========================================================================================================	
 */
 
