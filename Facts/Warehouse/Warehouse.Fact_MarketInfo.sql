@@ -37,6 +37,7 @@ create table Warehouse.Fact_MarketInfo
 		BasisDataEntry							varchar(500)		null,
 		PandC									varchar(50)			null,
 		LastModifiedBy							varchar(250)		null,
+		Comments								varchar(5000)		null,
 		FreightRatePayment						numeric(18, 5)		null,		-- Metrics
 		ProductQuantity							numeric(18, 5)		null,
 		RowCreatedDate							datetime			not null,
