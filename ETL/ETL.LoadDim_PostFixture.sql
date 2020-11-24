@@ -280,6 +280,51 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch
 
+	-- Update Product based on Max BLQty for fixture.  Used for RLS
+	begin try
+		with
+			MaxProduct	(
+								PostFixtureAlternateKey,
+								Product
+							)
+		as
+		(
+			select
+					parcel.RelatedSpiFixtureId PostFixtureAlternateKey,
+					max(p.ProductName) Product
+				from
+					ParcelProducts pp with (nolock)
+						join Products p with (nolock)
+							on pp.RelatedProductId = p.QBRecId
+						join Parcels parcel with (nolock)
+							on pp.QBRecId = parcel.RelatedParcelProductId
+				where
+					coalesce(parcel.BLQty, parcel.NominatedQty) =	(
+																		select
+																				coalesce(max(par.BLQty), max(par.NominatedQty))
+																			from
+																				Parcels par with (nolock)
+																			where
+																				par.RelatedSpiFixtureId = parcel.RelatedSpiFixtureId
+																	)
+				group by
+					parcel.RelatedSpiFixtureId
+		)
+
+		update
+				Staging.Dim_PostFixture with (tablock)
+			set
+				Product = mp.Product
+			from	
+				MaxProduct mp
+			where
+				mp.PostFixtureAlternateKey = Staging.Dim_PostFixture.PostFixtureAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating hash values - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
+	
 	-- Generate hash values for Type 1 changes. Only Type 1 SCDs
 	begin try
 		update
@@ -384,51 +429,6 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch
 
-	-- Update Product based on Max BLQty for fixture.  Used for RLS
-	begin try
-		with
-			MaxProduct	(
-								PostFixtureAlternateKey,
-								Product
-							)
-		as
-		(
-			select
-					parcel.RelatedSpiFixtureId PostFixtureAlternateKey,
-					max(p.ProductName) Product
-				from
-					ParcelProducts pp with (nolock)
-						join Products p with (nolock)
-							on pp.RelatedProductId = p.QBRecId
-						join Parcels parcel with (nolock)
-							on pp.QBRecId = parcel.RelatedParcelProductId
-				where
-					parcel.BLQty =	(
-										select
-												max(par.BLQty)
-											from
-												Parcels par with (nolock)
-											where
-												par.RelatedSpiFixtureId = parcel.RelatedSpiFixtureId
-									)
-				group by
-					parcel.RelatedSpiFixtureId
-		)
-
-		update
-				Staging.Dim_PostFixture with (tablock)
-			set
-				Product = mp.Product
-			from	
-				MaxProduct mp
-			where
-				mp.PostFixtureAlternateKey = Staging.Dim_PostFixture.PostFixtureAlternateKey;
-	end try
-	begin catch
-		select @ErrorMsg = 'Updating hash values - ' + error_message();
-		throw 51000, @ErrorMsg, 1;
-	end catch
-	
 	-- Insert new post fixtures into Warehouse table
 	begin try
 		insert
