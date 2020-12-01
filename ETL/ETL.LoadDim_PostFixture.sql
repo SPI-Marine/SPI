@@ -201,7 +201,7 @@ begin
 				LaycanStatus =	case
 									when LaycanCancellingFinal_QBC = LaycanCancellingOriginal
 											and LaycanCommencementFinal_QBC = LaycanCommencementOriginal
-										then 'No Change'
+										then 'Original'
 									when LaycanCancellingFinal_QBC > LaycanCancellingOriginal
 										then 'Extended'
 									when LaycanCommencementFinal_QBC between LaycanCommencementOriginal and LaycanCancellingOriginal
