@@ -50,7 +50,7 @@ create table Warehouse.Fact_SPIInvoiceRegistry
 		RowCreatedDate											date				not null,
 		constraint [PK_Warehouse_Fact_SPIInvoiceRegistry_Key] primary key clustered 
 		(
-			InvoiceKey asc
+			InvoiceKey, LoadPortKey, DischargePortKey asc
 		)
 			with 
 				(pad_index = off, statistics_norecompute = off, ignore_dup_key = off, allow_row_locks = on, allow_page_locks = on) 

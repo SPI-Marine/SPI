@@ -48,7 +48,7 @@ create table Staging.Fact_SPIInvoiceRegistry
 		InvoiceAmount											decimal(18, 5)		null,		-- Metrics
 		constraint [PK_Staging_Fact_SPIInvoiceRegistry_AltKey] primary key clustered 
 		(
-			InvoiceAlternateKey asc
+			InvoiceAlternateKey, LoadPortKey, DischargePortKey asc
 		)
 			with 
 				(pad_index = off, statistics_norecompute = off, ignore_dup_key = off, allow_row_locks = on, allow_page_locks = on) 
