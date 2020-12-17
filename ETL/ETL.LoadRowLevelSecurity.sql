@@ -29,6 +29,21 @@ begin
 		truncate table Warehouse.RowLevelSecurity;
 
 	begin try
+		with DimensionAlternateKeys(DimName, AlternateKey, FieldValue)
+		as
+		(
+			select distinct 'Product', p.ProductAlternateKey, p.ProductName from Warehouse.Dim_Product p
+			union
+			select distinct 'ChartererParent', cp.ChartererParentAlternateKey, cp.ChartererParentName from Warehouse.Dim_ChartererParent cp
+			union
+			select distinct 'OwnerParent', op.OwnerParentAlternateKey, op.OwnerParentName from Warehouse.Dim_OwnerParent op
+			union
+			select distinct 'Charterer', C.ChartererAlternateKey, c.FullStyleName from Warehouse.Dim_Charterer c
+			union
+			select distinct 'Owner', o.OwnerAlternateKey, o.FullStyleName from Warehouse.Dim_Owner o
+			union
+			select distinct 'Region', r.RegionAlternateKey, r.RegionName from Warehouse.Dim_Region r
+		)
 		insert
 				Warehouse.RowLevelSecurity with (tablock)	(
 																RecordID,
@@ -54,10 +69,29 @@ begin
 				rls.[GUID]							[GUID],
 				rls.MinCPDateToPull					MinCPDateToPull
 			from
-				Staging.RowLevelSecurity rls;
+				Staging.RowLevelSecurity rls
+					left join DimensionAlternateKeys prod
+						on prod.FieldValue = rls.Product
+							and prod.DimName = 'Product'
+					left join DimensionAlternateKeys chpar
+						on chpar.FieldValue = rls.ChartererParent
+							and chpar.DimName = 'ChartererParent'
+					left join DimensionAlternateKeys ownpar
+						on ownpar.FieldValue = rls.OwnerParent
+							and ownpar.DimName = 'OwnerParent'
+					left join DimensionAlternateKeys reg
+						on reg.FieldValue = rls.Product
+							and reg.DimName = 'Region'
+					left join DimensionAlternateKeys prod
+						on prod.FieldValue = rls.Product
+							and prod.DimName = 'Product'
+					left join DimensionAlternateKeys prod
+						on prod.FieldValue = rls.Product
+							and prod.DimName = 'Product'
+					;
 	end try
 	begin catch
-		select @ErrorMsg = 'Staging RowLevelSecurity records - ' + error_message();
+		select @ErrorMsg = 'Loading RowLevelSecurity records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch
 end
