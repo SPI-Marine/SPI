@@ -24,6 +24,7 @@ Brian Boswick	07/22/2020	Added FrtRateProjection
 Brian Boswick	07/28/2020	Added VoyageSummaryReportComments
 Brian Boswick	07/09/2020	Removed COA fields
 Brian Boswick	09/01/2020	Added SPIInitialDemurrageEstimate
+Brian Boswick	12/11/2020	Added AlternateKeys for RLS
 ==========================================================================================================	
 */
 
@@ -111,6 +112,13 @@ create table Warehouse.Dim_PostFixture
 		FrtRateProjection				decimal(18, 6)		null,
 		VoyageSummaryReportComments		varchar(1000)		null,
 		SPIInitialDemurrageEstimate		decimal(18, 6)		null,
+		ProductAlternateKey				int					null,		-- RLS fields
+		ChartererAlternateKey			int					null,
+		ChartererParentAlternateKey		int					null,
+		OwnerAlternateKey				int					null,
+		OwnerParentAlternateKey			int					null,
+		LoadRegionAlternateKey			int					null,
+		DischargeRegionAlternateKey		int					null,
 		Type1HashValue					varbinary(16)		not null,
 		RowCreatedDate					date				not null,
 		RowUpdatedDate					date				not null,

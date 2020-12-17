@@ -28,6 +28,7 @@ Brian Boswick	07/20/2020	Added HoseOffDateFinal ETL logic
 Brian Boswick	07/22/2020	Added FrtRateProjection ETL logic
 Brian Boswick	07/09/2020	Removed COA fields
 Brian Boswick	09/01/2020	Added SPIInitialDemurrageEstimate
+Brian Boswick	12/11/2020	Added AlternateKeys for RLS
 ==========================================================================================================	
 */
 
@@ -147,6 +148,13 @@ begin
 				fixture.FrtRateProjection,
 				fixture.VoyageSummaryReportComments_ADMIN,
 				fixture.SPIInitialDemurrageEstimate,
+				null ProductAlternateKey,
+				chartererfullstyle.QBRecId ChartererAlternateKey,
+				chartererparent.QBRecId ChartererParentAlternateKey,
+				ownerfullstyle.QBRecId OwnerAlternateKey,
+				ownerparent.QBRecId OwnerParentAlternateKey,
+				loadregion.QBRecId LoadRegionAlternateKey,
+				dischregion.QBRecId DischargeRegionAlternateKey,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -165,6 +173,10 @@ begin
 						on coa.RecordID = fixture.RelatedSPICOAId
 					left join SPIOffices office (nolock)
 						on office.QBRecId = fixture.RelatedSPIOfficeID
+					left join ShippingRegions loadregion
+						on loadregion.RegionName = fixture.LoadPortRegion
+					left join ShippingRegions dischregion
+						on dischregion.RegionName = fixture.DischPortRegion
 					left join	(
 									select
 											tm.EmailAddress,
@@ -285,13 +297,15 @@ begin
 		with
 			MaxProduct	(
 								PostFixtureAlternateKey,
-								Product
+								Product,
+								ProductAlternateKey
 							)
 		as
 		(
 			select
 					parcel.RelatedSpiFixtureId PostFixtureAlternateKey,
-					max(p.ProductName) Product
+					max(p.ProductName) Product,
+					max(p.QBRecId) ProductAlternateKey
 				from
 					ParcelProducts pp with (nolock)
 						join Products p with (nolock)
@@ -314,7 +328,8 @@ begin
 		update
 				Staging.Dim_PostFixture with (tablock)
 			set
-				Product = mp.Product
+				Product = mp.Product,
+				ProductAlternateKey = mp.PostFixtureAlternateKey
 			from	
 				MaxProduct mp
 			where
@@ -410,7 +425,14 @@ begin
 																LaycanStatus,
 																FrtRateProjection,
 																VoyageSummaryReportComments,
-																SPIInitialDemurrageEstimate
+																SPIInitialDemurrageEstimate,
+																ProductAlternateKey,
+																ChartererAlternateKey,
+																ChartererParentAlternateKey,
+																OwnerAlternateKey,
+																OwnerParentAlternateKey,
+																LoadRegionAlternateKey,
+																DischargeRegionAlternateKey
 															)
 												);
 		
@@ -512,6 +534,13 @@ begin
 					fixture.FrtRateProjection,
 					fixture.VoyageSummaryReportComments,
 					fixture.SPIInitialDemurrageEstimate,
+					fixture.ProductAlternateKey,
+					fixture.ChartererAlternateKey,
+					fixture.ChartererParentAlternateKey,
+					fixture.OwnerAlternateKey,
+					fixture.OwnerParentAlternateKey,
+					fixture.LoadRegionAlternateKey,
+					fixture.DischargeRegionAlternateKey,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -608,6 +637,13 @@ begin
 				FrtRateProjection = fixture.FrtRateProjection,
 				VoyageSummaryReportComments = fixture.VoyageSummaryReportComments,
 				SPIInitialDemurrageEstimate = fixture.SPIInitialDemurrageEstimate,
+				ProductAlternateKey = fixture.ProductAlternateKey,
+				ChartererAlternateKey = fixture.ChartererAlternateKey,
+				ChartererParentAlternateKey = fixture.ChartererParentAlternateKey,
+				OwnerAlternateKey = fixture.OwnerAlternateKey,
+				OwnerParentAlternateKey = fixture.OwnerParentAlternateKey,
+				LoadRegionAlternateKey = fixture.LoadRegionAlternateKey,
+				DischargeRegionAlternateKey = fixture.DischargeRegionAlternateKey,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -734,6 +770,13 @@ begin
 													FrtRateProjection,
 													VoyageSummaryReportComments,
 													SPIInitialDemurrageEstimate,
+													ProductAlternateKey,
+													ChartererAlternateKey,
+													ChartererParentAlternateKey,
+													OwnerAlternateKey,
+													OwnerParentAlternateKey,
+													LoadRegionAlternateKey,
+													DischargeRegionAlternateKey,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -820,6 +863,13 @@ begin
 							0.0,			-- FrtRateProjection
 							'Unknown',		-- VoyageSummaryReportComments
 							0.0,			-- SPIInitialDemurrageEstimate
+							0,				-- ProductAlternateKey
+							0,				-- ChartererAlternateKey
+							0,				-- ChartererParentAlternateKey
+							0,				-- OwnerAlternateKey
+							0,				-- OwnerParentAlternateKey
+							0,				-- LoadRegionAlternateKey
+							0,				-- DischargeRegionAlternateKey
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
