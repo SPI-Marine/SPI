@@ -34,7 +34,8 @@ begin
 		insert
 				Staging.Dim_ChartererParent with (tablock)
 		select
-				charterer.QBRecId,
+				charterer.QBRecId ChartererParentAlternateKey,
+				'cp_' + convert(varchar(50), charterer.QBRecId) ChartererParentRlsKey,
 				charterer.ChartererParentName,
 				charterer.Notes,
 				charterer.[Type],
@@ -65,6 +66,7 @@ begin
 				Type1HashValue =	hashbytes	(
 													'MD2',
 													concat	(
+																ChartererParentRlsKey,
 																ChartererParentName,
 																Notes,
 																[Type]
@@ -92,6 +94,7 @@ begin
 				Warehouse.Dim_ChartererParent  with (tablock)
 			select
 					charterer.ChartererParentAlternateKey,
+					charterer.ChartererParentRlsKey,
 					charterer.ChartererParentName,
 					charterer.Notes,
 					charterer.[Type],
@@ -114,6 +117,7 @@ begin
 		update
 				Warehouse.Dim_ChartererParent with (tablock)
 			set
+				ChartererParentRlsKey = charterer.ChartererParentRlsKey,
 				ChartererParentName = charterer.ChartererParentName,
 				Notes = charterer.Notes,
 				[Type] = charterer.[Type],
@@ -166,6 +170,7 @@ begin
 					Warehouse.Dim_ChartererParent with (tablock)	(
 																		ChartererParentKey,
 																		ChartererParentAlternateKey,
+																		ChartererParentRlsKey,
 																		ChartererParentName,
 																		Notes,
 																		[Type],
@@ -178,6 +183,7 @@ begin
 				values	(
 							-1,				-- ChartererParentKey
 							-1,				-- ChartererParentAlternateKey
+							'Unknown',		-- ChartererParentRlsKey
 							'Unknown',		-- ChartererParentName
 							'Unknown',		-- Notes
 							'Unknown',		-- [Type]

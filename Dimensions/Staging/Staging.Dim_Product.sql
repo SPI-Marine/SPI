@@ -1,3 +1,6 @@
+drop table if exists Staging.Dim_Product;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -10,12 +13,10 @@ Brian Boswick	04/10/2019	Added ProductType
 ==========================================================================================================	
 */
 
-drop table if exists Staging.Dim_Product;
-go
-
 create table Staging.Dim_Product
 	(
 		ProductAlternateKey		int					not null,
+		ProductRlsKey			varchar(100)		not null,
 		ProductName				nvarchar(250)		not null,
 		SpecificGravity			decimal(18, 4)		null,
 		RequiredCoating			nvarchar(250)		null,

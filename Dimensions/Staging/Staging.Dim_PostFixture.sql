@@ -111,13 +111,13 @@ create table Staging.Dim_PostFixture
 		FrtRateProjection				decimal(18, 6)		null,
 		VoyageSummaryReportComments		varchar(1000)		null,
 		SPIInitialDemurrageEstimate		decimal(18, 6)		null,
-		ProductAlternateKey				int					null,		-- RLS fields
-		ChartererAlternateKey			int					null,
-		ChartererParentAlternateKey		int					null,
-		OwnerAlternateKey				int					null,
-		OwnerParentAlternateKey			int					null,
-		LoadRegionAlternateKey			int					null,
-		DischargeRegionAlternateKey		int					null,
+		ProductRlsKey					varchar(150)		null,		-- RLS fields
+		ChartererRlsKey					varchar(150)		null,
+		ChartererParentRlsKey			varchar(150)		null,
+		OwnerRlsKey						varchar(150)		null,
+		OwnerParentRlsKey				varchar(150)		null,
+		LoadRegionRlsKey				varchar(150)		null,
+		DischargeRegionRlsKey			varchar(150)		null,
 		Type1HashValue					varbinary(16)		not null,
 		RecordStatus					int					not null
 		constraint [PK_Staging_Dim_PostFixture_QBRecId] primary key clustered 

@@ -25,6 +25,7 @@ Brian Boswick	02/21/2020	Added Direction and ProductType ETL logic
 Brian Boswick	05/06/2020	Added VesselPortStatusOfficial
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	10/12/2020	Added ETAEndOriginal
+Brian Boswick	12/14/2020	Added EOSPStartDate to replace NORStartDate
 ==========================================================================================================	
 */
 
@@ -58,6 +59,7 @@ begin
 																ItineraryPortType,
 																Comments,
 																NORStartDate,
+																EOSPStartDate,
 																ETAOriginalDate,
 																ETAOriginalCreateDate,
 																ETAEndOriginal,
@@ -89,6 +91,7 @@ begin
 				vi.ItineraryPortType							ItineraryPortType,
 				vi.Comments										Comments,
 				firstnorevent.FirstNOREventDate					NORStartDate,
+				firsteospevent.FirstEOSPEventDate				EOSPStartDate,
 				vi.ETAStartOriginal_ADMIN						ETAOriginalDate,
 				vi.OriginalETACreatedOn_ADMIN					ETAOriginalCreateDate,
 				loaddischarge.ETAEndOriginal					ETAEndOriginal,
@@ -141,6 +144,28 @@ begin
 								) firstnorevent
 						on firstnorevent.PostFixtureAlternateKey = vi.RelatedSPIFixtureID
 							and firstnorevent.RelatedPortID = loaddischarge.RelatedPortId
+					left join	(
+									select
+											pf.QBRecId			PostFixtureAlternateKey,
+											pp.RelatedPortId	RelatedPortID,
+											min(e.StartDate)	FirstEOSPEventDate
+										from
+											SOFEvents e with (nolock)
+												join PortEventTimes pet with (nolock)
+													on pet.QBRecId = e.RelatedPortTimeEventId
+												join ParcelBerths pb with (nolock)
+													on pb.QBRecId = e.RelatedParcelBerthId
+												join ParcelPorts pp with (nolock)
+													on pp.QBRecId = pb.RelatedLDPId
+												join PostFixtures pf with (nolock)
+													on pf.QBRecId = pb.RelatedSpiFixtureId
+												where
+													pet.QBRecId = 214 -- Arrived / EOSP
+												group by
+													pf.QBRecId, pp.RelatedPortId
+								) firsteospevent
+						on firsteospevent.PostFixtureAlternateKey = vi.RelatedSPIFixtureID
+							and firsteospevent.RelatedPortID = loaddischarge.RelatedPortId
 					left join	(
 									select
 											pf.QBRecId													PostFixtureAlternateKey,
@@ -265,10 +290,10 @@ begin
 		update
 				Staging.Fact_VesselItinerary with (tablock)
 			set
-				DaysOutOriginalETASent = try_convert(smallint, abs(datediff(day, NORStartDate, ETAOriginalCreateDate))),
-				DaysOutOriginalETA = try_convert(smallint, abs(datediff(day, NORStartDate, ETAOriginalDate))),
-				DaysOutTwoWeekETA = try_convert(smallint, abs(datediff(day, NORStartDate, TwoWeekETA))),
-				DaysOutOneWeekETA = try_convert(smallint, abs(datediff(day, NORStartDate, OneWeekETA)))
+				DaysOutOriginalETASent = try_convert(smallint, abs(datediff(day, EOSPStartDate, ETAOriginalCreateDate))),
+				DaysOutOriginalETA = try_convert(smallint, abs(datediff(day, EOSPStartDate, ETAOriginalDate))),
+				DaysOutTwoWeekETA = try_convert(smallint, abs(datediff(day, EOSPStartDate, TwoWeekETA))),
+				DaysOutOneWeekETA = try_convert(smallint, abs(datediff(day, EOSPStartDate, OneWeekETA)))
 			where
 				isnull(NORStartDate, '12/30/1899') > '12/30/1899';
 
@@ -655,6 +680,7 @@ begin
 																	ItineraryPortType,
 																	Comments,
 																	NORStartDate,
+																	EOSPStartDate,
 																	ETAOriginalDate,
 																	ETAOriginalCreateDate,
 																	ETAEndOriginal,
@@ -709,6 +735,7 @@ begin
 					fvi.ItineraryPortType,
 					fvi.Comments,
 					fvi.NORStartDate,
+					fvi.EOSPStartDate,
 					fvi.ETAOriginalDate,
 					fvi.ETAOriginalCreateDate,
 					fvi.ETAEndOriginal,

@@ -14,6 +14,7 @@ Description:	Creates the LoadRowLevelSecurity stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	12/17/2020	Changed ETL for new RLS fields
 ==========================================================================================================	
 */
 
@@ -29,66 +30,40 @@ begin
 		truncate table Warehouse.RowLevelSecurity;
 
 	begin try
-		with DimensionAlternateKeys(DimName, AlternateKey, FieldValue)
-		as
-		(
-			select distinct 'Product', p.ProductAlternateKey, p.ProductName from Warehouse.Dim_Product p
-			union
-			select distinct 'ChartererParent', cp.ChartererParentAlternateKey, cp.ChartererParentName from Warehouse.Dim_ChartererParent cp
-			union
-			select distinct 'OwnerParent', op.OwnerParentAlternateKey, op.OwnerParentName from Warehouse.Dim_OwnerParent op
-			union
-			select distinct 'Charterer', C.ChartererAlternateKey, c.FullStyleName from Warehouse.Dim_Charterer c
-			union
-			select distinct 'Owner', o.OwnerAlternateKey, o.FullStyleName from Warehouse.Dim_Owner o
-			union
-			select distinct 'Region', r.RegionAlternateKey, r.RegionName from Warehouse.Dim_Region r
-		)
 		insert
 				Warehouse.RowLevelSecurity with (tablock)	(
-																RecordID,
-																Product,
-																ChartererParent,
-																OwnerParent,
-																UserName,
-																LoadRegion,
-																DischargeRegion,
-																FullStyleName,
-																[GUID],
-																MinCPDateToPull
+																PortalUserId,
+																PortalUserEmail,
+																PermissionLevelId,
+																PermissionLevelName,
+																ChartererParentRlsKey,
+																ChartererRlsKey,
+																OwnerParentRlsKey,
+																OwnerRlsKey,
+																ProductRlsKey,
+																LoadRegionRlsKey,
+																DischargeRegionRlsKey
 															)
 		select
-				rls.RecordID						RecordID,
-				rls.Product							Product,
-				rls.ChartererParent					ChartererParent,
-				rls.OwnerParent						OwnerParent,
-				rls.UserName						UserName,
-				rls.LoadRegion						LoadRegion,
-				rls.DischargeRegion					DischargeRegion,
-				rls.FullStyleName					FullStyleName,
-				rls.[GUID]							[GUID],
-				rls.MinCPDateToPull					MinCPDateToPull
-			from
-				Staging.RowLevelSecurity rls
-					left join DimensionAlternateKeys prod
-						on prod.FieldValue = rls.Product
-							and prod.DimName = 'Product'
-					left join DimensionAlternateKeys chpar
-						on chpar.FieldValue = rls.ChartererParent
-							and chpar.DimName = 'ChartererParent'
-					left join DimensionAlternateKeys ownpar
-						on ownpar.FieldValue = rls.OwnerParent
-							and ownpar.DimName = 'OwnerParent'
-					left join DimensionAlternateKeys reg
-						on reg.FieldValue = rls.Product
-							and reg.DimName = 'Region'
-					left join DimensionAlternateKeys prod
-						on prod.FieldValue = rls.Product
-							and prod.DimName = 'Product'
-					left join DimensionAlternateKeys prod
-						on prod.FieldValue = rls.Product
-							and prod.DimName = 'Product'
-					;
+			u.Id PortalUserId
+			,u.Email PortalUserEmail
+			,p.PermissionLevelId PermissionLevelId
+			,pl.[Name] PermissionLevelName
+			,'cp_' + CONVERT(NVARCHAR(50), u.ChartererParentAlternateKey)	ChartererParentRlsKey
+			,'c_' + CONVERT(NVARCHAR(50), p.ChartererAlternateKey)			ChartererRlsKey
+			,'op_' + CONVERT(NVARCHAR(50), u.OwnerParentAlternateKey)		OwnerParentRlsKey
+			,'o_' + CONVERT(NVARCHAR(50), p.OwnerAlternateKey)				OwnerRlsKey
+			,'p_' + CONVERT(NVARCHAR(50), p.ProductAlternateKey)			ProductRlsKey
+			,'lr_' + CONVERT(NVARCHAR(50), p.LoadRegionAlternateKey)		LoadRegionRlsKey
+			,'dr_' + CONVERT(NVARCHAR(50), p.DischargeRegionAlternateKey)	DischargeRegionRlsKey
+		from
+			SpiPortal_AspNetUsers u
+				left outer join SpiPortal_AppUserPostFixturePermissions p 
+					on p.UserId = u.Id
+				left outer join SpiPortal_PostFixturePermissionLevels pl
+					on pl.Id = p.PermissionLevelId
+		where
+			p.PermissionLevelId is not null;
 	end try
 	begin catch
 		select @ErrorMsg = 'Loading RowLevelSecurity records - ' + error_message();

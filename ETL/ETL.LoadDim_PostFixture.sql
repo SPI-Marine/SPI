@@ -148,13 +148,13 @@ begin
 				fixture.FrtRateProjection,
 				fixture.VoyageSummaryReportComments_ADMIN,
 				fixture.SPIInitialDemurrageEstimate,
-				null ProductAlternateKey,
-				chartererfullstyle.QBRecId ChartererAlternateKey,
-				chartererparent.QBRecId ChartererParentAlternateKey,
-				ownerfullstyle.QBRecId OwnerAlternateKey,
-				ownerparent.QBRecId OwnerParentAlternateKey,
-				loadregion.QBRecId LoadRegionAlternateKey,
-				dischregion.QBRecId DischargeRegionAlternateKey,
+				null ProductRlsKey,
+				'c_' + convert(varchar(50), chartererfullstyle.QBRecId) ChartererRlsKey,
+				'cp_' + convert(varchar(50), chartererparent.QBRecId) ChartererParentRlsKey,
+				'o_' + convert(varchar(50), ownerfullstyle.QBRecId) OwnerRlsKey,
+				'op_' + convert(varchar(50), ownerparent.QBRecId) OwnerParentRlsKey,
+				'lr_' + convert(varchar(50), loadregion.QBRecId) LoadRegionRlsKey,
+				'dr_' + convert(varchar(50), dischregion.QBRecId) DischargeRegionRlsKey,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -329,7 +329,7 @@ begin
 				Staging.Dim_PostFixture with (tablock)
 			set
 				Product = mp.Product,
-				ProductAlternateKey = mp.PostFixtureAlternateKey
+				ProductRlsKey = 'p_' + convert(varchar(50), mp.ProductAlternateKey)
 			from	
 				MaxProduct mp
 			where
@@ -426,13 +426,13 @@ begin
 																FrtRateProjection,
 																VoyageSummaryReportComments,
 																SPIInitialDemurrageEstimate,
-																ProductAlternateKey,
-																ChartererAlternateKey,
-																ChartererParentAlternateKey,
-																OwnerAlternateKey,
-																OwnerParentAlternateKey,
-																LoadRegionAlternateKey,
-																DischargeRegionAlternateKey
+																ProductRlsKey,
+																ChartererRlsKey,
+																ChartererParentRlsKey,
+																OwnerRlsKey,
+																OwnerParentRlsKey,
+																LoadRegionRlsKey,
+																DischargeRegionRlsKey
 															)
 												);
 		
@@ -534,13 +534,13 @@ begin
 					fixture.FrtRateProjection,
 					fixture.VoyageSummaryReportComments,
 					fixture.SPIInitialDemurrageEstimate,
-					fixture.ProductAlternateKey,
-					fixture.ChartererAlternateKey,
-					fixture.ChartererParentAlternateKey,
-					fixture.OwnerAlternateKey,
-					fixture.OwnerParentAlternateKey,
-					fixture.LoadRegionAlternateKey,
-					fixture.DischargeRegionAlternateKey,
+					fixture.ProductRlsKey,
+					fixture.ChartererRlsKey,
+					fixture.ChartererParentRlsKey,
+					fixture.OwnerRlsKey,
+					fixture.OwnerParentRlsKey,
+					fixture.LoadRegionRlsKey,
+					fixture.DischargeRegionRlsKey,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -637,13 +637,13 @@ begin
 				FrtRateProjection = fixture.FrtRateProjection,
 				VoyageSummaryReportComments = fixture.VoyageSummaryReportComments,
 				SPIInitialDemurrageEstimate = fixture.SPIInitialDemurrageEstimate,
-				ProductAlternateKey = fixture.ProductAlternateKey,
-				ChartererAlternateKey = fixture.ChartererAlternateKey,
-				ChartererParentAlternateKey = fixture.ChartererParentAlternateKey,
-				OwnerAlternateKey = fixture.OwnerAlternateKey,
-				OwnerParentAlternateKey = fixture.OwnerParentAlternateKey,
-				LoadRegionAlternateKey = fixture.LoadRegionAlternateKey,
-				DischargeRegionAlternateKey = fixture.DischargeRegionAlternateKey,
+				ProductRlsKey = fixture.ProductRlsKey,
+				ChartererRlsKey = fixture.ChartererRlsKey,
+				ChartererParentRlsKey = fixture.ChartererParentRlsKey,
+				OwnerRlsKey = fixture.OwnerRlsKey,
+				OwnerParentRlsKey = fixture.OwnerParentRlsKey,
+				LoadRegionRlsKey = fixture.LoadRegionRlsKey,
+				DischargeRegionRlsKey = fixture.DischargeRegionRlsKey,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -770,13 +770,13 @@ begin
 													FrtRateProjection,
 													VoyageSummaryReportComments,
 													SPIInitialDemurrageEstimate,
-													ProductAlternateKey,
-													ChartererAlternateKey,
-													ChartererParentAlternateKey,
-													OwnerAlternateKey,
-													OwnerParentAlternateKey,
-													LoadRegionAlternateKey,
-													DischargeRegionAlternateKey,
+													ProductRlsKey,
+													ChartererRlsKey,
+													ChartererParentRlsKey,
+													OwnerRlsKey,
+													OwnerParentRlsKey,
+													LoadRegionRlsKey,
+													DischargeRegionRlsKey,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -863,13 +863,13 @@ begin
 							0.0,			-- FrtRateProjection
 							'Unknown',		-- VoyageSummaryReportComments
 							0.0,			-- SPIInitialDemurrageEstimate
-							0,				-- ProductAlternateKey
-							0,				-- ChartererAlternateKey
-							0,				-- ChartererParentAlternateKey
-							0,				-- OwnerAlternateKey
-							0,				-- OwnerParentAlternateKey
-							0,				-- LoadRegionAlternateKey
-							0,				-- DischargeRegionAlternateKey
+							0,				-- ProductRlsKey
+							0,				-- ChartererRlsKey
+							0,				-- ChartererParentRlsKey
+							0,				-- OwnerRlsKey
+							0,				-- OwnerParentRlsKey
+							0,				-- LoadRegionRlsKey
+							0,				-- DischargeRegionRlsKey
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate

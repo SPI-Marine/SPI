@@ -1,28 +1,29 @@
 /*
 ==========================================================================================================
 Author:			Brian Boswick
-Create date:	09/15/2020
-Description:	Creates the Staging.Dim_OwnerParent table
+Create date:	12/09/2020
+Description:	Creates the Warehouse.Dim_Region table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 ==========================================================================================================	
 */
 
-drop table if exists Staging.Dim_OwnerParent;
+drop table if exists Warehouse.Dim_Region;
 go
 
-create table Staging.Dim_OwnerParent
+create table Warehouse.Dim_Region
 	(
-		OwnerParentAlternateKey		int					not null,
-		OwnerParentRlsKey			varchar(100)		null,
-		OwnerParentName				varchar(500)		null,
-		Notes						varchar(5000)		null,
-		Type1HashValue				varbinary(16)		not null,
-		RecordStatus				int					not null
-		constraint [PK_Staging_Dim_OwnerParent_QBRecId] primary key clustered 
+		RegionKey				int					not null identity(1, 1),
+		RegionAlternateKey		int					not null,
+		RegionName				nvarchar(250)		not null,
+		Type1HashValue			varbinary(16)		not null,
+		RowCreatedDate			date				not null,
+		RowUpdatedDate			date				not null,
+		IsCurrentRow			char(1)				not null,
+		constraint [PK_Warehouse_Dim_Region_QBRecId] primary key clustered 
 		(
-			OwnerParentAlternateKey asc
+			RegionAlternateKey asc
 		)
 			with 
 				(pad_index = off, statistics_norecompute = off, ignore_dup_key = off, allow_row_locks = on, allow_page_locks = on) 

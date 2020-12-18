@@ -20,7 +20,6 @@ create table Warehouse.RowLevelSecurity
 		PermissionLevelName					varchar(250)		null,
 		ChartererParentRlsKey				varchar(100)		null,
 		ChartererRlsKey						varchar(100)		null,
-		ChartererParentRlsKey				varchar(100)		null,
 		OwnerParentRlsKey					varchar(100)		null,
 		OwnerRlsKey							varchar(100)		null,
 		ProductRlsKey						varchar(100)		null,
