@@ -802,6 +802,7 @@ begin
 				ItineraryPortType = fvi.ItineraryPortType,
 				Comments = fvi.Comments,
 				NORStartDate = fvi.NORStartDate,
+				EOSPStartDate = fvi.EOSPStartDate,
 				ETAOriginalDate = fvi.ETAOriginalDate,
 				ETAOriginalCreateDate = fvi.ETAOriginalCreateDate,
 				TwoWeekETA = fvi.TwoWeekETA,
