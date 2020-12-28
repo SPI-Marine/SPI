@@ -160,7 +160,7 @@ begin
 												join PostFixtures pf with (nolock)
 													on pf.QBRecId = pb.RelatedSpiFixtureId
 												where
-													pet.QBRecId = 214 -- Arrived / EOSP
+													pet.QBRecId in (36, 214) -- Arrived / EOSP
 												group by
 													pf.QBRecId, pp.RelatedPortId
 								) firsteospevent
