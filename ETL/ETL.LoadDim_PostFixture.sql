@@ -153,8 +153,8 @@ begin
 				'cp_' + convert(varchar(50), chartererparent.QBRecId) ChartererParentRlsKey,
 				'o_' + convert(varchar(50), ownerfullstyle.QBRecId) OwnerRlsKey,
 				'op_' + convert(varchar(50), ownerparent.QBRecId) OwnerParentRlsKey,
-				'lr_' + convert(varchar(50), loadregion.QBRecId) LoadRegionRlsKey,
-				'dr_' + convert(varchar(50), dischregion.QBRecId) DischargeRegionRlsKey,
+				'r_' + convert(varchar(50), loadregion.QBRecId) LoadRegionRlsKey,
+				'r_' + convert(varchar(50), dischregion.QBRecId) DischargeRegionRlsKey,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from

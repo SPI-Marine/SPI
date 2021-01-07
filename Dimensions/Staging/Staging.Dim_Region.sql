@@ -6,6 +6,7 @@ Description:	Creates the Staging.Dim_Region table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	01/07/2021	Added RegionRlsKey
 ==========================================================================================================	
 */
 
@@ -15,7 +16,8 @@ go
 create table Staging.Dim_Region
 	(
 		RegionAlternateKey		int					not null,
-		RegionName				nvarchar(250)		null,
+		RegionRlsKey			varchar(15)			null,
+		RegionName				varchar(250)		null,
 		Type1HashValue			varbinary(16)		not null,
 		RecordStatus			int					not null,
 		constraint [PK_Staging_Dim_Region_QBRecId] primary key clustered 

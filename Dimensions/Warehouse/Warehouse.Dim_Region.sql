@@ -6,6 +6,7 @@ Description:	Creates the Warehouse.Dim_Region table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	01/07/2021	Added RegionRlsKey
 ==========================================================================================================	
 */
 
@@ -16,6 +17,7 @@ create table Warehouse.Dim_Region
 	(
 		RegionKey				int					not null identity(1, 1),
 		RegionAlternateKey		int					not null,
+		RegionRlsKey			varchar(15)			not null,
 		RegionName				nvarchar(250)		not null,
 		Type1HashValue			varbinary(16)		not null,
 		RowCreatedDate			date				not null,
