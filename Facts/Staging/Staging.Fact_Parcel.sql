@@ -20,6 +20,8 @@ Brian Boswick	07/30/2020	Added NOR/Hose Off dates for load/discharge ports
 Brian Boswick	08/21/2020	Changed ProductQuantityKey logic to aggregate to Fixture level
 Brian Boswick	09/28/2020	Added BaseFreightPMT and BunkerAdjustmentPMT fields
 Brian Boswick	10/12/2020	Added SupplierName/ReceiverName
+Brian Boswick	01/08/2021	Added ExtraLaytime
+Brian Boswick	01/11/2021	Added LaytimeUsedAgreedHrs
 ==========================================================================================================	
 */
 
@@ -57,6 +59,8 @@ create table Staging.Fact_Parcel
 		DischargeLaytimeAllowed					decimal(18, 6)		null,
 		DischargeLaytimeUsed					decimal(18, 6)		null,
 		BunkerCharge							decimal(18, 6)		null,
+		ExtraLaytime							decimal(18, 6)		null,
+		LaytimeUsedAgreedHrs					decimal(18, 6)		null,
 		LoadNORStartDate						date				null,
 		LoadLastHoseOffDate						date				null,			-- Degenerate Dimension Attributes
 		DischargeNORStartDate					date				null,
@@ -67,6 +71,7 @@ create table Staging.Fact_Parcel
 		ReceiverName							varchar(500)		null,
 		TotalLoadBerthBLQty						decimal(18, 6)		null,			-- ETL fields
 		TotalDischargeBerthBLQty				decimal(18, 6)		null,
+		TotalFixtureBLQty						decimal(18, 6)		null,
 		LoadPortAlternateKey					int					null,
 		DischargePortAlternateKey				int					null,
 		PostFixtureAlternateKey					int					null,

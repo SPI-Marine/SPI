@@ -26,6 +26,8 @@ Brian Boswick	10/12/2020	Added SupplierName/ReceiverName
 Brian Boswick	10/15/2020	Adjusted Product Quantity calculation to include Nominated Quantity when
 							BL Quantity is not available
 Brian Boswick	11/05/2020	Modified ETL for new quantity ranges
+Brian Boswick	01/08/2021	Added ExtraLaytime logic
+Brian Boswick	01/11/2021	Added LaytimeUsedAgreedHrs logic
 ==========================================================================================================	
 */
 
@@ -74,7 +76,8 @@ begin
 														ReceiverName,
 														LoadPortAlternateKey,
 														DischargePortAlternateKey,
-														PostFixtureAlternateKey
+														PostFixtureAlternateKey,
+														ExtraLaytime
 													)
 		select
 				p.QbRecId										ParcelAlternateKey,
@@ -108,7 +111,8 @@ begin
 				p.ReceiverName,
 				wdloadport.PortAlternateKey						LoadPortAlternateKey,
 				wddischport.PortAlternateKey					DischargePortAlternateKey,
-				wdpostfixture.PostFixtureAlternateKey
+				wdpostfixture.PostFixtureAlternateKey,
+				pf.ExtraLaytimeforFixture_Entry_ADMIN			ExtraLaytime
 			from
 				Parcels p with (nolock)
 					join Warehouse.Dim_Parcel wdparcel with (nolock)
@@ -371,7 +375,8 @@ begin
 			set
 				TotalLoadBerthBLQty = lt.TotalBerthBLQty,
 				TotalDischargeBerthBLQty = dt.TotalBerthBLQty,
-				ProductFixtureQuantityKey = isnull(dpq.ProductQuantityKey, -1)
+				ProductFixtureQuantityKey = isnull(dpq.ProductQuantityKey, -1),
+				TotalFixtureBLQty = fpq.TotalFixtureBLQty
 			from
 				Staging.Fact_Parcel sfp
 					left join AggregateLoadTotalBerthBLQty lt
@@ -391,6 +396,40 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 	
+	-- LaytimeUsedAgreedHrs metrics
+	begin try
+		with
+			FixtureLaytimeUsedAgreedMetrics	(
+												PostFixtureAlternateKey,
+												LaytimeUsedAgreedHrs
+											)
+			as
+			(
+				select
+						pf.QBRecId,
+						case
+							when isnull(pf.DemurrageRate, 0) > 0
+								then pf.DemurrageAmountAgreed/(pf.DemurrageRate/24.0)
+							else null
+						end
+					from
+						PostFixtures pf (nolock)
+			)
+
+		update
+				Staging.Fact_Parcel with (tablock)
+			set
+				LaytimeUsedAgreedHrs = ltu.LaytimeUsedAgreedHrs
+			from
+				FixtureLaytimeUsedAgreedMetrics ltu
+			where
+				ltu.PostFixtureAlternateKey = Staging.Fact_Parcel.PostFixtureAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating Laytime/BLQty Ratio metrics - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+	
 	-- Laytime/BLQty Ratio metrics
 	begin try
 		update
@@ -399,7 +438,8 @@ begin
 				LoadLaytimeAllowed = (BLQty/TotalLoadBerthBLQty)*LoadLaytimeAllowed,
 				LoadLaytimeUsed = (BLQty/TotalLoadBerthBLQty)*LoadLaytimeUsed,
 				DischargeLaytimeAllowed = (BLQty/TotalDischargeBerthBLQty)*DischargeLaytimeAllowed,
-				DischargeLaytimeUsed = (BLQty/TotalDischargeBerthBLQty)*DischargeLaytimeUsed
+				DischargeLaytimeUsed = (BLQty/TotalDischargeBerthBLQty)*DischargeLaytimeUsed,
+				ExtraLaytime = (BLQty/TotalDischargeBerthBLQty)*ExtraLaytime
 			where
 				isnull(TotalLoadBerthBLQty, 0) > 0
 				and isnull(TotalDischargeBerthBLQty, 0) > 0;
@@ -628,6 +668,8 @@ begin
 															BunkerCharge,
 															BaseFreightPMT,
 															BunkerAdjustmentPMT,
+															ExtraLaytime,
+															LaytimeUsedAgreedHrs,
 															LoadNORStartDate,
 															LoadLastHoseOffDate,
 															DischargeNORStartDate,
@@ -671,6 +713,8 @@ begin
 					sfp.BunkerCharge,
 					sfp.BaseFreightPMT,
 					sfp.BunkerAdjustmentPMT,
+					sfp.ExtraLaytime,
+					sfp.LaytimeUsedAgreedHrs,
 					sfp.LoadNORStartDate,
 					sfp.LoadLastHoseOffDate,
 					sfp.DischargeNORStartDate,
