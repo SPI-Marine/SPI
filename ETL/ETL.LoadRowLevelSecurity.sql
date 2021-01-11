@@ -54,8 +54,8 @@ begin
 			,'op_' + CONVERT(NVARCHAR(50), u.OwnerParentAlternateKey)		OwnerParentRlsKey
 			,'o_' + CONVERT(NVARCHAR(50), p.OwnerAlternateKey)				OwnerRlsKey
 			,'p_' + CONVERT(NVARCHAR(50), p.ProductAlternateKey)			ProductRlsKey
-			,'lr_' + CONVERT(NVARCHAR(50), p.LoadRegionAlternateKey)		LoadRegionRlsKey
-			,'dr_' + CONVERT(NVARCHAR(50), p.DischargeRegionAlternateKey)	DischargeRegionRlsKey
+			,'r_' + CONVERT(NVARCHAR(50), p.LoadRegionAlternateKey)			LoadRegionRlsKey
+			,'r_' + CONVERT(NVARCHAR(50), p.DischargeRegionAlternateKey)	DischargeRegionRlsKey
 		from
 			SpiPortal_AspNetUsers u
 				left outer join SpiPortal_AppUserPostFixturePermissions p 
