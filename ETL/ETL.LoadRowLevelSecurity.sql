@@ -49,13 +49,13 @@ begin
 			,u.Email PortalUserEmail
 			,p.PermissionLevelId PermissionLevelId
 			,pl.[Name] PermissionLevelName
-			,'cp_' + CONVERT(NVARCHAR(50), u.ChartererParentAlternateKey)	ChartererParentRlsKey
-			,'c_' + CONVERT(NVARCHAR(50), p.ChartererAlternateKey)			ChartererRlsKey
-			,'op_' + CONVERT(NVARCHAR(50), u.OwnerParentAlternateKey)		OwnerParentRlsKey
-			,'o_' + CONVERT(NVARCHAR(50), p.OwnerAlternateKey)				OwnerRlsKey
-			,'p_' + CONVERT(NVARCHAR(50), p.ProductAlternateKey)			ProductRlsKey
-			,'r_' + CONVERT(NVARCHAR(50), p.LoadRegionAlternateKey)			LoadRegionRlsKey
-			,'r_' + CONVERT(NVARCHAR(50), p.DischargeRegionAlternateKey)	DischargeRegionRlsKey
+			,u.ChartererParentRlsKey
+			,p.ChartererRlsKey
+			,u.OwnerParentRlsKey
+			,p.OwnerRlsKey
+			,p.ProductRlsKey
+			,p.LoadRegionRlsKey
+			,p.DischargeRegionRlsKey
 		from
 			SpiPortal_AspNetUsers u
 				left outer join SpiPortal_AppUserPostFixturePermissions p 
