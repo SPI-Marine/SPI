@@ -399,21 +399,43 @@ begin
 	-- LaytimeUsedAgreedHrs metrics
 	begin try
 		with
-			FixtureLaytimeUsedAgreedMetrics	(
-												PostFixtureAlternateKey,
-												LaytimeUsedAgreedHrs
-											)
+			ParcelDemurrageAgreed	(
+										ParcelAlternateKey,
+										ParcelDemurrageAgreed,
+										DemurrageRate
+									)
 			as
 			(
 				select
-						pf.QBRecId,
+						p.ParcelAlternateKey,
 						case
-							when isnull(pf.DemurrageRate, 0) > 0
-								then pf.DemurrageAmountAgreed/(pf.DemurrageRate/24.0)
+							when isnull(p.TotalFixtureBLQty, 0) > 0
+								then pf.DemurrageAmountAgreed * (p.BLQty/p.TotalFixtureBLQty)
+							else null
+						end,
+						pf.DemurrageRate
+					from
+						Staging.Fact_Parcel p (nolock)
+							join PostFixtures pf (nolock)
+								on p.PostFixtureAlternateKey = pf.QBRecId
+			),
+			ParcelLaytimeUsedAgreedHrs	(
+											ParcelAlternateKey,
+											LaytimeUsedAgreedHrs
+										)
+			as
+			(
+				select
+						pda.ParcelAlternateKey,
+						case
+							when isnull(pda.DemurrageRate, 0) > 0
+								then (24 * pda.ParcelDemurrageAgreed / pda.DemurrageRate) + (p.LoadLaytimeAllowed + p.DischargeLaytimeAllowed)
 							else null
 						end
 					from
-						PostFixtures pf (nolock)
+						ParcelDemurrageAgreed pda
+							join Staging.Fact_Parcel p
+								on p.ParcelAlternateKey = pda.ParcelAlternateKey
 			)
 
 		update
@@ -421,9 +443,9 @@ begin
 			set
 				LaytimeUsedAgreedHrs = ltu.LaytimeUsedAgreedHrs
 			from
-				FixtureLaytimeUsedAgreedMetrics ltu
+				ParcelLaytimeUsedAgreedHrs ltu
 			where
-				ltu.PostFixtureAlternateKey = Staging.Fact_Parcel.PostFixtureAlternateKey;
+				ltu.ParcelAlternateKey = Staging.Fact_Parcel.ParcelAlternateKey;
 	end try
 	begin catch
 		select @ErrorMsg = 'Updating Laytime/BLQty Ratio metrics - ' + error_message();
