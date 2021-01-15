@@ -24,5 +24,6 @@ create table Warehouse.RowLevelSecurity
 		OwnerRlsKey							varchar(100)		null,
 		ProductRlsKey						varchar(100)		null,
 		LoadRegionRlsKey					varchar(100)		null,
-		DischargeRegionRlsKey				varchar(100)		null
+		DischargeRegionRlsKey				varchar(100)		null,
+		MinCPDateToPull						date				null
 	) on [primary];

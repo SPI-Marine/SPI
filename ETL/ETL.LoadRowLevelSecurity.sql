@@ -42,7 +42,8 @@ begin
 																OwnerRlsKey,
 																ProductRlsKey,
 																LoadRegionRlsKey,
-																DischargeRegionRlsKey
+																DischargeRegionRlsKey,
+																MinCPDateToPull
 															)
 		select
 			u.Id PortalUserId
@@ -56,6 +57,7 @@ begin
 			,p.ProductRlsKey
 			,p.LoadRegionRlsKey
 			,p.DischargeRegionRlsKey
+			,convert(date, dateadd(year, -p.CpDataLimitYears, getdate())) MinCPDateToPull
 		from
 			SpiPortal_AspNetUsers u
 				left outer join SpiPortal_AppUserPostFixturePermissions p 
