@@ -183,6 +183,9 @@ begin
 						sum(ee.LtUsedProrationAmtHrs_QBC) LaytimeUsed
 					from
 						ParcelBerths loadberth with (nolock)
+							join ParcelPorts pp
+								on loadberth.RelatedLDPId = pp.QBRecId
+									and pp.[Type] = 'Load'
 							join SOFEvents ee with (nolock)
 								on ee.RelatedParcelBerthId = loadberth.QBRecId
 							join Warehouse.Dim_PostFixture wpf with (nolock)
@@ -206,6 +209,9 @@ begin
 						sum(ee.LtUsedProrationAmtHrs_QBC) LaytimeUsed
 					from
 						ParcelBerths dischberth with (nolock)
+							join ParcelPorts pp
+								on dischberth.RelatedLDPId = pp.QBRecId
+									and pp.[Type] = 'Discharge'
 							join SOFEvents ee with (nolock)
 								on ee.RelatedParcelBerthId = dischberth.QBRecId
 							join Warehouse.Dim_PostFixture wpf with (nolock)
@@ -229,6 +235,9 @@ begin
 						sum(loadberth.LaytimeAllowedBerthHrs_QBC) LaytimeAllowed
 					from
 						ParcelBerths loadberth with (nolock)
+							join ParcelPorts pp
+								on loadberth.RelatedLDPId = pp.QBRecId
+									and pp.[Type] = 'Load'
 							join Warehouse.Dim_PostFixture wpf with (nolock)
 								on wpf.PostFixtureAlternateKey = loadberth.RelatedSpiFixtureId
 							join Warehouse.Dim_Berth wloadberth with (nolock)
@@ -250,6 +259,9 @@ begin
 						sum(dischberth.LaytimeAllowedBerthHrs_QBC) LaytimeAllowed
 					from
 						ParcelBerths dischberth with (nolock)
+							join ParcelPorts pp
+								on dischberth.RelatedLDPId = pp.QBRecId
+									and pp.[Type] = 'Discharge'
 							join Warehouse.Dim_PostFixture wpf with (nolock)
 								on wpf.PostFixtureAlternateKey = dischberth.RelatedSpiFixtureId
 							join Warehouse.Dim_Berth wdischberth with (nolock)
@@ -396,6 +408,25 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 	
+	-- Laytime/BLQty Ratio metrics
+	begin try
+		update
+				Staging.Fact_Parcel with (tablock)
+			set
+				LoadLaytimeAllowed = (BLQty/TotalLoadBerthBLQty)*LoadLaytimeAllowed,
+				LoadLaytimeUsed = (BLQty/TotalLoadBerthBLQty)*LoadLaytimeUsed,
+				DischargeLaytimeAllowed = (BLQty/TotalDischargeBerthBLQty)*DischargeLaytimeAllowed,
+				DischargeLaytimeUsed = (BLQty/TotalDischargeBerthBLQty)*DischargeLaytimeUsed,
+				ExtraLaytime = (BLQty/TotalDischargeBerthBLQty)*ExtraLaytime
+			where
+				isnull(TotalLoadBerthBLQty, 0) > 0
+				and isnull(TotalDischargeBerthBLQty, 0) > 0;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating Laytime/BLQty Ratio metrics - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+	
 	-- LaytimeUsedAgreedHrs metrics
 	begin try
 		with
@@ -418,56 +449,23 @@ begin
 						Staging.Fact_Parcel p (nolock)
 							join PostFixtures pf (nolock)
 								on p.PostFixtureAlternateKey = pf.QBRecId
-			),
-			ParcelLaytimeUsedAgreedHrs	(
-											ParcelAlternateKey,
-											LaytimeUsedAgreedHrs
-										)
-			as
-			(
-				select
-						pda.ParcelAlternateKey,
-						case
-							when isnull(pda.DemurrageRate, 0) > 0
-								then (24 * pda.ParcelDemurrageAgreed / pda.DemurrageRate) + (p.LoadLaytimeAllowed + p.DischargeLaytimeAllowed)
-							else null
-						end
-					from
-						ParcelDemurrageAgreed pda
-							join Staging.Fact_Parcel p
-								on p.ParcelAlternateKey = pda.ParcelAlternateKey
-			)
 
 		update
 				Staging.Fact_Parcel with (tablock)
 			set
-				LaytimeUsedAgreedHrs = ltu.LaytimeUsedAgreedHrs
+				Staging.Fact_Parcel.LaytimeUsedAgreedHrs =	case
+																when isnull(pda.DemurrageRate, 0) > 0
+																	then ((24.0 * pda.ParcelDemurrageAgreed) / pda.DemurrageRate) + (p.LoadLaytimeAllowed + p.DischargeLaytimeAllowed)
+																else null
+															end,
+				Staging.Fact_Parcel.ParcelDemurrageAgreed = pda.ParcelDemurrageAgreed
 			from
-				ParcelLaytimeUsedAgreedHrs ltu
-			where
-				ltu.ParcelAlternateKey = Staging.Fact_Parcel.ParcelAlternateKey;
+				Staging.Fact_Parcel p
+					join ParcelDemurrageAgreed pda
+						on p.ParcelAlternateKey = pda.ParcelAlternateKey;
 	end try
 	begin catch
-		select @ErrorMsg = 'Updating Laytime/BLQty Ratio metrics - ' + error_message();
-		throw 51000, @ErrorMsg, 1;
-	end catch	
-	
-	-- Laytime/BLQty Ratio metrics
-	begin try
-		update
-				Staging.Fact_Parcel with (tablock)
-			set
-				LoadLaytimeAllowed = (BLQty/TotalLoadBerthBLQty)*LoadLaytimeAllowed,
-				LoadLaytimeUsed = (BLQty/TotalLoadBerthBLQty)*LoadLaytimeUsed,
-				DischargeLaytimeAllowed = (BLQty/TotalDischargeBerthBLQty)*DischargeLaytimeAllowed,
-				DischargeLaytimeUsed = (BLQty/TotalDischargeBerthBLQty)*DischargeLaytimeUsed,
-				ExtraLaytime = (BLQty/TotalDischargeBerthBLQty)*ExtraLaytime
-			where
-				isnull(TotalLoadBerthBLQty, 0) > 0
-				and isnull(TotalDischargeBerthBLQty, 0) > 0;
-	end try
-	begin catch
-		select @ErrorMsg = 'Updating Laytime/BLQty Ratio metrics - ' + error_message();
+		select @ErrorMsg = 'Updating LaytimeUsedAgreedHrs metrics - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 	
@@ -692,6 +690,7 @@ begin
 															BunkerAdjustmentPMT,
 															ExtraLaytime,
 															LaytimeUsedAgreedHrs,
+															ParcelDemurrageAgreed,
 															LoadNORStartDate,
 															LoadLastHoseOffDate,
 															DischargeNORStartDate,
@@ -737,6 +736,7 @@ begin
 					sfp.BunkerAdjustmentPMT,
 					sfp.ExtraLaytime,
 					sfp.LaytimeUsedAgreedHrs,
+					sfp.ParcelDemurrageAgreed,
 					sfp.LoadNORStartDate,
 					sfp.LoadLastHoseOffDate,
 					sfp.DischargeNORStartDate,

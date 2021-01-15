@@ -61,6 +61,7 @@ create table Staging.Fact_Parcel
 		BunkerCharge							decimal(18, 6)		null,
 		ExtraLaytime							decimal(18, 6)		null,
 		LaytimeUsedAgreedHrs					decimal(18, 6)		null,
+		ParcelDemurrageAgreed					decimal(18, 6)		null,
 		LoadNORStartDate						date				null,
 		LoadLastHoseOffDate						date				null,			-- Degenerate Dimension Attributes
 		DischargeNORStartDate					date				null,

@@ -64,6 +64,7 @@ create table Warehouse.Fact_Parcel
 		BunkerAdjustmentPMT						decimal(18, 6)		null,
 		ExtraLaytime							decimal(18, 6)		null,
 		LaytimeUsedAgreedHrs					decimal(18, 6)		null,
+		ParcelDemurrageAgreed					decimal(18, 6)		null,
 		LoadNORStartDate						date				null,			-- Degenerate Dimension Attributes
 		LoadLastHoseOffDate						date				null,
 		DischargeNORStartDate					date				null,
