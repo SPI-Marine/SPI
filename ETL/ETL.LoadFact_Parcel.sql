@@ -28,6 +28,7 @@ Brian Boswick	10/15/2020	Adjusted Product Quantity calculation to include Nomina
 Brian Boswick	11/05/2020	Modified ETL for new quantity ranges
 Brian Boswick	01/08/2021	Added ExtraLaytime logic
 Brian Boswick	01/11/2021	Added LaytimeUsedAgreedHrs logic
+Brian Boswick	01/27/2021	Added DemurrageRate
 ==========================================================================================================	
 */
 
@@ -77,7 +78,8 @@ begin
 														LoadPortAlternateKey,
 														DischargePortAlternateKey,
 														PostFixtureAlternateKey,
-														ExtraLaytime
+														ExtraLaytime,
+														DemurrageRate
 													)
 		select
 				p.QbRecId										ParcelAlternateKey,
@@ -112,7 +114,8 @@ begin
 				wdloadport.PortAlternateKey						LoadPortAlternateKey,
 				wddischport.PortAlternateKey					DischargePortAlternateKey,
 				wdpostfixture.PostFixtureAlternateKey,
-				pf.ExtraLaytimeforFixture_Entry_ADMIN			ExtraLaytime
+				pf.ExtraLaytimeforFixture_Entry_ADMIN			ExtraLaytime,
+				pf.DemurrageRate
 			from
 				Parcels p with (nolock)
 					join Warehouse.Dim_Parcel wdparcel with (nolock)
@@ -449,6 +452,7 @@ begin
 						Staging.Fact_Parcel p (nolock)
 							join PostFixtures pf (nolock)
 								on p.PostFixtureAlternateKey = pf.QBRecId
+			)
 
 		update
 				Staging.Fact_Parcel with (tablock)
@@ -691,6 +695,7 @@ begin
 															ExtraLaytime,
 															LaytimeUsedAgreedHrs,
 															ParcelDemurrageAgreed,
+															DemurrageRate,
 															LoadNORStartDate,
 															LoadLastHoseOffDate,
 															DischargeNORStartDate,
@@ -737,6 +742,7 @@ begin
 					sfp.ExtraLaytime,
 					sfp.LaytimeUsedAgreedHrs,
 					sfp.ParcelDemurrageAgreed,
+					sfp.DemurrageRate,
 					sfp.LoadNORStartDate,
 					sfp.LoadLastHoseOffDate,
 					sfp.DischargeNORStartDate,

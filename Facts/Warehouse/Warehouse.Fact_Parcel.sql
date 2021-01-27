@@ -22,6 +22,7 @@ Brian Boswick	09/28/2020	Added BaseFreightPMT and BunkerAdjustmentPMT fields
 Brian Boswick	10/12/2020	Added SupplierName/ReceiverName
 Brian Boswick	01/08/2021	Added ExtraLaytime
 Brian Boswick	01/11/2021	Added LaytimeUsedAgreedHrs
+Brian Boswick	01/27/2021	Added DemurrageRate
 ==========================================================================================================	
 */
 
@@ -65,6 +66,7 @@ create table Warehouse.Fact_Parcel
 		ExtraLaytime							decimal(18, 6)		null,
 		LaytimeUsedAgreedHrs					decimal(18, 6)		null,
 		ParcelDemurrageAgreed					decimal(18, 6)		null,
+		DemurrageRate							decimal(18, 6)		null,
 		LoadNORStartDate						date				null,			-- Degenerate Dimension Attributes
 		LoadLastHoseOffDate						date				null,
 		DischargeNORStartDate					date				null,
