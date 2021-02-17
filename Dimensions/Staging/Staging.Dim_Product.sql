@@ -16,8 +16,8 @@ Brian Boswick	04/10/2019	Added ProductType
 create table Staging.Dim_Product
 	(
 		ProductAlternateKey		int					not null,
-		ProductRlsKey			varchar(100)		not null,
-		ProductName				nvarchar(250)		not null,
+		ProductRlsKey			varchar(100)		null,
+		ProductName				nvarchar(250)		null,
 		SpecificGravity			decimal(18, 4)		null,
 		RequiredCoating			nvarchar(250)		null,
 		EU						nvarchar(250)		null,
