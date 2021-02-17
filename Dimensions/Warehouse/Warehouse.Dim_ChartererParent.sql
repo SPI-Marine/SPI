@@ -1,3 +1,6 @@
+drop table if exists Warehouse.Dim_ChartererParent;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -6,16 +9,15 @@ Description:	Creates the Warehouse.Dim_ChartererParent table
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	12/18/2020	Added ChartererParentRlsKey
 ==========================================================================================================	
 */
-
-drop table if exists Warehouse.Dim_ChartererParent;
-go
 
 create table Warehouse.Dim_ChartererParent
 	(
 		ChartererParentKey				int					not null identity(1, 1),
 		ChartererParentAlternateKey		int					not null,
+		ChartererParentRlsKey			varchar(100)		null,
 		ChartererParentName				varchar(500)		null,
 		Notes							varchar(5000)		null,
 		[Type]							varchar(500)		null,

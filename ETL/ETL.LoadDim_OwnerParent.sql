@@ -35,6 +35,7 @@ begin
 				Staging.Dim_OwnerParent with (tablock)
 		select
 				ownerparent.QBRecId,
+				'op_' + convert(varchar(50), ownerparent.QBRecId) OwnerParentRlsKey,
 				ownerparent.OwnerParentName,
 				ownerparent.Notes,
 				0 Type1HashValue,
@@ -64,6 +65,7 @@ begin
 				Type1HashValue =	hashbytes	(
 													'MD2',
 													concat	(
+																OwnerParentRlsKey,
 																OwnerParentName,
 																Notes
 															)
@@ -90,6 +92,7 @@ begin
 				Warehouse.Dim_OwnerParent with (tablock)
 			select
 					wo.OwnerParentAlternateKey,
+					wo.OwnerParentRlsKey,
 					wo.OwnerParentName,
 					wo.Notes,
 					wo.Type1HashValue,
@@ -111,6 +114,7 @@ begin
 		update
 				Warehouse.Dim_OwnerParent with (tablock)
 			set
+				OwnerParentRlsKey = so.OwnerParentRlsKey,
 				OwnerParentName = so.OwnerParentName,
 				Notes = so.Notes,
 				Type1HashValue = so.Type1HashValue,
@@ -162,6 +166,7 @@ begin
 					Warehouse.Dim_OwnerParent with (tablock)	(
 																	OwnerParentKey,
 																	OwnerParentAlternateKey,
+																	OwnerParentRlsKey,
 																	OwnerParentName,
 																	Notes,
 																	Type1HashValue,
@@ -173,6 +178,7 @@ begin
 				values	(
 							-1,				-- OwnerParentKey
 							-1,				-- OwnerParentAlternateKey
+							'Unknown',		-- OwnerParentRlsKey
 							'Unknown',		-- OwnerParentName
 							'Unknown',		-- Notes
 							0,				-- Type1HashValue

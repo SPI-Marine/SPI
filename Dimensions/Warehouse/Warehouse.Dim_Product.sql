@@ -1,3 +1,6 @@
+drop table if exists Warehouse.Dim_Product;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -10,13 +13,11 @@ Brian Boswick	04/10/2019	Added ProductType
 ==========================================================================================================	
 */
 
-drop table if exists Warehouse.Dim_Product;
-go
-
 create table Warehouse.Dim_Product
 	(
 		ProductKey				int					not null identity(1, 1),
 		ProductAlternateKey		int					not null,
+		ProductRlsKey			varchar(100)		not null,
 		ProductName				nvarchar(250)		not null,
 		SpecificGravity			decimal(18, 4)		null,
 		RequiredCoating			nvarchar(250)		null,
@@ -32,7 +33,7 @@ create table Warehouse.Dim_Product
 		IsCurrentRow			char(1)				not null,
 		constraint [PK_Warehouse_Dim_Product_Key] primary key clustered 
 		(
-			ProductAlternateKey asc
+			ProductKey asc
 		)
 			with 
 				(pad_index = off, statistics_norecompute = off, ignore_dup_key = off, allow_row_locks = on, allow_page_locks = on) 

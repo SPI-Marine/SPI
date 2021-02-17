@@ -16,6 +16,7 @@ create table Warehouse.Dim_OwnerParent
 	(
 		OwnerParentKey				int					not null identity(1, 1),
 		OwnerParentAlternateKey		int					not null,
+		OwnerParentRlsKey			varchar(100)		null,
 		OwnerParentName				varchar(500)		null,
 		Notes						varchar(5000)		null,
 		Type1HashValue				varbinary(16)		not null,

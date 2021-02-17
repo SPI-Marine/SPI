@@ -36,18 +36,19 @@ begin
 		insert
 				Staging.Dim_Product
 		select
-				product.QBRecId						ProductAlternateKey,
-				product.ProductName					ProductName,
-				product.SpecificGravity				SpecificGravity,
-				product.RequiredCoating				RequiredCoating,
-				product.EU							EU,
-				product.CIQ							CIQ,
-				product.NIOP						NIOP,
-				product.Notes						Notes,
-				product.LiquidType					LiquidType,
-				prodtype.TypeName					ProductType,
-				0									Type1HashValue,
-				isnull(rs.RecordStatus, @NewRecord) RecordStatus
+				product.QBRecId									ProductAlternateKey,
+				'p_' + convert(varchar(50), product.QBRecId)	ProductRlsKey,
+				product.ProductName								ProductName,
+				product.SpecificGravity							SpecificGravity,
+				product.RequiredCoating							RequiredCoating,
+				product.EU										EU,
+				product.CIQ										CIQ,
+				product.NIOP									NIOP,
+				product.Notes									Notes,
+				product.LiquidType								LiquidType,
+				prodtype.TypeName								ProductType,
+				0												Type1HashValue,
+				isnull(rs.RecordStatus, @NewRecord)				RecordStatus
 			from
 				Products product
 					left join ProductType prodtype
@@ -75,6 +76,7 @@ begin
 				Type1HashValue =	hashbytes	(
 													'MD2',
 													concat	(
+																ProductRlsKey,
 																ProductName,
 																SpecificGravity,
 																RequiredCoating,
@@ -108,6 +110,7 @@ begin
 				Warehouse.Dim_Product
 			select
 					product.ProductAlternateKey,
+					product.ProductRlsKey,
 					product.ProductName,
 					product.SpecificGravity,
 					product.RequiredCoating,
@@ -136,6 +139,7 @@ begin
 		update
 				Warehouse.Dim_Product
 			set
+				ProductRlsKey = product.ProductRlsKey,
 				ProductName = product.ProductName,
 				SpecificGravity = product.SpecificGravity,
 				RequiredCoating = product.RequiredCoating,
@@ -194,6 +198,7 @@ begin
 					Warehouse.Dim_Product	(
 														ProductKey,
 														ProductAlternateKey,
+														ProductRlsKey,
 														ProductName,
 														SpecificGravity,
 														RequiredCoating,
@@ -213,6 +218,7 @@ begin
 							-1,				-- ProductKey
 							0,				-- ProductAlternateKey
 							'Unknown',		-- ProductName
+							'Unknown',		-- ProductRlsKey
 							0.0,			-- SpecificGravity
 							'Unknown',		-- RequiredCoating
 							'Unknown',		-- EU

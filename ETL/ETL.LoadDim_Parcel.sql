@@ -16,6 +16,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	05/20/2019	Remove deleted records from Warehouse
 Brian Boswick	06/04/2019	Added DeadfreightQty
+Brian Boswick	10/12/2020	Added SupplierName/ReceiverName
 ==========================================================================================================	
 */
 
@@ -53,6 +54,8 @@ begin
 				parcel.[DemurrageAgreedPro-ration_QBC]		IsAgreedProRated,
 				parcel.ParcelNumber							ParcelNumber,
 				parcel.DeadfreightQty						DeadfreightQty,
+				parcel.SupplierName							SupplierName,
+				parcel.ReceiverName							ReceiverName,
 				0 											Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord)			RecordStatus
 			from
@@ -70,36 +73,6 @@ begin
 		select @ErrorMsg = 'Staging Parcel records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
-
-	-- Update ParcelNumber
-	--begin try
-	--	update
-	--			Staging.Dim_Parcel with (tablock)
-	--		set
-	--			ParcelNumber = parcelnumber.ParcelNumber
-	--		from
-	--			Parcels parcel
-	--				left join	(
-	--								select
-	--										p.QbRecId					ParcelAltKey,
-	--										p.RelatedSpiFixtureId,
-	--										row_number() over	(
-	--																partition by p.RelatedSpiFixtureId
-	--																order by p.QbRecId
-	--															)		ParcelNumber
-	--									from
-	--										Parcels p
-	--									where
-	--										p.RelatedSpiFixtureId is not null
-	--							) parcelnumber
-	--					on parcelnumber.ParcelAltKey = parcel.QbRecId
-	--		where
-	--			parcel.QbRecId = Staging.Dim_Parcel.ParcelAlternateKey;
-	--end try
-	--begin catch
-	--	select @ErrorMsg = 'Updating hash values - ' + error_message();
-	--	throw 51000, @ErrorMsg, 1;
-	--end catch
 
 	-- Generate hash values for Type 1 changes. Only Type 1 SCDs
 	begin try
@@ -124,7 +97,9 @@ begin
 																VaultDemurrage,
 																IsAgreedProRated,
 																ParcelNumber,
-																DeadfreightQty
+																DeadfreightQty,
+																SupplierName,
+																ReceiverName
 															)
 												);
 		
@@ -164,6 +139,8 @@ begin
 					parcel.IsAgreedProRated,
 					parcel.ParcelNumber,
 					parcel.DeadfreightQty,
+					parcel.SupplierName,
+					parcel.ReceiverName,
 					parcel.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -198,6 +175,8 @@ begin
 				IsAgreedProRated = parcel.IsAgreedProRated,
 				ParcelNumber = parcel.ParcelNumber,
 				DeadfreightQty = parcel.DeadfreightQty,
+				SupplierName = parcel.SupplierName,
+				ReceiverName = parcel.ReceiverName,
 				Type1HashValue = parcel.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -262,6 +241,8 @@ begin
 														IsAgreedProRated,
 														ParcelNumber,
 														DeadfreightQty,
+														SupplierName,
+														ReceiverName,
 														Type1HashValue,
 														RowCreatedDate,
 														RowUpdatedDate,
@@ -286,6 +267,8 @@ begin
 							'Unknown',					-- IsAgreedProRated
 							0,							-- ParcelNumber
 							0,							-- DeadfreightQty
+							'Unknown',					-- SupplierName
+							'Unknown',					-- ReceiverName
 							0,							-- Type1HashValue
 							getdate(),					-- RowCreatedDate
 							getdate(),					-- RowUpdatedDate
@@ -309,6 +292,8 @@ begin
 							'Unknown',					-- IsAgreedProRated
 							0,							-- ParcelNumber
 							0,							-- DeadfreightQty
+							'Unknown',					-- SupplierName
+							'Unknown',					-- ReceiverName
 							0,							-- Type1HashValue
 							getdate(),					-- RowCreatedDate
 							getdate(),					-- RowUpdatedDate

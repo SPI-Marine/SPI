@@ -14,6 +14,7 @@ Description:	Creates the LoadRowLevelSecurity stored procedure
 Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
+Brian Boswick	12/17/2020	Changed ETL for new RLS fields
 ==========================================================================================================	
 */
 
@@ -31,33 +32,43 @@ begin
 	begin try
 		insert
 				Warehouse.RowLevelSecurity with (tablock)	(
-																RecordID,
-																Product,
-																ChartererParent,
-																OwnerParent,
-																UserName,
-																LoadRegion,
-																DischargeRegion,
-																FullStyleName,
-																[GUID],
+																PortalUserId,
+																PortalUserEmail,
+																PermissionLevelId,
+																PermissionLevelName,
+																ChartererParentRlsKey,
+																ChartererRlsKey,
+																OwnerParentRlsKey,
+																OwnerRlsKey,
+																ProductRlsKey,
+																LoadRegionRlsKey,
+																DischargeRegionRlsKey,
 																MinCPDateToPull
 															)
 		select
-				rls.RecordID						RecordID,
-				rls.Product							Product,
-				rls.ChartererParent					ChartererParent,
-				rls.OwnerParent						OwnerParent,
-				rls.UserName						UserName,
-				rls.LoadRegion						LoadRegion,
-				rls.DischargeRegion					DischargeRegion,
-				rls.FullStyleName					FullStyleName,
-				rls.[GUID]							[GUID],
-				rls.MinCPDateToPull					MinCPDateToPull
-			from
-				Staging.RowLevelSecurity rls;
+			u.Id PortalUserId
+			,u.Email PortalUserEmail
+			,p.PermissionLevelId PermissionLevelId
+			,pl.[Name] PermissionLevelName
+			,u.ChartererParentRlsKey
+			,p.ChartererRlsKey
+			,u.OwnerParentRlsKey
+			,p.OwnerRlsKey
+			,p.ProductRlsKey
+			,p.LoadRegionRlsKey
+			,p.DischargeRegionRlsKey
+			,convert(date, dateadd(year, -p.CpDataLimitYears, getdate())) MinCPDateToPull
+		from
+			SpiPortal_AspNetUsers u
+				left outer join SpiPortal_AppUserPostFixturePermissions p 
+					on p.UserId = u.Id
+				left outer join SpiPortal_PostFixturePermissionLevels pl
+					on pl.Id = p.PermissionLevelId
+		where
+			p.PermissionLevelId is not null;
 	end try
 	begin catch
-		select @ErrorMsg = 'Staging RowLevelSecurity records - ' + error_message();
+		select @ErrorMsg = 'Loading RowLevelSecurity records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch
 end

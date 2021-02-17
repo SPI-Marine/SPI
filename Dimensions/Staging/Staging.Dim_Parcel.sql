@@ -8,6 +8,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	04/17/2019	Added ParcelNumber
 Brian Boswick	06/04/2019	Added DeadfreightQty
+Brian Boswick	10/12/2020	Added SupplierName/ReceiverName
 ==========================================================================================================	
 */
 
@@ -32,6 +33,8 @@ create table Staging.Dim_Parcel
 		IsAgreedProRated		varchar(15)			null,
 		ParcelNumber			smallint			null,
 		DeadfreightQty			decimal(18, 5)		null,
+		SupplierName			varchar(500)		null,
+		ReceiverName			varchar(500)		null,
 		Type1HashValue			varbinary(16)		not null,
 		RecordStatus			int					not null,
 		constraint [PK_Staging_Dim_Parcel_QBRecId] primary key clustered 

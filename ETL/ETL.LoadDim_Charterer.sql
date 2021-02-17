@@ -15,6 +15,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	08/13/2020	Source data from FullStyles table
+Brian Boswick	12/16/2020	Added ChartererParentAlternateKey for RLS
 ==========================================================================================================	
 */
 
@@ -36,6 +37,9 @@ begin
 				Staging.Dim_Charterer with (tablock)
 		select
 				fs.QBRecId,
+				fs.RelatedChartererParentID,
+				'c_' + convert(varchar(50), fs.QBRecId) ChartererRlsKey,
+				'cp_' + convert(varchar(50), fs.RelatedChartererParentID) ChartererParentRlsKey,
 				fs.FullStyleName,
 				charterer.ChartererParentName,
 				fs.[Type],
@@ -72,6 +76,8 @@ begin
 				Type1HashValue =	hashbytes	(
 													'MD2',
 													concat	(
+																ChartererRlsKey,
+																ChartererParentRlsKey,
 																FullStyleName,
 																ChartererParentName,
 																[Type],
@@ -101,6 +107,9 @@ begin
 				Warehouse.Dim_Charterer  with (tablock)
 			select
 					charterer.ChartererAlternateKey,
+					charterer.ChartererRlsKey,
+					charterer.ChartererParentAlternateKey,
+					charterer.ChartererParentRlsKey,
 					charterer.FullStyleName,
 					charterer.ChartererParentName,
 					charterer.[Type],
@@ -125,6 +134,9 @@ begin
 		update
 				Warehouse.Dim_Charterer with (tablock)
 			set
+				ChartererRlsKey = charterer.ChartererRlsKey,
+				ChartererParentAlternateKey = charterer.ChartererParentAlternateKey,
+				ChartererParentRlsKey = charterer.ChartererParentRlsKey,
 				FullStyleName = charterer.FullStyleName,
 				ChartererParentName = charterer.ChartererParentName,
 				[Type] = charterer.[Type],
@@ -179,6 +191,9 @@ begin
 					Warehouse.Dim_Charterer with (tablock)	(
 																ChartererKey,
 																ChartererAlternateKey,
+																ChartererRlsKey,
+																ChartererParentAlternateKey,
+																ChartererParentRlsKey,
 																FullStyleName,
 																ChartererParentName,
 																[Type],
@@ -193,6 +208,9 @@ begin
 				values	(
 							-1,				-- ChartererKey
 							-1,				-- ChartererAlternateKey
+							'Unknown',		-- ChartererRlsKey
+							-1,				-- ChartererParentAlternateKey
+							'Unknown',		-- ChartererParentRlsKey
 							'Unknown',		-- FullStyleName
 							'Unknown',		-- ChartererParentName
 							'Unknown',		-- [Type]

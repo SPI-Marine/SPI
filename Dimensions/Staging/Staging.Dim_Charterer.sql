@@ -1,3 +1,6 @@
+drop table if exists Staging.Dim_Charterer;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -7,15 +10,16 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	08/13/2020	Source data from FullStyles table
+Brian Boswick	12/16/2020	Added ChartererParentAlternateKey/ChartererParentRlsKey/ChartererRlsKey for RLS
 ==========================================================================================================	
 */
-
-drop table if exists Staging.Dim_Charterer;
-go
 
 create table Staging.Dim_Charterer
 	(
 		ChartererAlternateKey		int					not null,
+		ChartererParentAlternateKey	int					null,
+		ChartererRlsKey				varchar(100)		null,
+		ChartererParentRlsKey		varchar(100)		null,
 		FullStyleName				varchar(500)		null,
 		ChartererParentName			varchar(500)		null,
 		[Type]						varchar(500)		null,

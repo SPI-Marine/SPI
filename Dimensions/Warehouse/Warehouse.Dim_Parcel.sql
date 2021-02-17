@@ -8,6 +8,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	04/17/2019	Added ParcelNumber
 Brian Boswick	06/04/2019	Added DeadfreightQty
+Brian Boswick	10/12/2020	Added SupplierName/ReceiverName
 ==========================================================================================================	
 */
 
@@ -33,6 +34,8 @@ create table Warehouse.Dim_Parcel
 		IsAgreedProRated		varchar(15)			null,
 		ParcelNumber			smallint			null,
 		DeadfreightQty			decimal(18, 2)		null,
+		SupplierName			varchar(500)		null,
+		ReceiverName			varchar(500)		null,
 		Type1HashValue			varbinary(16)		not null,
 		RowCreatedDate			datetime			not null,
 		RowUpdatedDate			datetime			not null,

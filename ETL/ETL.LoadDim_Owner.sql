@@ -15,6 +15,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	08/13/2020	Source data from FullStyles table
+Brian Boswick	12/16/2020	Added OwnerParentAlternateKey for RLS
 ==========================================================================================================	
 */
 
@@ -35,7 +36,10 @@ begin
 		insert
 				Staging.Dim_Owner with (tablock)
 		select
-				fs.QBRecId,
+				fs.QBRecId												OwnerAlternateKey,
+				'o_' + convert(varchar(50), fs.QBRecId)					OwnerRlsKey,
+				fs.RelatedOwnerParentId									OwnerParentAlternateKey,
+				'op_' + convert(varchar(50), fs.RelatedOwnerParentId)	OwnerParentRlsKey,
 				fs.FullStyleName,
 				ownerparent.OwnerParentName,
 				fs.[Type],
@@ -72,6 +76,8 @@ begin
 				Type1HashValue =	hashbytes	(
 													'MD2',
 													concat	(
+																OwnerRlsKey,
+																OwnerParentRlsKey,
 																FullStyleName,
 																OwnerParentName,
 																[Type],
@@ -101,6 +107,9 @@ begin
 				Warehouse.Dim_Owner with (tablock)
 			select
 					wo.OwnerAlternateKey,
+					wo.OwnerRlsKey,
+					wo.OwnerParentAlternateKey,
+					wo.OwnerParentRlsKey,
 					wo.FullStyleName,
 					wo.OwnerParentName,
 					wo.[Type],
@@ -125,6 +134,9 @@ begin
 		update
 				Warehouse.Dim_Owner with (tablock)
 			set
+				OwnerRlsKey = so.OwnerRlsKey,
+				OwnerParentAlternateKey = so.OwnerParentAlternateKey,
+				OwnerParentRlsKey = so.OwnerParentRlsKey,
 				FullStyleName = so.FullStyleName,
 				OwnerParentName = so.OwnerParentName,
 				[Type] = so.[Type],
@@ -179,6 +191,9 @@ begin
 					Warehouse.Dim_Owner with (tablock)	(
 															OwnerKey,
 															OwnerAlternateKey,
+															OwnerRlsKey,
+															OwnerParentAlternateKey,
+															OwnerParentRlsKey,
 															FullStyleName,
 															OwnerParentName,
 															[Type],
@@ -193,6 +208,9 @@ begin
 				values	(
 							-1,				-- OwnerKey
 							-1,				-- OwnerAlternateKey
+							'Unknown',		-- OwnerRlsKey
+							-1,				-- OwnerParentAlternateKey
+							'Unknown',		-- OwnerParentRlsKey
 							'Unknown',		-- FullStyleName
 							'Unknown',		-- OwnerParentName
 							'Unknown',		-- [Type]

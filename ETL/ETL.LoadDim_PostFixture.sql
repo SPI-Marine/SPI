@@ -28,6 +28,7 @@ Brian Boswick	07/20/2020	Added HoseOffDateFinal ETL logic
 Brian Boswick	07/22/2020	Added FrtRateProjection ETL logic
 Brian Boswick	07/09/2020	Removed COA fields
 Brian Boswick	09/01/2020	Added SPIInitialDemurrageEstimate
+Brian Boswick	12/11/2020	Added AlternateKeys for RLS
 ==========================================================================================================	
 */
 
@@ -147,6 +148,13 @@ begin
 				fixture.FrtRateProjection,
 				fixture.VoyageSummaryReportComments_ADMIN,
 				fixture.SPIInitialDemurrageEstimate,
+				null ProductRlsKey,
+				'c_' + convert(varchar(50), chartererfullstyle.QBRecId) ChartererRlsKey,
+				'cp_' + convert(varchar(50), chartererparent.QBRecId) ChartererParentRlsKey,
+				'o_' + convert(varchar(50), ownerfullstyle.QBRecId) OwnerRlsKey,
+				'op_' + convert(varchar(50), ownerparent.QBRecId) OwnerParentRlsKey,
+				'r_' + convert(varchar(50), loadregion.QBRecId) LoadRegionRlsKey,
+				'r_' + convert(varchar(50), dischregion.QBRecId) DischargeRegionRlsKey,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -165,6 +173,10 @@ begin
 						on coa.RecordID = fixture.RelatedSPICOAId
 					left join SPIOffices office (nolock)
 						on office.QBRecId = fixture.RelatedSPIOfficeID
+					left join ShippingRegions loadregion
+						on loadregion.RegionName = fixture.LoadPortRegion
+					left join ShippingRegions dischregion
+						on dischregion.RegionName = fixture.DischPortRegion
 					left join	(
 									select
 											tm.EmailAddress,
@@ -201,7 +213,7 @@ begin
 				LaycanStatus =	case
 									when LaycanCancellingFinal_QBC = LaycanCancellingOriginal
 											and LaycanCommencementFinal_QBC = LaycanCommencementOriginal
-										then 'No Change'
+										then 'Original'
 									when LaycanCancellingFinal_QBC > LaycanCancellingOriginal
 										then 'Extended'
 									when LaycanCommencementFinal_QBC between LaycanCommencementOriginal and LaycanCancellingOriginal
@@ -285,13 +297,15 @@ begin
 		with
 			MaxProduct	(
 								PostFixtureAlternateKey,
-								Product
+								Product,
+								ProductAlternateKey
 							)
 		as
 		(
 			select
 					parcel.RelatedSpiFixtureId PostFixtureAlternateKey,
-					max(p.ProductName) Product
+					max(p.ProductName) Product,
+					max(p.QBRecId) ProductAlternateKey
 				from
 					ParcelProducts pp with (nolock)
 						join Products p with (nolock)
@@ -314,7 +328,8 @@ begin
 		update
 				Staging.Dim_PostFixture with (tablock)
 			set
-				Product = mp.Product
+				Product = mp.Product,
+				ProductRlsKey = 'p_' + convert(varchar(50), mp.ProductAlternateKey)
 			from	
 				MaxProduct mp
 			where
@@ -410,7 +425,14 @@ begin
 																LaycanStatus,
 																FrtRateProjection,
 																VoyageSummaryReportComments,
-																SPIInitialDemurrageEstimate
+																SPIInitialDemurrageEstimate,
+																ProductRlsKey,
+																ChartererRlsKey,
+																ChartererParentRlsKey,
+																OwnerRlsKey,
+																OwnerParentRlsKey,
+																LoadRegionRlsKey,
+																DischargeRegionRlsKey
 															)
 												);
 		
@@ -512,6 +534,13 @@ begin
 					fixture.FrtRateProjection,
 					fixture.VoyageSummaryReportComments,
 					fixture.SPIInitialDemurrageEstimate,
+					fixture.ProductRlsKey,
+					fixture.ChartererRlsKey,
+					fixture.ChartererParentRlsKey,
+					fixture.OwnerRlsKey,
+					fixture.OwnerParentRlsKey,
+					fixture.LoadRegionRlsKey,
+					fixture.DischargeRegionRlsKey,
 					fixture.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -608,6 +637,13 @@ begin
 				FrtRateProjection = fixture.FrtRateProjection,
 				VoyageSummaryReportComments = fixture.VoyageSummaryReportComments,
 				SPIInitialDemurrageEstimate = fixture.SPIInitialDemurrageEstimate,
+				ProductRlsKey = fixture.ProductRlsKey,
+				ChartererRlsKey = fixture.ChartererRlsKey,
+				ChartererParentRlsKey = fixture.ChartererParentRlsKey,
+				OwnerRlsKey = fixture.OwnerRlsKey,
+				OwnerParentRlsKey = fixture.OwnerParentRlsKey,
+				LoadRegionRlsKey = fixture.LoadRegionRlsKey,
+				DischargeRegionRlsKey = fixture.DischargeRegionRlsKey,
 				Type1HashValue = fixture.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -734,6 +770,13 @@ begin
 													FrtRateProjection,
 													VoyageSummaryReportComments,
 													SPIInitialDemurrageEstimate,
+													ProductRlsKey,
+													ChartererRlsKey,
+													ChartererParentRlsKey,
+													OwnerRlsKey,
+													OwnerParentRlsKey,
+													LoadRegionRlsKey,
+													DischargeRegionRlsKey,
 													Type1HashValue,
 													RowCreatedDate,
 													RowUpdatedDate,
@@ -820,6 +863,13 @@ begin
 							0.0,			-- FrtRateProjection
 							'Unknown',		-- VoyageSummaryReportComments
 							0.0,			-- SPIInitialDemurrageEstimate
+							0,				-- ProductRlsKey
+							0,				-- ChartererRlsKey
+							0,				-- ChartererParentRlsKey
+							0,				-- OwnerRlsKey
+							0,				-- OwnerParentRlsKey
+							0,				-- LoadRegionRlsKey
+							0,				-- DischargeRegionRlsKey
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
