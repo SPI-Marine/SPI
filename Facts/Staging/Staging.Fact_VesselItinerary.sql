@@ -37,7 +37,7 @@ create table Staging.Fact_VesselItinerary
 		COAKey									int					not null,
 		DirectionKey							int					not null,
 		ItineraryPortType						varchar(50)			null,			-- Degenerate Dimension Attributes
-		Comments								varchar(500)		null,
+		Comments								varchar(5000)		null,
 		NORStartDate							date				null,
 		EOSPStartDate							date				null,
 		ETAOriginalDate							date				null,
