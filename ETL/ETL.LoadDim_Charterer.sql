@@ -107,8 +107,8 @@ begin
 				Warehouse.Dim_Charterer  with (tablock)
 			select
 					charterer.ChartererAlternateKey,
-					charterer.ChartererRlsKey,
 					charterer.ChartererParentAlternateKey,
+					charterer.ChartererRlsKey,
 					charterer.ChartererParentRlsKey,
 					charterer.FullStyleName,
 					charterer.ChartererParentName,
