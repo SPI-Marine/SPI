@@ -369,12 +369,12 @@ begin
 					charge.[Description]										ChargeDescription,
 					null														ParcelNumber,
 					case
-						when charge.ProrationType = 'Tonnage' and parceltotals.TotalQty > 0
+						when charge.ProrationType = 'Tonnage' and parceltotals.TotalQty > 0 and parcel.BLQty > 0
 							then (parcel.BLQty/convert(decimal(18, 6), parceltotals.TotalQty) * charge.Amount)
+						when charge.ProrationType = 'Tonnage' and parceltotals.TotalQty > 0 and parcel.BLQty = 0 and parceltotals.ParcelCount > 0
+							then (convert(decimal(18, 6), parceltotals.TotalQty)/parceltotals.ParcelCount * charge.Amount)
 						when charge.ProrationType = 'Equally' and parceltotals.ParcelCount > 0
 							then charge.Amount/convert(decimal(18, 6), parceltotals.ParcelCount)
-						when charge.ProrationType = 'None'
-							then charge.Amount
 						else null
 					end															Charge,
 					null														ChargePerMetricTon,
@@ -476,11 +476,109 @@ begin
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
 				where
 					charge.RelatedSPIFixtureId is not null
-					and charge.ProrationType not in ('Individual')
+					and charge.ProrationType not in ('Individual', 'None')
 					and charge.DoNotIncludeInAdditionalChargeCalculation = 0
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging AdditionalCharge records - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Get Fixture-level Charges
+	begin try
+		insert
+				Staging.Fact_FixtureFinance with (tablock)
+			select
+				distinct
+					charge.RelatedSPIFixtureId									PostFixtureAlternateKey,
+					-1															RebillAlternateKey,
+					charge.QBRecId												ChargeAlternateKey,
+					-1															ParcelProductAlternateKey,
+					-1															ProductAlternateKey,
+					-1															ParcelAlternateKey,
+					@AdditionalChargeType										ChargeTypeAlternateKey,
+					-1															LoadPortBerthKey,
+					-1															DischargePortBerthKey,
+					-1															LoadPortKey,
+					-1															DischargePortKey,
+					-1															ProductKey,
+					-1															ParcelKey,
+					isnull(wpostfixture.PostFixtureKey, -1)						PostFixtureKey,
+					isnull(vessel.VesselKey, -1)								VesselKey,
+					isnull(cpdate.DateKey, -1)									CharterPartyDateKey,
+					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
+					isnull(wch.ChartererKey, -1)								ChartererKey,
+					isnull(wo.OwnerKey, -1)										OwnerKey,
+					isnull(coa.COAKey, -1)										COAKey,
+					chargetype.ChargeType										ChargeType,
+					charge.[Description]										ChargeDescription,
+					null														ParcelNumber,
+					charge.Amount												Charge,
+					null														ChargePerMetricTon,
+					try_convert	(
+									decimal(20, 8),
+									epostfixture.AddressCommissionPercent
+								) / 100											AddressCommissionRate,
+					case
+						when isnull(charge.Apply_Address_Commission_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
+							then charge.Amount * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)
+						else null
+					end															AddressCommissionAmount,
+					case
+						when isnull(charge.Apply_Address_Commission_ADMIN, 0) = 1 and isnull(try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent), 0.0) > 0.0
+							then charge.Amount - isnull	(
+															charge.Amount - (charge.Amount * (try_convert(decimal(20, 8), epostfixture.AddressCommissionPercent) / 100)),
+															0.0
+														)
+						else null
+					end															AddressCommissionApplied
+				from
+					PostFixtures epostfixture
+						left join AdditionalCharges charge with (nolock)
+							on charge.RelatedSPIFixtureId = epostfixture.QBRecId
+						left join AdditionalChargeType chargetype with (nolock)
+							on chargetype.RecordID = charge.RelatedAdditionalChargeType
+						left join Warehouse.Dim_PostFixture wpostfixture with (nolock)
+							on wpostfixture.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
+						left join Warehouse.Dim_COA coa
+							on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
+						left join FullStyles fs with (nolock)
+							on epostfixture.RelatedChartererFullStyle = fs.QBRecId
+						left join Warehouse.Dim_Owner wo with (nolock)
+							on wo.OwnerAlternateKey = fs.RelatedOwnerParentId
+						left join Warehouse.Dim_Charterer wch with (nolock)
+							on wch.ChartererAlternateKey = fs.RelatedChartererParentID
+						left join Warehouse.Dim_Calendar cpdate with (nolock)
+							on cpdate.FullDate = convert(date, epostfixture.CPDate)
+						left join	(
+										select
+												pf.QBRecId			PostFixtureAlternateKey,
+												min(e.StartDate)	FirstEventDate
+											from
+												SOFEvents e with (nolock)
+													join ParcelBerths pb with (nolock)
+														on pb.QBRecId = e.RelatedParcelBerthId
+													join PostFixtures pf with (nolock)
+														on pf.QBRecId = pb.RelatedSpiFixtureId
+													join ParcelPorts pp with (nolock)
+														on pb.RelatedLDPId = pp.QBRecID
+													where
+														pp.[Type] = 'Load'
+													group by
+														pf.QBRecId
+									) firstevent
+							on firstevent.PostFixtureAlternateKey = epostfixture.QBRecId
+						left join Warehouse.Dim_Calendar firsteventdate with (nolock)
+							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
+						left join Warehouse.Dim_Vessel vessel with (nolock)
+							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
+				where
+					charge.RelatedSPIFixtureId is not null
+					and charge.ProrationType = 'None'
+					and charge.DoNotIncludeInAdditionalChargeCalculation = 0
+	end try
+	begin catch
+		select @ErrorMsg = 'Staging Fixture-level records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 

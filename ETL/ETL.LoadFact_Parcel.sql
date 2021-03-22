@@ -29,6 +29,7 @@ Brian Boswick	11/05/2020	Modified ETL for new quantity ranges
 Brian Boswick	01/08/2021	Added ExtraLaytime logic
 Brian Boswick	01/11/2021	Added LaytimeUsedAgreedHrs logic
 Brian Boswick	01/27/2021	Added DemurrageRate
+Brian Boswick	03/22/2021	Added FirstLoadEventDateKey
 ==========================================================================================================	
 */
 
@@ -44,6 +45,19 @@ begin
 		truncate table Staging.Fact_Parcel;
 
 	begin try
+		with FirstLoadEvent(PostFixtureAlternateKey, FirstEventDate)
+		as
+		(
+			select
+					d.PostFixtureAlternateKey,
+					convert(date, min(d.EventStartDateTime)) FirstEventDate
+				from
+					Staging.SOFEvent_Durations d (nolock)
+				where
+					d.LoadDischarge = 'Load'
+				group by
+					d.PostFixtureAlternateKey
+		)
 		insert
 				Staging.Fact_Parcel with (tablock)	(
 														ParcelAlternateKey,
@@ -63,6 +77,7 @@ begin
 														VesselKey,
 														ProductFixtureQuantityKey,
 														COAKey,
+														FirstEventDateKey,
 														OutTurnQty,
 														ShipLoadedQty,
 														ShipDischargeQty,
@@ -99,6 +114,7 @@ begin
 				isnull(v.VesselKey, -1)							VesselKey,
 				-1												ProductFixtureQuantityKey,
 				isnull(coa.COAKey, -1)							COAKey,
+				isnull(fed.DateKey, -1)							FirstEventDateKey,
 				p.OutTurnQty,
 				p.ShipLoadedQty,
 				p.ShipDischargeQty,
@@ -120,6 +136,10 @@ begin
 				Parcels p with (nolock)
 					join Warehouse.Dim_Parcel wdparcel with (nolock)
 						on wdparcel.ParcelAlternateKey = p.QbRecId
+					left join FirstLoadEvent fe
+						on fe.PostFixtureAlternateKey = p.RelatedSpiFixtureId
+					left join Warehouse.Dim_Calendar fed
+						on fed.FullDate = fe.FirstEventDate
 					left join ParcelPorts loadparcelport with (nolock)
 						on loadparcelport.QBRecId = p.RelatedLoadPortID
 					left join Warehouse.Dim_Port wdloadport with (nolock)
@@ -675,6 +695,7 @@ begin
 															VesselKey,
 															ProductFixtureQuantityKey,
 															COAKey,
+															FirstEventDateKey,
 															OutTurnQty,
 															ShipLoadedQty,
 															ShipDischargeQty,
@@ -722,6 +743,7 @@ begin
 					sfp.VesselKey,
 					sfp.ProductFixtureQuantityKey,
 					sfp.COAKey,
+					sfp.FirstEventDateKey,
 					sfp.OutTurnQty,
 					sfp.ShipLoadedQty,
 					sfp.ShipDischargeQty,

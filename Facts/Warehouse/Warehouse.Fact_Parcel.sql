@@ -23,6 +23,7 @@ Brian Boswick	10/12/2020	Added SupplierName/ReceiverName
 Brian Boswick	01/08/2021	Added ExtraLaytime
 Brian Boswick	01/11/2021	Added LaytimeUsedAgreedHrs
 Brian Boswick	01/27/2021	Added DemurrageRate
+Brian Boswick	03/22/2021	Added FirstLoadEventDateKey
 ==========================================================================================================	
 */
 
@@ -46,6 +47,7 @@ create table Warehouse.Fact_Parcel
 		VesselKey								int					not null,
 		ProductFixtureQuantityKey				int					not null,
 		COAKey									int					not null,
+		FirstEventDateKey						int					not null,
 		OutTurnQty								decimal(18, 6)		null,			-- Metrics
 		ShipLoadedQty							decimal(18, 6)		null,
 		ShipDischargeQty						decimal(18, 6)		null,
