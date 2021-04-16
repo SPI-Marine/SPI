@@ -133,7 +133,12 @@ begin
 				fixture.LaycanCancelOrig,
 				fixture.Laycan_Cancelling_Final_QBC,
 				fixture.Laycan_Commencement_Final_QBC,
-				fixture.FixtureStatusDetailed,
+				case
+					when fixture.FixtureStatusDetailed like 'In Progress%'
+						then right(fixture.FixtureStatusDetailed, len(fixture.FixtureStatusDetailed) - 14)
+					when fixture.FixtureStatusDetailed like 'Voyage Complete%'
+						then right(fixture.FixtureStatusDetailed, len(fixture.FixtureStatusDetailed) - 18)
+				end FixtureStatusDetailed,
 				region.RegionName,
 				fixture.LAF_Disch_Mtph_QBC,
 				fixture.LAF_Load_Mtph_QBC,
