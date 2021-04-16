@@ -262,7 +262,7 @@ begin
 								and convert(decimal(18, 4), ufb.ParcelQuantity) < pq.MaximumQuantity
 				where
 					isnull(fs.FullStyleName, '') <> 'ABC Charterer'
-					and wpostfixture.FixtureStatus <> 'Cancelled';
+					and wpostfixture.FixtureStatusCategory <> 'Cancelled';
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging FixtureBerth records - ' + error_message();
