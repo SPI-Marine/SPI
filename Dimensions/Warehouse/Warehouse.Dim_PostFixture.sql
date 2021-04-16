@@ -25,6 +25,7 @@ Brian Boswick	07/28/2020	Added VoyageSummaryReportComments
 Brian Boswick	07/09/2020	Removed COA fields
 Brian Boswick	09/01/2020	Added SPIInitialDemurrageEstimate
 Brian Boswick	12/11/2020	Added AlternateKeys for RLS
+Brian Boswick	04/16/2021	Changed FixtureStatus fields to FixtureStatusCategory/FixtureStatusDetailed
 ==========================================================================================================	
 */
 
@@ -75,7 +76,7 @@ create table Warehouse.Dim_PostFixture
 		LaycanCancellingAmended			date				null,
 		LaycanCommencementAmended		date				null,
 		CurrencyCP						nvarchar(100)		null,
-		FixtureStatus					nvarchar(200)		null,
+		FixtureStatusCategory			nvarchar(200)		null,
 		LaytimeAllowedTotalLoad			decimal(18, 2)		null,
 		LaytimeAllowedTotalDisch		decimal(18, 2)		null,
 		FrtRatePmt						decimal(18, 2)		null,
@@ -96,7 +97,7 @@ create table Warehouse.Dim_PostFixture
 		LaycanCancellingOriginal		date				null,
 		LaycanCancellingFinal_QBC		date				null,
 		LaycanCommencementFinal_QBC		date				null,
-		SPIFixtureStatus				varchar(100)		null,
+		FixtureStatusDetailed			varchar(100)		null,
 		Region							varchar(100)		null,
 		LAF_Disch_Mtph_QBC				decimal(18, 2)		null,
 		LAF_Load_Mtph_QBC				decimal(18, 2)		null,

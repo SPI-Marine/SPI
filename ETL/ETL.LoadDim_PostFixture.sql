@@ -29,6 +29,7 @@ Brian Boswick	07/22/2020	Added FrtRateProjection ETL logic
 Brian Boswick	07/09/2020	Removed COA fields
 Brian Boswick	09/01/2020	Added SPIInitialDemurrageEstimate
 Brian Boswick	12/11/2020	Added AlternateKeys for RLS
+Brian Boswick	04/16/2021	Changed FixtureStatus fields to FixtureStatusCategory/FixtureStatusDetailed
 ==========================================================================================================	
 */
 
@@ -111,7 +112,7 @@ begin
 				fixture.LaycanCancellingAmended,
 				fixture.LaycanCommencementAmended,
 				fixture.CurrencyCP,
-				fixture.FixtureStatus,
+				fixture.FixtureStatusCategory,
 				fixture.LaytimeAllowedTotalLoad,
 				fixture.LaytimeAllowedTotalDisch,
 				fixture.FrtRatePmt,
@@ -132,7 +133,7 @@ begin
 				fixture.LaycanCancelOrig,
 				fixture.Laycan_Cancelling_Final_QBC,
 				fixture.Laycan_Commencement_Final_QBC,
-				fixture.SPI_Fixture_Status,
+				fixture.FixtureStatusDetailed,
 				region.RegionName,
 				fixture.LAF_Disch_Mtph_QBC,
 				fixture.LAF_Load_Mtph_QBC,
@@ -198,7 +199,7 @@ begin
 								) rs
 						on rs.PostFixtureAlternateKey = fixture.QBRecId
 			where
-				isnull(fixture.FixtureStatus, '') not like '%TEST%';
+				isnull(fixture.FixtureStatusCategory, '') not like '%TEST%';
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging PostFixture records - ' + error_message();
@@ -274,7 +275,7 @@ begin
 				HoseOffDateFinal =	case
 										when edr.DateCount <> edr.EventCount
 											then	case
-														when spf.FixtureStatus = 'Complete Pending Demurrage'
+														when spf.FixtureStatusCategory = 'Complete Pending Demurrage'
 															then edr.MaxHoseOffEvent
 														else null
 													end
@@ -389,7 +390,7 @@ begin
 																LaycanCancellingAmended,
 																LaycanCommencementAmended,
 																CurrencyCP,
-																FixtureStatus,
+																FixtureStatusCategory,
 																convert(nvarchar(30), LaytimeAllowedTotalLoad),
 																convert(nvarchar(30), LaytimeAllowedTotalDisch),
 																convert(nvarchar(30), FrtRatePmt),
@@ -410,7 +411,7 @@ begin
 																LaycanCancellingOriginal,
 																LaycanCancellingFinal_QBC,
 																LaycanCommencementFinal_QBC,
-																SPIFixtureStatus,
+																FixtureStatusDetailed,
 																Region,
 																LAF_Disch_Mtph_QBC,
 																LAF_Load_Mtph_QBC,
@@ -497,7 +498,7 @@ begin
 					fixture.LaycanCancellingAmended,
 					fixture.LaycanCommencementAmended,
 					fixture.CurrencyCP,
-					fixture.FixtureStatus,
+					fixture.FixtureStatusCategory,
 					fixture.LaytimeAllowedTotalLoad,
 					fixture.LaytimeAllowedTotalDisch,
 					fixture.FrtRatePmt,
@@ -518,7 +519,7 @@ begin
 					fixture.LaycanCancellingOriginal,
 					fixture.LaycanCancellingFinal_QBC,
 					fixture.LaycanCommencementFinal_QBC,
-					fixture.SPIFixtureStatus,
+					fixture.FixtureStatusDetailed,
 					fixture.Region,
 					fixture.LAF_Disch_Mtph_QBC,
 					fixture.LAF_Load_Mtph_QBC,
@@ -600,7 +601,7 @@ begin
 				LaycanCancellingAmended = fixture.LaycanCancellingAmended,
 				LaycanCommencementAmended = fixture.LaycanCommencementAmended,
 				CurrencyCP = fixture.CurrencyCP,
-				FixtureStatus = fixture.FixtureStatus,
+				FixtureStatusCategory = fixture.FixtureStatusCategory,
 				LaytimeAllowedTotalLoad = fixture.LaytimeAllowedTotalLoad,
 				LaytimeAllowedTotalDisch = fixture.LaytimeAllowedTotalDisch,
 				FrtRatePmt = fixture.FrtRatePmt,
@@ -621,7 +622,7 @@ begin
 				LaycanCancellingOriginal = fixture.LaycanCancellingOriginal,
 				LaycanCancellingFinal_QBC = fixture.LaycanCancellingFinal_QBC,
 				LaycanCommencementFinal_QBC = fixture.LaycanCommencementFinal_QBC,
-				SPIFixtureStatus = fixture.SPIFixtureStatus,
+				FixtureStatusDetailed = fixture.FixtureStatusDetailed,
 				Region = fixture.Region,
 				LAF_Disch_Mtph_QBC = fixture.LAF_Disch_Mtph_QBC,
 				LAF_Load_Mtph_QBC = fixture.LAF_Load_Mtph_QBC,
@@ -733,7 +734,7 @@ begin
 													LaycanCancellingAmended,
 													LaycanCommencementAmended,
 													CurrencyCP,
-													FixtureStatus,
+													FixtureStatusCategory,
 													LaytimeAllowedTotalLoad,
 													LaytimeAllowedTotalDisch,
 													FrtRatePmt,
@@ -754,7 +755,7 @@ begin
 													LaycanCancellingOriginal,
 													LaycanCancellingFinal_QBC,
 													LaycanCommencementFinal_QBC,
-													SPIFixtureStatus,
+													FixtureStatusDetailed,
 													Region,
 													LAF_Disch_Mtph_QBC,
 													LAF_Load_Mtph_QBC,
@@ -826,7 +827,7 @@ begin
 							'12/30/1899',	-- LaycanCancellingAmended
 							'12/30/1899',	-- LaycanCommencementAmended
 							'Unknown',		-- CurrencyCP
-							'Unknown',		-- FixtureStatus
+							'Unknown',		-- FixtureStatusCategory
 							0.0,			-- LaytimeAllowedTotalLoad
 							0.0,			-- LaytimeAllowedTotalDisch
 							0.0,			-- FrtRatePmt
@@ -847,7 +848,7 @@ begin
 							'12/30/1899',	-- LaycanCancellingOriginal
 							'12/30/1899',	-- LaycanCancellingFinal_QBC
 							'12/30/1899',	-- LaycanCommencementFinal_QBC
-							'Unknown',		-- SPIFixtureStatus
+							'Unknown',		-- FixtureStatusDetailed
 							'Unknown',		-- Region
 							0.0,			-- LAF_Disch_Mtph_QBC
 							0.0,			-- LAF_Load_Mtph_QBC
