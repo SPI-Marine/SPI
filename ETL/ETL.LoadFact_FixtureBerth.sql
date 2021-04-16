@@ -221,7 +221,7 @@ begin
 					AggregatedParcelQuantity ufb
 						left join Warehouse.Dim_PostFixture wpostfixture with (nolock)
 							on wpostfixture.PostFixtureAlternateKey = ufb.PostFixtureAlternateKey
-						left join Warehouse.Dim_Calendar CPDate
+						left join Warehouse.Dim_Calendar CPDate with (nolock)
 							on CPDate.FullDate = wpostfixture.CPDate
 						left join PostFixtures epostfixture with (nolock)
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
@@ -2141,10 +2141,11 @@ begin
 				from
 					Staging.Fact_FixtureBerth fb with (nolock)
 				where
-					PortBerthKey = fb.PortBerthKey
-					and ProductType = fb.ProductType
-					and ParcelQuantityTShirtSize = fb.ParcelQuantityTShirtSize
-					and LoadDischarge = fb.LoadDischarge
+					fb.PortBerthKey is not null
+					and fb.ProductType is not null
+					and fb.ParcelQuantityTShirtSize is not null
+					and fb.LoadDischarge is not null
+					and fb.FirstEventDateKey >= 20190101
 				group by
 					fb.PortBerthKey,
 					fb.ProductType,
