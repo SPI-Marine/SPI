@@ -1,3 +1,6 @@
+drop table if exists Staging.Fact_SPIInvoiceRegistry;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -9,11 +12,9 @@ Developer		Date		Change
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	08/27/2020	Added InvoiceTypeCategory
 Brian Boswick	10/01/2020	Added RegionFormula
+Brian Boswick	04/29/2021	Modified Invoice Type fields. Added InvoiceTypeSubCategory
 ==========================================================================================================	
 */
-
-drop table if exists Staging.Fact_SPIInvoiceRegistry;
-go
 
 create table Staging.Fact_SPIInvoiceRegistry
 	(
@@ -32,7 +33,7 @@ create table Staging.Fact_SPIInvoiceRegistry
 		COAKey													int					not null,
 		TimeChartererKey										int					not null,
 		InvoiceNumber											varchar(50)			null,		-- Degenerate Dimension Attributes
-		InvoiceType												varchar(50)			null,
+		InvoiceTypeDetailed										varchar(50)			null,
 		InvoiceTo												varchar(500)		null,
 		InvoiceStatus											varchar(100)		null,
 		VesselFormula											varchar(100)		null,
@@ -45,6 +46,7 @@ create table Staging.Fact_SPIInvoiceRegistry
 		CreditAppliedAgainstInvoiceNumber						varchar(100)		null,
 		CurrencyInvoice											varchar(100)		null,
 		InvoiceTypeCategory										varchar(100)		null,
+		InvoiceTypeSubCategory									varchar(100)		null,
 		InvoiceAmount											decimal(18, 5)		null,		-- Metrics
 		constraint [PK_Staging_Fact_SPIInvoiceRegistry_AltKey] primary key clustered 
 		(
