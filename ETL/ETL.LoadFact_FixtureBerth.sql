@@ -269,34 +269,6 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 	
-	-- Update FirstEventDateKey
-	begin try
-		update
-				Staging.Fact_FixtureBerth with (tablock)
-			set
-				FirstEventDateKey = wc.DateKey
-			from
-				(
-					select
-							min(convert(date, e.StartDate)) FirstEventDate,
-							pb.RelatedSpiFixtureId PostFixtureAlternateKey
-						from
-							SOFEvents e with (nolock)
-								join ParcelBerths pb  with (nolock)
-									on e.RelatedParcelBerthId = pb.QBRecId
-						group by
-							pb.RelatedSpiFixtureId
-				) fe
-					join Warehouse.Dim_Calendar wc with (nolock)
-						on wc.FullDate = fe.FirstEventDate
-			where
-				fe.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
-	end try
-	begin catch
-		select @ErrorMsg = 'Updating FirstEventDateKey - ' + error_message();
-		throw 51000, @ErrorMsg, 1;
-	end catch	
-
 	-- Update ProductType/ProductKey for the Post Fixture
 	begin try
 		with TopProductTypeQuantities	(
@@ -449,6 +421,34 @@ begin
 	end try
 	begin catch
 		select @ErrorMsg = 'Staging FixtureBerthEvent Durations - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
+	-- Update FirstEventDateKey
+	begin try
+		update
+				Staging.Fact_FixtureBerth with (tablock)
+			set
+				FirstEventDateKey = wc.DateKey
+			from
+				(
+					select
+							min(convert(date, e.StartDateTime)) FirstEventDate,
+							e.PostFixtureAlternateKey PostFixtureAlternateKey
+						from
+							Staging.Fact_FixtureBerthEvents e with (nolock)
+						where
+							e.LoadDischarge = 'Load'
+						group by
+							e.PostFixtureAlternateKey
+				) fe
+					join Warehouse.Dim_Calendar wc with (nolock)
+						on wc.FullDate = fe.FirstEventDate
+			where
+				fe.PostFixtureAlternateKey = Staging.Fact_FixtureBerth.PostFixtureAlternateKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating FirstEventDateKey - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
@@ -1889,6 +1889,7 @@ begin
 									Staging.Fact_FixtureBerthEvents evt with (nolock)
 								where
 									evt.EventTypeId = 219	-- NOR Tendered
+									and evt.LoadDischarge = 'Load'
 								group by
 									evt.PostFixtureAlternateKey
 						) minnor
