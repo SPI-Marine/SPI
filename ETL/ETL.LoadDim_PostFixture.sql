@@ -138,6 +138,7 @@ begin
 						then right(fixture.FixtureStatusDetailed, len(fixture.FixtureStatusDetailed) - 14)
 					when fixture.FixtureStatusDetailed like 'Voyage Complete%'
 						then right(fixture.FixtureStatusDetailed, len(fixture.FixtureStatusDetailed) - 18)
+					else fixture.FixtureStatusDetailed
 				end FixtureStatusDetailed,
 				region.RegionName,
 				fixture.LAF_Disch_Mtph_QBC,

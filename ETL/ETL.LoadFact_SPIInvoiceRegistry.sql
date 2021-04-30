@@ -17,6 +17,7 @@ Developer		Date		Change
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	08/27/2020	Added InvoiceTypeCategory
 Brian Boswick	11/05/2020	Modified ETL for new quantity ranges
+Brian Boswick	04/29/2021	Modified Invoice Type fields. Added InvoiceTypeSubCategory
 ==========================================================================================================	
 */
 
@@ -127,7 +128,7 @@ begin
 				isnull(coa.COAKey, -1)								COAKey,
 				isnull(tc.TimeChartererKey, -1)						TimeChartererKey,
 				ir.InvoiceNumberOfficial_INVOICE					InvoiceNumber,
-				ir.InvoiceType_ADMIN								InvoiceType,
+				ir.InvoiceTypeDetailed_ADMIN						InvoiceTypeDetailed,
 				ir.InvoiceTo_INVOICE								InvoiceTo,
 				ir.InvoiceStatus_ADMIN								InvoiceStatus,
 				ir.VesselFormula_INVOICE							VesselFormula,
@@ -140,6 +141,7 @@ begin
 				ir.CreditAppliedAgainstInvoiceNumber				CreditAppliedAgainstInvoiceNumber,
 				ir.Currency_INVOICE									CurrencyInvoice,
 				ir.InvoiceTypeCategory_ADMIN						InvoiceTypeCategory,
+				ir.InvoiceTypeSubCategory_ADMIN						InvoiceTypeSubCategory,
 				replace(ir.InvoiceAmountSnapShot_ADMIN, ',', '')	InvoiceAmount
 			from
 				InvoiceRegistry ir with (nolock)
@@ -209,7 +211,7 @@ begin
 					inv.COAKey,
 					inv.TimeChartererKey,
 					inv.InvoiceNumber,
-					inv.InvoiceType,
+					inv.InvoiceTypeDetailed,
 					inv.InvoiceTo,
 					inv.InvoiceStatus,
 					inv.VesselFormula,
@@ -222,6 +224,7 @@ begin
 					inv.CreditAppliedAgainstInvoiceNumber,
 					inv.CurrencyInvoice,
 					inv.InvoiceTypeCategory,
+					inv.InvoiceTypeSubCategory,
 					inv.InvoiceAmount,
 					getdate() RowStartDate
 				from
