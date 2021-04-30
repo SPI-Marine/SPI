@@ -20,6 +20,7 @@ Brian Boswick	05/06/2020	Added VesselPortStatusOfficial
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	10/12/2020	Added ETAEndOriginal
 Brian Boswick	12/14/2020	Added EOSPStartDate to replace NORStartDate
+Brian Boswick	04/29/2021	Added FirstLoadEventDateKey
 ==========================================================================================================	
 */
 
@@ -37,6 +38,7 @@ create table Warehouse.Fact_VesselItinerary
 		VesselKey								int					not null,
 		COAKey									int					not null,
 		DirectionKey							int					not null,
+		FirstLoadEventDateKey					int					not null,
 		ItineraryPortType						varchar(50)			null,
 		Comments								varchar(5000)		null,
 		NORStartDate							date				null,

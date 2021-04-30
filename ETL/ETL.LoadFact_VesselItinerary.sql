@@ -26,6 +26,7 @@ Brian Boswick	05/06/2020	Added VesselPortStatusOfficial
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	10/12/2020	Added ETAEndOriginal
 Brian Boswick	12/14/2020	Added EOSPStartDate to replace NORStartDate
+Brian Boswick	04/29/2021	Added FirstLoadEventDateKey ETL
 ==========================================================================================================	
 */
 
@@ -56,6 +57,7 @@ begin
 																VesselKey,
 																COAKey,
 																DirectionKey,
+																FirstLoadEventDateKey,
 																ItineraryPortType,
 																Comments,
 																NORStartDate,
@@ -88,6 +90,7 @@ begin
 				isnull(v.VesselKey, -1)							VesselKey,
 				isnull(coa.COAKey, -1)							COAKey,
 				-1												DirectionKey,
+				-1												FirstLoadEventDateKey,
 				vi.ItineraryPortType							ItineraryPortType,
 				vi.Comments										Comments,
 				firstnorevent.FirstNOREventDate					NORStartDate,
@@ -454,6 +457,24 @@ begin
 		throw 51000, @ErrorMsg, 1;
 	end catch	
 
+	-- Update FirstLoadEventDateKey
+	begin try
+		update
+				Staging.Fact_VesselItinerary
+			set
+				FirstLoadEventDateKey = fnd.DateKey
+			from
+				Staging.FirstLoadPortNORDates firstnor
+					join Warehouse.Dim_Calendar fnd
+						on fnd.FullDate = firstnor.FirstNOR
+			where
+				firstnor.PostFixtureKey = Staging.Fact_VesselItinerary.PostFixtureKey;
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating FirstLoadEventDateKey - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch	
+
 	-- Update NORWithinLaycan flags
 	begin try
 		update
@@ -677,6 +698,7 @@ begin
 																	VesselKey,
 																	COAKey,
 																	DirectionKey,
+																	FirstLoadEventDateKey,
 																	ItineraryPortType,
 																	Comments,
 																	NORStartDate,
@@ -732,6 +754,7 @@ begin
 					fvi.VesselKey,
 					fvi.COAKey,
 					fvi.DirectionKey,
+					fvi.FirstLoadEventDateKey,
 					fvi.ItineraryPortType,
 					fvi.Comments,
 					fvi.NORStartDate,
@@ -799,6 +822,7 @@ begin
 				VesselKey = fvi.VesselKey,
 				COAKey = fvi.COAKey,
 				DirectionKey = fvi.DirectionKey,
+				FirstLoadEventDateKey = fvi.FirstLoadEventDateKey,
 				ItineraryPortType = fvi.ItineraryPortType,
 				Comments = fvi.Comments,
 				NORStartDate = fvi.NORStartDate,
