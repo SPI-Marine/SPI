@@ -110,7 +110,7 @@ begin
 					ed.EventAlternateKey,
 					ed.PostFixtureAlternateKey,
 					lead(ed.EventStartDateTime) over	(
-															partition by ed.PostFixtureAlternateKey
+															partition by ed.PostFixtureAlternateKey, ed.ParcelBerthAlternateKey
 															order by ed.EventStartDateTime
 														)	NextEventStartDateTime
 				from
