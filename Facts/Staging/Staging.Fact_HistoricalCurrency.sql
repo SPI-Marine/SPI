@@ -17,8 +17,8 @@ create table Staging.Fact_HistoricalCurrency
 		HistoricalCurrencyAlternateKey			int					not null,
 		CurrencyKey								int					not null,
 		DateKey									int					not null,
-		UnitsPerUSD								numeric(18,5)		null,		-- Metrics
-		USDPerUnit								numeric(18,5)		null,
+		UnitsPerUSD								numeric(30, 9)		null,		-- Metrics
+		USDPerUnit								numeric(30, 9)		null,
 		constraint [PK_Staging_Fact_HistoricalCurrency_AltKey] primary key clustered 
 		(
 			HistoricalCurrencyAlternateKey asc

@@ -147,38 +147,45 @@ begin
 
 	-- Insert Unknown record
 	begin try
-		if exists (select 1 from Warehouse.Dim_Currency where CurrencyKey = -1)
+		if exists (select 1 from Warehouse.Dim_Currency where CurrencyKey in (0, -1))
 		begin
 			delete
 					Warehouse.Dim_Currency
 				where
-					CurrencyKey = -1;
+					CurrencyKey in (0, -1);
 		end
-		else
-		begin
-			set identity_insert Warehouse.Dim_Currency on;
-			insert
-					Warehouse.Dim_Currency	(
-														CurrencyKey,
-														CurrencyCode,
-														CurrencyName,
-														Type1HashValue,
-														RowCreatedDate,
-														RowUpdatedDate,
-														IsCurrentRow
-													)
 
-				values	(
-							-1,				-- CurrencyKey
-							0,				-- CurrencyCode
-							'Unknown',		-- CurrencyName
-							0,				-- Type1HashValue
-							getdate(),		-- RowCreatedDate
-							getdate(),		-- RowUpdatedDate
-							'Y'				-- IsCurrentRow
-						);
-			set identity_insert Warehouse.Dim_Currency off;
-		end
+		set identity_insert Warehouse.Dim_Currency on;
+		insert
+				Warehouse.Dim_Currency	(
+													CurrencyKey,
+													CurrencyCode,
+													CurrencyName,
+													Type1HashValue,
+													RowCreatedDate,
+													RowUpdatedDate,
+													IsCurrentRow
+												)
+
+			values	(
+						-1,				-- CurrencyKey
+						'U',			-- CurrencyCode
+						'Unknown',		-- CurrencyName
+						0,				-- Type1HashValue
+						getdate(),		-- RowCreatedDate
+						getdate(),		-- RowUpdatedDate
+						'Y'				-- IsCurrentRow
+					),
+					(
+						0,				-- CurrencyKey
+						'USD',			-- CurrencyCode
+						'US Dollar',	-- CurrencyName
+						0,				-- Type1HashValue
+						getdate(),		-- RowCreatedDate
+						getdate(),		-- RowUpdatedDate
+						'Y'				-- IsCurrentRow
+					);
+		set identity_insert Warehouse.Dim_Currency off;
 	end try
 	begin catch
 		select @ErrorMsg = 'Inserting Unknown record into Warehouse - ' + error_message();
