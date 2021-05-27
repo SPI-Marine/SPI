@@ -8,6 +8,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	07/19/2019	Added Area, Region
 Brian Boswick	02/17/2020	Added LOARestriction, DraftRestriction, ProductRestriction
+Brian Boswick	05/27/2021	Removed City, StateRegion
 ==========================================================================================================	
 */
 
@@ -19,8 +20,6 @@ create table Warehouse.Dim_Port
 		PortKey					int					not null identity(1, 1),
 		PortAlternateKey		int					not null,
 		PortName				nvarchar(500)		not null,
-		City					nvarchar(250)		null,
-		StateRegion				nvarchar(250)		null,
 		Country					nvarchar(100)		null,
 		Comments				nvarchar(max)		null,
 		Latitude				numeric(10, 4)		null,

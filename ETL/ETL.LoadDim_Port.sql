@@ -9,6 +9,7 @@ Developer		Date		Change
 Brian Boswick	05/20/2019	Remove deleted records from Warehouse
 Brian Boswick	07/19/2019	Added Area, Region
 Brian Boswick	02/17/2020	Added LOARestriction, DraftRestriction, ProductRestriction ETL logic
+Brian Boswick	05/27/2021	Removed City, StateRegion
 ==========================================================================================================	
 */
 
@@ -39,8 +40,6 @@ begin
 		select
 				[port].QBRecId,
 				[port].PortName,
-				[port].City,
-				[port].StateRegion,
 				[port].Country,
 				[port].Comments,
 				case 
@@ -95,8 +94,6 @@ begin
 													'MD2',
 													concat	(
 																PortName,
-																City,
-																StateRegion,
 																Country,
 																Comments,
 																Latitude,
@@ -132,8 +129,6 @@ begin
 			select
 					[port].PortAlternateKey,
 					[port].PortName,
-					[port].City,
-					[port].StateRegion,
 					[port].Country,
 					[port].Comments,
 					[port].Latitude,
@@ -164,8 +159,6 @@ begin
 				Warehouse.Dim_Port
 			set
 				PortName = [port].PortName,
-				City = [port].City,
-				StateRegion = [port].StateRegion,
 				Country = [port].Country,
 				Comments = [port].Comments,
 				Latitude = [port].Latitude,
@@ -226,8 +219,6 @@ begin
 														PortKey,
 														PortAlternateKey,
 														PortName,
-														City,
-														StateRegion,
 														Country,
 														Comments,
 														Latitude,
@@ -248,8 +239,6 @@ begin
 							-1,				-- PortKey
 							-1,				-- PortAlternateKey
 							'Unknown',		-- PortName
-							'Unknown',		-- City
-							'Unknown',		-- StateRegion
 							'Unknown',		-- Country
 							'Unknown',		-- Comments
 							0,				-- Latitude
@@ -269,8 +258,6 @@ begin
 							-2,				-- PortKey
 							-2,				-- PortAlternateKey
 							'ANY',			-- PortName
-							'ANY',			-- City
-							'ANY',			-- StateRegion
 							'ANY',			-- Country
 							'Unknown',		-- Comments
 							0,				-- Latitude

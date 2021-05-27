@@ -26,6 +26,7 @@ Brian Boswick	07/09/2020	Removed COA fields
 Brian Boswick	09/01/2020	SPIInitialDemurrageEstimate
 Brian Boswick	12/11/2020	Added AlternateKeys for RLS
 Brian Boswick	04/16/2021	Changed FixtureStatus fields to FixtureStatusCategory/FixtureStatusDetailed
+Brian Boswick	05/27/2021	Removed GroupName
 ==========================================================================================================	
 */
 
@@ -103,7 +104,6 @@ create table Staging.Dim_PostFixture
 		LAF_Total_hrs_QBC				decimal(18, 2)		null,
 		LaytimeAllowedTypeFixture_QBC	varchar(100)		null,
 		FixtureType						varchar(500)		null,
-		GroupName						varchar(500)		null,
 		SPIOffice						varchar(500)		null,
 		LoadRegion						varchar(500)		null,
 		DischargeRegion					varchar(500)		null,

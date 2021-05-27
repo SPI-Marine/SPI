@@ -8,6 +8,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	08/13/2020	Source data from FullStyles table
 Brian Boswick	12/16/2020	Added OwnerParentAlternateKey for RLS
+Brian Boswick	05/27/2021	Removed GroupName
 ==========================================================================================================	
 */
 
@@ -19,13 +20,12 @@ create table Warehouse.Dim_Owner
 		OwnerKey					int					not null identity(1, 1),
 		OwnerAlternateKey			int					not null,
 		OwnerRlsKey					varchar(100)		null,
-		OwnerParentAlternateKey		int					not null,
+		OwnerParentAlternateKey		int					null,
 		OwnerParentRlsKey			varchar(100)		null,
 		FullStyleName				varchar(500)		null,
 		OwnerParentName				varchar(500)		null,
 		[Type]						varchar(500)		null,
 		[Address]					varchar(500)		null,
-		GroupName					varchar(500)		null,
 		Type1HashValue				varbinary(16)		not null,
 		RowCreatedDate				date				not null,
 		RowUpdatedDate				date				not null,

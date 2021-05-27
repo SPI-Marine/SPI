@@ -30,6 +30,7 @@ Brian Boswick	07/09/2020	Removed COA fields
 Brian Boswick	09/01/2020	Added SPIInitialDemurrageEstimate
 Brian Boswick	12/11/2020	Added AlternateKeys for RLS
 Brian Boswick	04/16/2021	Changed FixtureStatus fields to FixtureStatusCategory/FixtureStatusDetailed
+Brian Boswick	05/27/2021	Removed GroupName
 ==========================================================================================================	
 */
 
@@ -146,7 +147,6 @@ begin
 				fixture.LAF_Total_hrs_QBC,
 				fixture.LaytimeAllowedTypeFixture_QBC,
 				fixture.FixtureType,
-				chartererfullstyle.GroupNameFS GroupName,
 				office.OfficeName SPIOffice,
 				fixture.LoadPortRegion,
 				fixture.DischPortRegion,
@@ -424,7 +424,6 @@ begin
 																LAF_Total_hrs_QBC,
 																LaytimeAllowedTypeFixture_QBC,
 																FixtureType,
-																GroupName,
 																SPIOffice,
 																LoadRegion,
 																DischargeRegion,
@@ -532,7 +531,6 @@ begin
 					fixture.LAF_Total_hrs_QBC,
 					fixture.LaytimeAllowedTypeFixture_QBC,
 					fixture.FixtureType,
-					fixture.GroupName,
 					fixture.SPIOffice,
 					fixture.LoadRegion,
 					fixture.DischargeRegion,
@@ -635,7 +633,6 @@ begin
 				LAF_Total_hrs_QBC = fixture.LAF_Total_hrs_QBC,
 				LaytimeAllowedTypeFixture_QBC = fixture.LaytimeAllowedTypeFixture_QBC,
 				FixtureType = fixture.FixtureType,
-				GroupName = fixture.GroupName,
 				SPIOffice = fixture.SPIOffice,
 				LoadRegion = fixture.LoadRegion,
 				DischargeRegion = fixture.DischargeRegion,
@@ -768,7 +765,6 @@ begin
 													LAF_Total_hrs_QBC,
 													LaytimeAllowedTypeFixture_QBC,
 													FixtureType,
-													GroupName,
 													SPIOffice,
 													LoadRegion,
 													DischargeRegion,
@@ -861,7 +857,6 @@ begin
 							0.0,			-- LAF_Total_hrs_QBC
 							0.0,			-- LaytimeAllowedTypeFixture_QBC
 							'Unknown',		-- FixtureType
-							'Unknown',		-- GroupName
 							'Unknown',		-- SPIOffice
 							'Unknown',		-- LoadRegion
 							'Unknown',		-- DischargeRegion

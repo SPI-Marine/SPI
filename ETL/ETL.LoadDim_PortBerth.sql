@@ -8,6 +8,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	05/20/2019	Remove deleted records from Warehouse
 Brian Boswick	01/31/2020	Added Area and Region ETL logic
+Brian Boswick	05/27/2021	Removed City, StateRegion
 ==========================================================================================================	
 */
 
@@ -62,8 +63,6 @@ begin
 						)										PortBerthName,
 				isnull([port].PortName, 'Unknown')				PortName,
 				isnull(berth.BerthName, 'Unknown')				BerthName,
-				[port].City										City,
-				[port].StateRegion								StateRegion,
 				[port].Country									Country,
 				[port].Comments									Comments,
 				case 
@@ -123,8 +122,6 @@ begin
 																PortBerthName,
 																PortName,
 																BerthName,
-																City,
-																StateRegion,
 																Country,
 																Comments,
 																Latitude,
@@ -161,8 +158,6 @@ begin
 					portberth.PortBerthName,
 					portberth.PortName,
 					portberth.BerthName,
-					portberth.City,
-					portberth.StateRegion,
 					portberth.Country,
 					portberth.Comments,
 					portberth.Latitude,
@@ -192,8 +187,6 @@ begin
 				PortBerthName = portberth.PortBerthName,
 				PortName = portberth.PortName,
 				BerthName = portberth.BerthName,
-				City = portberth.City,
-				StateRegion = portberth.StateRegion,
 				Country = portberth.Country,
 				Comments = portberth.Comments,
 				Latitude = portberth.Latitude,
@@ -263,8 +256,6 @@ begin
 														PortBerthName,
 														PortName,
 														BerthName,
-														City,
-														StateRegion,
 														Country,
 														Comments,
 														Latitude,
@@ -285,8 +276,6 @@ begin
 							'Unknown',		-- PortBerthName
 							'Unknown',		-- PortName
 							'Unknown',		-- BerthName
-							'Unknown',		-- City
-							'Unknown',		-- StateRegion
 							'Unknown',		-- Country
 							'Unknown',		-- Comments
 							0,				-- Latitude

@@ -8,6 +8,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	08/13/2020	Source data from FullStyles table
 Brian Boswick	12/16/2020	Added OwnerParentAlternateKey for RLS
+Brian Boswick	05/27/2021	Removed GroupName
 ==========================================================================================================	
 */
 
@@ -24,7 +25,6 @@ create table Staging.Dim_Owner
 		OwnerParentName			varchar(500)		null,
 		[Type]					varchar(500)		null,
 		[Address]				varchar(500)		null,
-		GroupName				varchar(500)		null,
 		Type1HashValue			varbinary(16)		not null,
 		RecordStatus			int					not null
 		constraint [PK_Staging_Dim_Owner_QBRecId] primary key clustered 
