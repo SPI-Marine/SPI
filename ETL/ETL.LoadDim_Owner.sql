@@ -34,7 +34,18 @@ begin
 
 	begin try
 		insert
-				Staging.Dim_Owner with (tablock)
+				Staging.Dim_Owner with (tablock)	(
+														OwnerAlternateKey,
+														OwnerRlsKey,
+														OwnerParentAlternateKey,
+														OwnerParentRlsKey,
+														FullStyleName,
+														OwnerParentName,
+														[Type],
+														[Address],
+														Type1HashValue,
+														RecordStatus
+													)
 		select
 				fs.QBRecId												OwnerAlternateKey,
 				'o_' + convert(varchar(50), fs.QBRecId)					OwnerRlsKey,
@@ -44,7 +55,6 @@ begin
 				ownerparent.OwnerParentName,
 				fs.[Type],
 				fs.[Address],
-				fs.GroupNameFS,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -81,8 +91,7 @@ begin
 																FullStyleName,
 																OwnerParentName,
 																[Type],
-																[Address],
-																GroupName
+																[Address]
 															)
 												);
 		
@@ -104,7 +113,20 @@ begin
 	-- Insert new Owners into Warehouse table
 	begin try
 		insert
-				Warehouse.Dim_Owner with (tablock)
+				Warehouse.Dim_Owner with (tablock)	(
+														OwnerAlternateKey,
+														OwnerRlsKey,
+														OwnerParentAlternateKey,
+														OwnerParentRlsKey,
+														FullStyleName,
+														OwnerParentName,
+														[Type],
+														[Address],
+														Type1HashValue,
+														RowCreatedDate,
+														RowUpdatedDate,
+														IsCurrentRow
+													)
 			select
 					wo.OwnerAlternateKey,
 					wo.OwnerRlsKey,
@@ -114,7 +136,6 @@ begin
 					wo.OwnerParentName,
 					wo.[Type],
 					wo.[Address],
-					wo.GroupName,
 					wo.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -141,7 +162,6 @@ begin
 				OwnerParentName = so.OwnerParentName,
 				[Type] = so.[Type],
 				[Address] = so.[Address],
-				GroupName = so.GroupName,
 				Type1HashValue = so.Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -198,7 +218,6 @@ begin
 															OwnerParentName,
 															[Type],
 															[Address],
-															GroupName,
 															Type1HashValue,
 															RowCreatedDate,
 															RowUpdatedDate,
@@ -215,7 +234,6 @@ begin
 							'Unknown',		-- OwnerParentName
 							'Unknown',		-- [Type]
 							'Unknown',		-- [Address]
-							'Unknown',		-- GroupName
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate

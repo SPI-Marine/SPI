@@ -7,6 +7,7 @@ Changes
 Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	01/31/2020	Added Area and Region
+Brian Boswick	05/27/2021	Removed City, StateRegion
 ==========================================================================================================	
 */
 
@@ -20,8 +21,6 @@ create table Staging.Dim_PortBerth
 		PortBerthName				nvarchar(500)		null,
 		PortName					nvarchar(500)		null,
 		BerthName					nvarchar(500)		null,
-		City						nvarchar(250)		null,
-		StateRegion					nvarchar(250)		null,
 		Country						nvarchar(100)		null,
 		Comments					nvarchar(max)		null,
 		Latitude					numeric(10, 4)		null,

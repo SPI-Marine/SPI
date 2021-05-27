@@ -16,6 +16,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	08/13/2020	Source data from FullStyles table
 Brian Boswick	12/16/2020	Added ChartererParentAlternateKey for RLS
+Brian Boswick	05/27/2021	Removed GroupName
 ==========================================================================================================	
 */
 
@@ -44,7 +45,6 @@ begin
 				charterer.ChartererParentName,
 				fs.[Type],
 				fs.[Address],
-				fs.GroupNameFS,
 				0 Type1HashValue,
 				isnull(rs.RecordStatus, @NewRecord) RecordStatus
 			from
@@ -81,8 +81,7 @@ begin
 																FullStyleName,
 																ChartererParentName,
 																[Type],
-																[Address],
-																GroupName
+																[Address]
 															)
 												);
 		
@@ -114,7 +113,6 @@ begin
 					charterer.ChartererParentName,
 					charterer.[Type],
 					charterer.[Address],
-					charterer.GroupName,
 					charterer.Type1HashValue,
 					getdate() RowStartDate,
 					getdate() RowUpdatedDate,
@@ -141,7 +139,6 @@ begin
 				ChartererParentName = charterer.ChartererParentName,
 				[Type] = charterer.[Type],
 				[Address] = charterer.[Address],
-				GroupName = charterer.GroupName,
 				Type1HashValue = [Charterer].Type1HashValue,
 				RowUpdatedDate = getdate()
 			from
@@ -198,7 +195,6 @@ begin
 																ChartererParentName,
 																[Type],
 																[Address],
-																GroupName,
 																Type1HashValue,
 																RowCreatedDate,
 																RowUpdatedDate,
@@ -215,7 +211,6 @@ begin
 							'Unknown',		-- ChartererParentName
 							'Unknown',		-- [Type]
 							'Unknown',		-- [Address]
-							'Unknown',		-- GroupName
 							0,				-- Type1HashValue
 							getdate(),		-- RowCreatedDate
 							getdate(),		-- RowUpdatedDate
