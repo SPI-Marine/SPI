@@ -1,3 +1,11 @@
+set ansi_nulls on;
+go
+set quoted_identifier on;
+go
+
+drop procedure if exists ETL.LoadFact_FixtureFinance;
+go
+
 /*
 ==========================================================================================================
 Author:			Brian Boswick
@@ -8,16 +16,9 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey ETL logic
 Brian Boswick	07/29/2020	Added COAKey
+Brian Boswick	06/18/2021	Added ProductFixtureQuantityKey
 ==========================================================================================================	
 */
-
-set ansi_nulls on;
-go
-set quoted_identifier on;
-go
-
-drop procedure if exists ETL.LoadFact_FixtureFinance;
-go
 
 create procedure ETL.LoadFact_FixtureFinance
 as
@@ -61,6 +62,7 @@ begin
 					isnull(wch.ChartererKey, -1)								ChartererKey,
 					isnull(wo.OwnerKey, -1)										OwnerKey,
 					isnull(coa.COAKey, -1)										COAKey,
+					isnull(pq.ProductQuantityKey, -1)							ProductFixtureQuantityKey,
 					'Freight'													ChargeType,
 					null														ChargeDescription,
 					null														ParcelNumber,
@@ -151,6 +153,9 @@ begin
 							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
 						left join Warehouse.Dim_Vessel vessel with (nolock)
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
+						left join Warehouse.Dim_ProductQuantity pq with (nolock)
+							on parcel.BLQty >= pq.MinimumQuantity
+								and parcel.BLQty < pq.MaximumQuantity
 				where
 					parcel.RelatedSPIFixtureId is not null
 					and parcel.ParcelFreightAmountQBC is not null;
@@ -186,6 +191,7 @@ begin
 					isnull(wch.ChartererKey, -1)								ChartererKey,
 					isnull(wo.OwnerKey, -1)										OwnerKey,
 					isnull(coa.COAKey, -1)										COAKey,
+					isnull(pq.ProductQuantityKey, -1)							ProductFixtureQuantityKey,
 					case
 						when parcel.DemurrageAgreedAmount_QBC = 0.0
 								and epostfixture.ZeroDemurrage = 1
@@ -325,6 +331,9 @@ begin
 							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
 						left join Warehouse.Dim_Vessel vessel with (nolock)
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
+						left join Warehouse.Dim_ProductQuantity pq with (nolock)
+							on parcel.BLQty >= pq.MinimumQuantity
+								and parcel.BLQty < pq.MaximumQuantity
 				where
 					parcel.RelatedSPIFixtureId is not null
 					and coalesce	(
@@ -365,6 +374,7 @@ begin
 					isnull(wch.ChartererKey, -1)								ChartererKey,
 					isnull(wo.OwnerKey, -1)										OwnerKey,
 					isnull(coa.COAKey, -1)										COAKey,
+					isnull(pq.ProductQuantityKey, -1)							ProductFixtureQuantityKey,
 					chargetype.ChargeType										ChargeType,
 					charge.[Description]										ChargeDescription,
 					null														ParcelNumber,
@@ -474,6 +484,9 @@ begin
 							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
 						left join Warehouse.Dim_Vessel vessel with (nolock)
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
+						left join Warehouse.Dim_ProductQuantity pq with (nolock)
+							on parcel.BLQty >= pq.MinimumQuantity
+								and parcel.BLQty < pq.MaximumQuantity
 				where
 					charge.RelatedSPIFixtureId is not null
 					and charge.ProrationType not in ('Individual', 'None')
@@ -510,6 +523,7 @@ begin
 					isnull(wch.ChartererKey, -1)								ChartererKey,
 					isnull(wo.OwnerKey, -1)										OwnerKey,
 					isnull(coa.COAKey, -1)										COAKey,
+					-1															ProductFixtureQuantityKey,
 					chargetype.ChargeType										ChargeType,
 					charge.[Description]										ChargeDescription,
 					null														ParcelNumber,
@@ -608,6 +622,7 @@ begin
 					isnull(wch.ChartererKey, -1)															ChartererKey,
 					isnull(wo.OwnerKey, -1)																	OwnerKey,
 					isnull(coa.COAKey, -1)																	COAKey,
+					isnull(pq.ProductQuantityKey, -1)														ProductFixtureQuantityKey,
 					chargetype.ChargeType																	ChargeType,		
 					addcharges.[Description]																ChargeDescription,
 					null																					ParcelNumber,
@@ -705,6 +720,9 @@ begin
 							on firsteventdate.FullDate = convert(date, firstevent.FirstEventDate)
 						left join Warehouse.Dim_Vessel vessel with (nolock)
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
+						left join Warehouse.Dim_ProductQuantity pq with (nolock)
+							on parcel.BLQty >= pq.MinimumQuantity
+								and parcel.BLQty < pq.MaximumQuantity
 				where
 					parcel.RelatedSPIFixtureId is not null
 					and parcel.RelatedParcelProductId is not null
@@ -767,6 +785,7 @@ begin
 					finance.ChartererKey,
 					finance.OwnerKey,
 					finance.COAKey,
+					finance.ProductFixtureQuantityKey,
 					finance.ChargeType,
 					finance.ChargeDescription,
 					finance.ParcelNumber,
