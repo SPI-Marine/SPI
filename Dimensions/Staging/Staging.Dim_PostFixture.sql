@@ -27,6 +27,7 @@ Brian Boswick	09/01/2020	SPIInitialDemurrageEstimate
 Brian Boswick	12/11/2020	Added AlternateKeys for RLS
 Brian Boswick	04/16/2021	Changed FixtureStatus fields to FixtureStatusCategory/FixtureStatusDetailed
 Brian Boswick	05/27/2021	Removed GroupName
+Brian Boswick	06/23/2021	Added COAKey
 ==========================================================================================================	
 */
 
@@ -36,6 +37,7 @@ go
 create table Staging.Dim_PostFixture
 	(
 		PostFixtureAlternateKey			int					not null,
+		COAKey							int					null,
 		BrokerEmail						nvarchar(250)		null,
 		BrokerFirstName					nvarchar(250)		null,
 		BrokerLastName					nvarchar(250)		null,

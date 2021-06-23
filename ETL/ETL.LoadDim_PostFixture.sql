@@ -31,6 +31,7 @@ Brian Boswick	09/01/2020	Added SPIInitialDemurrageEstimate
 Brian Boswick	12/11/2020	Added AlternateKeys for RLS
 Brian Boswick	04/16/2021	Changed FixtureStatus fields to FixtureStatusCategory/FixtureStatusDetailed
 Brian Boswick	05/27/2021	Removed GroupName
+Brian Boswick	06/23/2021	Added COAKey
 ==========================================================================================================	
 */
 
@@ -53,6 +54,7 @@ begin
 		select
 			distinct
 				fixture.QBRecId,
+				isnull(wcoa.COAKey, -1)						COAKey,
 				fixture.RelatedBroker						BrokerEmail,
 				isnull(brokername.FirstName, 'Unknown')		BrokerFirstName,
 				isnull(brokername.LastName, 'Unknown')		BrokerLastName,
@@ -180,10 +182,12 @@ begin
 						on coa.RecordID = fixture.RelatedSPICOAId
 					left join SPIOffices office (nolock)
 						on office.QBRecId = fixture.RelatedSPIOfficeID
-					left join ShippingRegions loadregion
+					left join ShippingRegions loadregion (nolock)
 						on loadregion.RegionName = fixture.LoadPortRegion
-					left join ShippingRegions dischregion
+					left join ShippingRegions dischregion (nolock)
 						on dischregion.RegionName = fixture.DischPortRegion
+					left join Warehouse.Dim_COA wcoa (nolock)
+						on wcoa.COAAlternateKey = fixture.RelatedSPICOAId
 					left join	(
 									select
 											tm.EmailAddress,
@@ -356,6 +360,7 @@ begin
 				Type1HashValue =	hashbytes	(
 													'MD2',
 													concat	(
+																convert(nvarchar(30), COAKey),
 																BrokerEmail,
 																BrokerFirstName,
 																BrokerLastName,
@@ -463,6 +468,7 @@ begin
 				Warehouse.Dim_PostFixture with (tablock)
 			select
 					fixture.PostFixtureAlternateKey,
+					fixture.COAKey,
 					fixture.BrokerEmail,
 					fixture.BrokerFirstName,
 					fixture.BrokerLastName,
@@ -565,6 +571,7 @@ begin
 		update
 				Warehouse.Dim_PostFixture with (tablock)
 			set
+				COAKey = fixture.COAKey,
 				BrokerEmail = fixture.BrokerEmail,
 				BrokerFirstName = fixture.BrokerFirstName,
 				BrokerLastName = fixture.BrokerLastName,
@@ -697,6 +704,7 @@ begin
 					Warehouse.Dim_PostFixture	(
 													PostFixtureKey,
 													PostFixtureAlternateKey,
+													COAKey,
 													BrokerEmail,
 													BrokerFirstName,
 													BrokerLastName,
@@ -789,6 +797,7 @@ begin
 				values	(
 							-1,				-- PostFixtureKey
 							0,				-- PostFixtureAlternateKey
+							-1,				-- COAKey
 							'Unknown',		-- BrokerEmail
 							'Unknown',		-- BrokerFirstName
 							'Unknown',		-- BrokerLastName
