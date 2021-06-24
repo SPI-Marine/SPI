@@ -71,8 +71,16 @@ begin
 				isnull(coa.COAKey, -1)							COAKey,
 				p.NominatedQty,
 				p.BLQty,
-				nom.TentCargoNom_OriginalQty					TentCargoNomOriginalQty,
-				nom.TentCargoNomDateOriginal,
+				case
+					when isnull(nom.CargoNominationbyParcel, 'no') = 'yes'
+						then p.TentativeCargoNomQty
+					else nom.TentCargoNom_OriginalQty
+				end												TentCargoNomOriginalQty,
+				case
+					when isnull(nom.CargoNominationbyParcel, 'no') = 'yesy'
+						then p.TentativeCargoNomDateOriginal
+					else nom.TentCargoNomDateOriginal
+				end												TentCargoNomDateOriginal,
 				p.[Status],
 				wdloadport.PortAlternateKey						LoadPortAlternateKey,
 				wddischport.PortAlternateKey					DischargePortAlternateKey,
