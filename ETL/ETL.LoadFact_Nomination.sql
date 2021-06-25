@@ -46,6 +46,7 @@ begin
 															VesselKey,
 															COAKey,
 															ConfirmationDateKey,
+															LoadDateKey,
 															NominatedQty,
 															BLQty,
 															TentCargoNomOriginalQty,
@@ -82,6 +83,7 @@ begin
 				isnull(v.VesselKey, -1)							VesselKey,
 				isnull(coa.COAKey, -1)							COAKey,
 				isnull(cd.DateKey, -1)							ConfirmationDateKey,
+				-1												LoadDateKey,
 				p.NominatedQty,
 				p.BLQty,
 				case
@@ -90,7 +92,7 @@ begin
 					else nom.TentCargoNom_OriginalQty
 				end												TentCargoNomOriginalQty,
 				case
-					when isnull(nom.CargoNominationbyParcel, 'no') = 'yesy'
+					when isnull(nom.CargoNominationbyParcel, 'no') = 'yes'
 						then p.TentativeCargoNomDateOriginal
 					else nom.TentCargoNomDateOriginal
 				end												TentCargoNomDateOriginal,
@@ -167,7 +169,8 @@ begin
 				LoadNORStartDate = firstloadnorevent.FirstNOREventDate,
 				LoadLastHoseOffDate = lastloadhoseoffevent.LastHoseOffEventDate,
 				DischargeNORStartDate = firstdischargenorevent.FirstNOREventDate,
-				DischargeLastHoseOffDate = lastdischargehoseoffevent.LastHoseOffEventDate
+				DischargeLastHoseOffDate = lastdischargehoseoffevent.LastHoseOffEventDate,
+				LoadDateKey = isnull(ld.DateKey, -1)
 			from
 				Staging.Fact_Nomination sfp
 					left join	(
@@ -193,6 +196,8 @@ begin
 								) firstloadnorevent
 						on firstloadnorevent.PostFixtureAlternateKey = sfp.PostFixtureAlternateKey
 							and firstloadnorevent.RelatedPortID = sfp.LoadPortAlternateKey
+					left join Warehouse.Dim_Calendar ld with (nolock)
+						on ld.FullDate = convert(date, firstloadnorevent.FirstNOREventDate)
 					left join	(
 									select
 											pf.QBRecId			PostFixtureAlternateKey,
@@ -291,6 +296,7 @@ begin
 																VesselKey,
 																COAKey,
 																ConfirmationDateKey,
+																LoadDateKey,
 																NominatedQty,
 																BLQty,
 																TentCargoNomOriginalQty,
@@ -329,6 +335,7 @@ begin
 					sfp.VesselKey,
 					sfp.COAKey,
 					sfp.ConfirmationDateKey,
+					sfp.LoadDateKey,
 					sfp.NominatedQty,
 					sfp.BLQty,
 					sfp.TentCargoNomOriginalQty,

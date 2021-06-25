@@ -30,6 +30,7 @@ create table Warehouse.Fact_Nomination
 		VesselKey												int					not null,
 		COAKey													int					not null,
 		ConfirmationDateKey										int					not null,
+		LoadDateKey												int					not null,
 		NominatedQty											decimal(18, 6)		null,			-- Metrics
 		BLQty													decimal(18, 6)		null,
 		TentCargoNomOriginalQty									decimal(18, 6)		null,
