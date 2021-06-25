@@ -1,12 +1,10 @@
 {
   "ExpandedNodes": [
     "",
-    "\\Dimensions\\Warehouse",
     "\\ETL",
     "\\Facts",
     "\\Facts\\Staging",
     "\\Facts\\Warehouse"
   ],
-  "SelectedNode": "\\ETL\\ETL.LoadFact_Nomination.sql",
   "PreviewInSolutionExplorer": false
 }

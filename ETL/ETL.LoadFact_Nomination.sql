@@ -45,11 +45,23 @@ begin
 															DimParcelKey,
 															VesselKey,
 															COAKey,
+															ConfirmationDateKey,
 															NominatedQty,
 															BLQty,
 															TentCargoNomOriginalQty,
 															TentCargoNomDateOriginal,
 															[Status],
+															FirmCargoNomQty,
+															VesselNomLaycanCommencementOriginal,
+															VesselNomLaycanCancellingOriginal,
+															VesselNomDateOriginal,
+															ChartererRequestLaycanCommencementOriginal,
+															ChartererRequestLaycanCancellingOriginal,
+															DateOwnersSentScheduleofAvailableVesselstoCharterers,
+															FirstMondayoftheMonth,
+															CargoNominationbyParcel,
+															ChartererRequestedQty,
+															VesselCapacity,
 															LoadPortAlternateKey,
 															DischargePortAlternateKey,
 															PostFixtureAlternateKey
@@ -69,6 +81,7 @@ begin
 				wdparcel.ParcelKey								DimParcelKey,
 				isnull(v.VesselKey, -1)							VesselKey,
 				isnull(coa.COAKey, -1)							COAKey,
+				isnull(cd.DateKey, -1)							ConfirmationDateKey,
 				p.NominatedQty,
 				p.BLQty,
 				case
@@ -82,6 +95,17 @@ begin
 					else nom.TentCargoNomDateOriginal
 				end												TentCargoNomDateOriginal,
 				p.[Status],
+				nom.FirmCargoNom_Qty,
+				nom.VesselNom_LaycanCommencementOriginal,
+				nom.VesselNom_LaycanCancellingOriginal,
+				nom.VesselNom_DateOriginal,
+				nom.ChartererRequest_LaycanCommencementOriginal,
+				nom.ChartererRequest_LaycanCancellingOriginal,
+				nom.DateOwnersSentScheduleofAvailableVesselstoCharterers											DateOwnersSentScheduleofAvailableVesselstoCharterers,
+				nom.[1stMondayoftheMonth],
+				nom.CargoNominationbyParcel,
+				nom.ChartererRequestedQty,
+				nom.VesselCapacity,
 				wdloadport.PortAlternateKey						LoadPortAlternateKey,
 				wddischport.PortAlternateKey					DischargePortAlternateKey,
 				wdpostfixture.PostFixtureAlternateKey
@@ -121,6 +145,8 @@ begin
 						on p.RelatedSpiFixtureId = wdpostfixture.PostFixtureAlternateKey
 					left join Warehouse.Dim_Calendar bld with (nolock)
 						on bld.FullDate = convert(date, p.BillLadingDate)
+					left join Warehouse.Dim_Calendar cd with (nolock)
+						on cd.FullDate = convert(date, nom.ConfirmationDate)
 					left join PostFixtures pf with (nolock)
 						on p.RelatedSpiFixtureId = pf.QBRecId
 					left join Warehouse.Dim_COA coa (nolock)
@@ -264,15 +290,27 @@ begin
 																DimParcelKey,
 																VesselKey,
 																COAKey,
+																ConfirmationDateKey,
 																NominatedQty,
 																BLQty,
 																TentCargoNomOriginalQty,
+																FirmCargoNomQty,
 																LoadNORStartDate,
 																LoadLastHoseOffDate,
 																DischargeNORStartDate,
 																DischargeLastHoseOffDate,
 																TentCargoNomDateOriginal,
 																[Status],
+																VesselNomLaycanCommencementOriginal,
+																VesselNomLaycanCancellingOriginal,
+																VesselNomDateOriginal,
+																ChartererRequestLaycanCommencementOriginal,
+																ChartererRequestLaycanCancellingOriginal,
+																DateOwnersSentScheduleofAvailableVesselstoCharterers,
+																FirstMondayoftheMonth,
+																CargoNominationbyParcel,
+																ChartererRequestedQty,
+																VesselCapacity,
 																RowCreatedDate
 															)
 			select
@@ -290,15 +328,27 @@ begin
 					sfp.DimParcelKey,
 					sfp.VesselKey,
 					sfp.COAKey,
+					sfp.ConfirmationDateKey,
 					sfp.NominatedQty,
 					sfp.BLQty,
 					sfp.TentCargoNomOriginalQty,
+					sfp.FirmCargoNomQty,
 					sfp.LoadNORStartDate,
 					sfp.LoadLastHoseOffDate,
 					sfp.DischargeNORStartDate,
 					sfp.DischargeLastHoseOffDate,
 					sfp.TentCargoNomDateOriginal,
 					sfp.[Status],
+					sfp.VesselNomLaycanCommencementOriginal,
+					sfp.VesselNomLaycanCancellingOriginal,
+					sfp.VesselNomDateOriginal,
+					sfp.ChartererRequestLaycanCommencementOriginal,
+					sfp.ChartererRequestLaycanCancellingOriginal,
+					sfp.DateOwnersSentScheduleofAvailableVesselstoCharterers,
+					sfp.FirstMondayoftheMonth,
+					sfp.CargoNominationbyParcel,
+					sfp.ChartererRequestedQty,
+					sfp.VesselCapacity,
 					getdate()
 				from
 					Staging.Fact_Nomination sfp with (nolock);
