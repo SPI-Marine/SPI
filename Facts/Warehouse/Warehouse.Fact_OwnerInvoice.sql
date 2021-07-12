@@ -8,6 +8,7 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	07/29/2020	Added InvoiceStatus
+Brian Boswick	07/12/2021	Removed COAKey
 ==========================================================================================================	
 */
 
@@ -25,7 +26,6 @@ create table Warehouse.Fact_OwnerInvoice
 		InvoiceSentToChartererDateKey		int					not null,
 		VerifiedByChartererDateKey			int					not null,
 		PostFixtureKey						int					not null,
-		COAKey								int					not null,
 		OwnerInvoiceNumber					varchar(150)		null,		-- Degenerate Dimension Attributes
 		OwnerInvoiceAttachment				varchar(5000)		null,
 		Currency							varchar(50)			null,

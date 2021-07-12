@@ -152,7 +152,7 @@ begin
 					left join PostFixtures pf with (nolock)
 						on p.RelatedSpiFixtureId = pf.QBRecId
 					left join Warehouse.Dim_COA coa (nolock)
-						on coa.COAAlternateKey = pf.RelatedSPICOAId
+						on coa.TradeLaneAlternateKey = pf.RelatedSPICOAId
 					left join Warehouse.Dim_Vessel v with (nolock)
 						on v.VesselAlternateKey = pf.RelatedVessel;
 	end try
@@ -160,6 +160,55 @@ begin
 		select @ErrorMsg = 'Staging Parcel records - ' + error_message();
 		throw 51000, @ErrorMsg, 1;
 	end catch	
+	
+	-- Calculate prorated Nominated and BL quantities
+	begin try
+		with TotalQuantities(TotalBlQty, TotalNominatedQty, PostFixtureAlternateKey)
+		as
+		(
+			select
+					sum(isnull(n.BLQty, 0.0)) TotalBlQty,
+					sum(isnull(n.NominatedQty, 0.0)) TotalNominatedQty,
+					n.PostFixtureAlternateKey
+				from
+					Staging.Fact_Nomination n
+				group by
+					n.PostFixtureAlternateKey
+		)
+		update
+				Staging.Fact_Nomination
+			set
+				TotalBLQty = tq.TotalBlQty,
+				TotalNominatedQty = tq.TotalNominatedQty
+			from
+				TotalQuantities tq
+					join Staging.Fact_Nomination nom
+						on nom.PostFixtureAlternateKey = tq.PostFixtureAlternateKey;
+
+		update
+				Staging.Fact_Nomination
+			set
+				BLQtyProration = case when TotalBLQty > 0.0 then (BLQty/TotalBLQty) else null end,
+				NominatedQtyProration = case when TotalNominatedQty > 0.0 then (NominatedQty/TotalNominatedQty) else null end;
+	
+		update
+				Staging.Fact_Nomination
+			set
+				TentCargoNomOriginalQty =	case
+												when CargoNominationbyParcel = 'no'
+													then TentCargoNomOriginalQty * coalesce(BLQtyProration, NominatedQtyProration)
+												else TentCargoNomOriginalQty
+											end,
+				FirmCargoNomQty =	case
+										when CargoNominationbyParcel = 'no'
+											then FirmCargoNomQty * coalesce(BLQtyProration, NominatedQtyProration)
+										else FirmCargoNomQty
+									end
+	end try
+	begin catch
+		select @ErrorMsg = 'Updating prorated Nominated and BL quantities - ' + error_message();
+		throw 51000, @ErrorMsg, 1;
+	end catch
 	
 	-- Get NOR start dates for load/discharge ports
 	begin try

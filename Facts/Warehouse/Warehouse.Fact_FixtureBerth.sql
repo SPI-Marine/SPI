@@ -17,6 +17,7 @@ Brian Boswick	08/19/2020	Added DischargePortBerthKey, LoadBerthKey
 Brian Boswick	08/21/2020	Renamed ProductQuantityKey to ProductFixtureBerthQuantityKey
 Brian Boswick	08/28/2020	Added LoadPortBerthKey
 Brian Boswick	10/22/2020	Added BerthPumpRate
+Brian Boswick	07/12/2021	Removed COAKey
 ==========================================================================================================	
 */
 
@@ -45,7 +46,6 @@ create table Warehouse.Fact_FixtureBerth
 		ProductKey												int					not null,
 		ProductFixtureBerthQuantityKey							int					not null,
 		CPDateKey												int					not null,
-		COAKey													int					not null,
 		LoadDischarge											varchar(50)			null,		-- Degenerate Dimension Attributes
 		ProductType												nvarchar(100)		null,
 		ParcelQuantityTShirtSize								varchar(50)			null,

@@ -1,10 +1,10 @@
 {
   "ExpandedNodes": [
     "",
-    "\\ETL",
-    "\\Facts",
-    "\\Facts\\Staging",
-    "\\Facts\\Warehouse"
+    "\\Dimensions",
+    "\\Dimensions\\Staging",
+    "\\Dimensions\\Warehouse",
+    "\\ETL"
   ],
   "PreviewInSolutionExplorer": false
 }

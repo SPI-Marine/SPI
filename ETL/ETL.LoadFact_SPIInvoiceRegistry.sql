@@ -18,6 +18,7 @@ Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	08/27/2020	Added InvoiceTypeCategory
 Brian Boswick	11/05/2020	Modified ETL for new quantity ranges
 Brian Boswick	04/29/2021	Modified Invoice Type fields. Added InvoiceTypeSubCategory
+Brian Boswick	07/12/2021	Removed COAKey
 ==========================================================================================================	
 */
 
@@ -125,7 +126,6 @@ begin
 				-1													ChartererKey,
 				isnull(pq.ProductQuantityKey, -1)					ProductQuantityKey,
 				isnull(cpdate.DateKey, 18991230)					CPDateKey,
-				isnull(coa.COAKey, -1)								COAKey,
 				isnull(tc.TimeChartererKey, -1)						TimeChartererKey,
 				ir.InvoiceNumberOfficial_INVOICE					InvoiceNumber,
 				ir.InvoiceTypeDetailed_ADMIN						InvoiceTypeDetailed,
@@ -151,8 +151,6 @@ begin
 						on pf.PostFixtureAlternateKey = ir.RelatedSPIFixtureID
 					left join PostFixtures epf with (nolock)
 						on pf.PostFixtureAlternateKey = epf.QBRecId
-					left join Warehouse.Dim_COA coa (nolock)
-						on coa.COAAlternateKey = epf.RelatedSPICOAId
 					left join MaxProducts loadproduct with (nolock)
 						on loadproduct.PostFixtureAlternateKey = ir.RelatedSPIFixtureID
 							and loadproduct.LoadDischarge = 'Load'
@@ -208,7 +206,6 @@ begin
 					inv.ChartererKey,
 					inv.ProductQuantityKey,
 					inv.CPDateKey,
-					inv.COAKey,
 					inv.TimeChartererKey,
 					inv.InvoiceNumber,
 					inv.InvoiceTypeDetailed,

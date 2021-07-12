@@ -13,6 +13,7 @@ Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	08/27/2020	Added InvoiceTypeCategory
 Brian Boswick	10/01/2020	Added RegionFormula
 Brian Boswick	04/29/2021	Modified Invoice Type fields. Added InvoiceTypeSubCategory
+Brian Boswick	07/12/2021	Removed COAKey
 ==========================================================================================================	
 */
 
@@ -31,7 +32,6 @@ create table Warehouse.Fact_SPIInvoiceRegistry
 		ChartererKey											int					not null,
 		ProductQuantityKey										int					not null,
 		CPDateKey												int					not null,
-		COAKey													int					not null,
 		TimeChartererKey										int					not null,
 		InvoiceNumber											varchar(50)			null,		-- Degenerate Dimension Attributes
 		InvoiceTypeDetailed										varchar(50)			null,

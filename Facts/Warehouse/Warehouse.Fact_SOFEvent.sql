@@ -11,6 +11,7 @@ Brian Boswick	02/14/2020	Renamed multiple metrics
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	03/25/2021	Removed fields to refactor to remove Parcel/Product grain and change to 
 							event level grain
+Brian Boswick	07/12/2021	Removed COAKey
 ==========================================================================================================	
 */
 
@@ -30,7 +31,6 @@ create table Warehouse.Fact_SOFEvent
 		PortBerthKey			int					not null,
 		ChartererKey			int					not null,
 		OwnerKey				int					not null,
-		COAKey					int					not null,
 		ProrationType			nvarchar(100)		null,		-- Degenerate Dimension Attributes
 		EventType				nvarchar(250)		null,
 		IsLaytime				char(1)				null,

@@ -52,7 +52,11 @@ create table Staging.Fact_Nomination
 		VesselCapacity											int					null,
 		LoadPortAlternateKey									int					null,			-- ETL fields
 		DischargePortAlternateKey								int					null,
-		PostFixtureAlternateKey									int					null,		
+		PostFixtureAlternateKey									int					null,
+		TotalBLQty												decimal(18, 6)		null,
+		TotalNominatedQty										decimal(18, 6)		null,
+		BLQtyProration											decimal(18, 6)		null,
+		NominatedQtyProration									decimal(18, 6)		null,
 		constraint [PK_Staging_Fact_Nomination_AltKey] primary key clustered 
 		(
 			ParcelAlternateKey, NominationAlternateKey asc
