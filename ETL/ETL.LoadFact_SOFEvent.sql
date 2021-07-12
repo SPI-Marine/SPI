@@ -14,6 +14,7 @@ Brian Boswick	06/02/2020	Pull event duration from Staging.SOFEvent_Durations tab
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	03/25/2021	Refactor to remove Parcel/Product grain and change to event level grain. LImit
 							to only pulling in event from last 2 years
+Brian Boswick	07/12/2021	Removed COAKey
 ==========================================================================================================	
 */
 
@@ -51,7 +52,6 @@ begin
 						PortBerthKey,
 						ChartererKey,
 						OwnerKey,
-						COAKey,
 						ProrationType,
 						EventType,
 						IsLaytime,
@@ -82,7 +82,6 @@ begin
 				isnull(portberth.PortBerthKey, -1)			PortBerthKey,
 				isnull(wch.ChartererKey, -1)				ChartererKey,
 				isnull(wo.OwnerKey, -1)						OwnerKey,
-				isnull(coa.COAKey, -1)						COAKey,
 				sof.LaytimeProationType						ProrationType,
 				eventtype.EventNameReports					EventType,
 				case sof.Laytime
@@ -166,8 +165,6 @@ begin
 						on wpostfixture.PostFixtureAlternateKey = parcel.PostFixtureAlternateKey
 					left join PostFixtures epostfixture with (nolock)
 						on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
-					left join Warehouse.Dim_COA coa (nolock)
-						on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
 					left join FullStyles fs with (nolock)
 						on epostfixture.RelatedChartererFullStyle = fs.QBRecId
 					left join Warehouse.Dim_Owner wo with (nolock)
@@ -225,7 +222,6 @@ begin
 						PortBerthKey,
 						ChartererKey,
 						OwnerKey,
-						COAKey,
 						ProrationType,
 						EventType,
 						IsLaytime,
@@ -251,7 +247,6 @@ begin
 					evt.PortBerthKey,
 					evt.ChartererKey,
 					evt.OwnerKey,
-					evt.COAKey,
 					evt.ProrationType,
 					evt.EventType,
 					evt.IsLaytime,

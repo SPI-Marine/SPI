@@ -17,6 +17,7 @@ Developer		Date		Change
 Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey ETL logic
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	06/18/2021	Added ProductFixtureQuantityKey
+Brian Boswick	07/12/2021	Removed COAKey
 ==========================================================================================================	
 */
 
@@ -61,7 +62,6 @@ begin
 					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					isnull(wch.ChartererKey, -1)								ChartererKey,
 					isnull(wo.OwnerKey, -1)										OwnerKey,
-					isnull(coa.COAKey, -1)										COAKey,
 					isnull(pq.ProductQuantityKey, -1)							ProductFixtureQuantityKey,
 					'Freight'													ChargeType,
 					null														ChargeDescription,
@@ -121,8 +121,6 @@ begin
 							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 						left join PostFixtures epostfixture with (nolock)
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
-						left join Warehouse.Dim_COA coa (nolock)
-							on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
 						left join FullStyles fs with (nolock)
 							on epostfixture.RelatedChartererFullStyle = fs.QBRecId
 						left join Warehouse.Dim_Owner wo with (nolock)
@@ -190,7 +188,6 @@ begin
 					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					isnull(wch.ChartererKey, -1)								ChartererKey,
 					isnull(wo.OwnerKey, -1)										OwnerKey,
-					isnull(coa.COAKey, -1)										COAKey,
 					isnull(pq.ProductQuantityKey, -1)							ProductFixtureQuantityKey,
 					case
 						when parcel.DemurrageAgreedAmount_QBC = 0.0
@@ -299,8 +296,6 @@ begin
 							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 						left join PostFixtures epostfixture with (nolock)
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
-						left join Warehouse.Dim_COA coa
-							on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
 						left join FullStyles fs with (nolock)
 							on epostfixture.RelatedChartererFullStyle = fs.QBRecId
 						left join Warehouse.Dim_Owner wo with (nolock)
@@ -373,7 +368,6 @@ begin
 					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					isnull(wch.ChartererKey, -1)								ChartererKey,
 					isnull(wo.OwnerKey, -1)										OwnerKey,
-					isnull(coa.COAKey, -1)										COAKey,
 					isnull(pq.ProductQuantityKey, -1)							ProductFixtureQuantityKey,
 					chargetype.ChargeType										ChargeType,
 					charge.[Description]										ChargeDescription,
@@ -452,8 +446,6 @@ begin
 							on wpostfixture.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
 						left join PostFixtures epostfixture with (nolock)
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
-						left join Warehouse.Dim_COA coa
-							on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
 						left join FullStyles fs with (nolock)
 							on epostfixture.RelatedChartererFullStyle = fs.QBRecId
 						left join Warehouse.Dim_Owner wo with (nolock)
@@ -522,7 +514,6 @@ begin
 					isnull(firsteventdate.DateKey, -1)							FirstLoadEventDateKey,
 					isnull(wch.ChartererKey, -1)								ChartererKey,
 					isnull(wo.OwnerKey, -1)										OwnerKey,
-					isnull(coa.COAKey, -1)										COAKey,
 					-1															ProductFixtureQuantityKey,
 					chargetype.ChargeType										ChargeType,
 					charge.[Description]										ChargeDescription,
@@ -554,8 +545,6 @@ begin
 							on chargetype.RecordID = charge.RelatedAdditionalChargeType
 						left join Warehouse.Dim_PostFixture wpostfixture with (nolock)
 							on wpostfixture.PostFixtureAlternateKey = charge.RelatedSPIFixtureId
-						left join Warehouse.Dim_COA coa
-							on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
 						left join FullStyles fs with (nolock)
 							on epostfixture.RelatedChartererFullStyle = fs.QBRecId
 						left join Warehouse.Dim_Owner wo with (nolock)
@@ -621,7 +610,6 @@ begin
 					isnull(firsteventdate.DateKey, -1)														FirstLoadEventDateKey,
 					isnull(wch.ChartererKey, -1)															ChartererKey,
 					isnull(wo.OwnerKey, -1)																	OwnerKey,
-					isnull(coa.COAKey, -1)																	COAKey,
 					isnull(pq.ProductQuantityKey, -1)														ProductFixtureQuantityKey,
 					chargetype.ChargeType																	ChargeType,		
 					addcharges.[Description]																ChargeDescription,
@@ -688,8 +676,6 @@ begin
 							on wpostfixture.PostFixtureAlternateKey = parcel.RelatedSPIFixtureId
 						left join PostFixtures epostfixture with (nolock)
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
-						left join Warehouse.Dim_COA coa
-							on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
 						left join FullStyles fs with (nolock)
 							on epostfixture.RelatedChartererFullStyle = fs.QBRecId
 						left join Warehouse.Dim_Owner wo with (nolock)
@@ -784,7 +770,6 @@ begin
 					finance.FirstLoadEventDateKey,
 					finance.ChartererKey,
 					finance.OwnerKey,
-					finance.COAKey,
 					finance.ProductFixtureQuantityKey,
 					finance.ChargeType,
 					finance.ChargeDescription,

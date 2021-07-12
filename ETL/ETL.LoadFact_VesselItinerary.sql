@@ -27,6 +27,7 @@ Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	10/12/2020	Added ETAEndOriginal
 Brian Boswick	12/14/2020	Added EOSPStartDate to replace NORStartDate
 Brian Boswick	04/29/2021	Added FirstLoadEventDateKey ETL
+Brian Boswick	07/12/2021	Removed COAKey
 ==========================================================================================================	
 */
 
@@ -55,7 +56,6 @@ begin
 																ChartererKey,
 																OwnerKey,
 																VesselKey,
-																COAKey,
 																DirectionKey,
 																FirstLoadEventDateKey,
 																ItineraryPortType,
@@ -88,7 +88,6 @@ begin
 				isnull(wch.ChartererKey, -1)					ChartererKey,
 				isnull(wo.OwnerKey, -1)							OwnerKey,
 				isnull(v.VesselKey, -1)							VesselKey,
-				isnull(coa.COAKey, -1)							COAKey,
 				-1												DirectionKey,
 				-1												FirstLoadEventDateKey,
 				vi.ItineraryPortType							ItineraryPortType,
@@ -202,8 +201,6 @@ begin
 						on wvi.VesselItineraryAlternateKey = vi.RecordID
 					left join PostFixtures pf with (nolock)
 						on vi.RelatedSpiFixtureId = pf.QBRecId
-					left join Warehouse.Dim_COA coa (nolock)
-						on coa.COAAlternateKey = pf.RelatedSPICOAId
 					left join FullStyles fs with (nolock)
 						on pf.RelatedChartererFullStyle = fs.QBRecId
 					left join Warehouse.Dim_Owner wo with (nolock)
@@ -696,7 +693,6 @@ begin
 																	ChartererKey,
 																	OwnerKey,
 																	VesselKey,
-																	COAKey,
 																	DirectionKey,
 																	FirstLoadEventDateKey,
 																	ItineraryPortType,
@@ -752,7 +748,6 @@ begin
 					fvi.ChartererKey,
 					fvi.OwnerKey,
 					fvi.VesselKey,
-					fvi.COAKey,
 					fvi.DirectionKey,
 					fvi.FirstLoadEventDateKey,
 					fvi.ItineraryPortType,
@@ -820,7 +815,6 @@ begin
 				ChartererKey = fvi.ChartererKey,
 				OwnerKey = fvi.OwnerKey,
 				VesselKey = fvi.VesselKey,
-				COAKey = fvi.COAKey,
 				DirectionKey = fvi.DirectionKey,
 				FirstLoadEventDateKey = fvi.FirstLoadEventDateKey,
 				ItineraryPortType = fvi.ItineraryPortType,

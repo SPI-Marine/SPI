@@ -30,6 +30,7 @@ Brian Boswick	08/28/2020	Added LoadPortBerthKey
 Brian Boswick	09/18/2020	Removed Pump Rates > 2500 from average calcualtion
 Brian Boswick	10/22/2020	Added BerthPumpRate
 Brian Boswick	11/05/2020	Modified ETL for new quantity ranges
+Brian Boswick	07/12/2021	Removed COAKey
 ==========================================================================================================	
 */
 
@@ -187,7 +188,6 @@ begin
 												OwnerKey,
 												ProductKey,
 												ProductFixtureBerthQuantityKey,
-												COAKey,
 												LoadDischarge,
 												ParcelQuantity,
 												LaytimeAllowed
@@ -213,7 +213,6 @@ begin
 					isnull(wo.OwnerKey, -1)									OwnerKey,
 					-1														ProductKey,
 					isnull(pq.ProductQuantityKey, -1)						ProductFixtureBerthQuantityKey,
-					isnull(coa.COAKey, -1)									COAKey,
 					ufb.LoadDischarge										LoadDischarge,
 					ufb.ParcelQuantity										ParcelQuantity,
 					ufb.LaytimeAllowed										LaytimeAllowed
@@ -225,8 +224,6 @@ begin
 							on CPDate.FullDate = wpostfixture.CPDate
 						left join PostFixtures epostfixture with (nolock)
 							on epostfixture.QBRecId = wpostfixture.PostFixtureAlternateKey
-						left join Warehouse.Dim_COA coa (nolock)
-							on coa.COAAlternateKey = epostfixture.RelatedSPICOAId
 						left join Warehouse.Dim_Vessel vessel with (nolock)
 							on vessel.VesselAlternateKey = epostfixture.RelatedVessel
 						left join ParcelPorts pp with (nolock)
@@ -2231,7 +2228,6 @@ begin
 					sfb.ProductKey,
 					sfb.ProductFixtureBerthQuantityKey,
 					sfb.CPDateKey,
-					sfb.COAKey,
 					sfb.LoadDischarge,
 					sfb.ProductType,
 					sfb.ParcelQuantityTShirtSize,

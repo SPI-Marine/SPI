@@ -187,7 +187,7 @@ begin
 					left join ShippingRegions dischregion (nolock)
 						on dischregion.RegionName = fixture.DischPortRegion
 					left join Warehouse.Dim_COA wcoa (nolock)
-						on wcoa.COAAlternateKey = fixture.RelatedSPICOAId
+						on wcoa.TradeLaneAlternateKey = fixture.RelatedSPICOATradeLaneID
 					left join	(
 									select
 											tm.EmailAddress,

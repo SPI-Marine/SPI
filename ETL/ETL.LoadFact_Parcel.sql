@@ -30,6 +30,7 @@ Brian Boswick	01/08/2021	Added ExtraLaytime logic
 Brian Boswick	01/11/2021	Added LaytimeUsedAgreedHrs logic
 Brian Boswick	01/27/2021	Added DemurrageRate
 Brian Boswick	03/22/2021	Added FirstLoadEventDateKey
+Brian Boswick	07/12/2021	Removed COAKey
 ==========================================================================================================	
 */
 
@@ -76,7 +77,6 @@ begin
 														OwnerKey,
 														VesselKey,
 														ProductFixtureQuantityKey,
-														COAKey,
 														FirstEventDateKey,
 														OutTurnQty,
 														ShipLoadedQty,
@@ -113,7 +113,6 @@ begin
 				isnull(wo.OwnerKey, -1)							OwnerKey,
 				isnull(v.VesselKey, -1)							VesselKey,
 				-1												ProductFixtureQuantityKey,
-				isnull(coa.COAKey, -1)							COAKey,
 				isnull(fed.DateKey, -1)							FirstEventDateKey,
 				p.OutTurnQty,
 				p.ShipLoadedQty,
@@ -174,8 +173,6 @@ begin
 						on bld.FullDate = convert(date, p.BillLadingDate)
 					left join PostFixtures pf with (nolock)
 						on p.RelatedSpiFixtureId = pf.QBRecId
-					left join Warehouse.Dim_COA coa (nolock)
-						on coa.COAAlternateKey = pf.RelatedSPICOAId
 					left join FullStyles fs with (nolock)
 						on pf.RelatedChartererFullStyle = fs.QBRecId
 					left join Warehouse.Dim_Owner wo with (nolock)
@@ -694,7 +691,6 @@ begin
 															OwnerKey,
 															VesselKey,
 															ProductFixtureQuantityKey,
-															COAKey,
 															FirstEventDateKey,
 															OutTurnQty,
 															ShipLoadedQty,
@@ -742,7 +738,6 @@ begin
 					sfp.OwnerKey,
 					sfp.VesselKey,
 					sfp.ProductFixtureQuantityKey,
-					sfp.COAKey,
 					sfp.FirstEventDateKey,
 					sfp.OutTurnQty,
 					sfp.ShipLoadedQty,

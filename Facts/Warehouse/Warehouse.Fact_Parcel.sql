@@ -24,6 +24,7 @@ Brian Boswick	01/08/2021	Added ExtraLaytime
 Brian Boswick	01/11/2021	Added LaytimeUsedAgreedHrs
 Brian Boswick	01/27/2021	Added DemurrageRate
 Brian Boswick	03/22/2021	Added FirstLoadEventDateKey
+Brian Boswick	07/12/2021	Removed COAKey
 ==========================================================================================================	
 */
 
@@ -46,7 +47,6 @@ create table Warehouse.Fact_Parcel
 		OwnerKey								int					not null,
 		VesselKey								int					not null,
 		ProductFixtureQuantityKey				int					not null,
-		COAKey									int					not null,
 		FirstEventDateKey						int					not null,
 		OutTurnQty								decimal(18, 6)		null,			-- Metrics
 		ShipLoadedQty							decimal(18, 6)		null,

@@ -14,6 +14,7 @@ Brian Boswick	01/31/2020	Added LoadPortKey and DischargePortKey
 Brian Boswick	02/06/2020	Added ChartererKey and OwnerKey
 Brian Boswick	07/29/2020	Added COAKey
 Brian Boswick	06/18/2021	Added ProductFixtureQuantityKey
+Brian Boswick	07/12/2021	Removed COAKey
 ==========================================================================================================	
 */
 
@@ -38,7 +39,6 @@ create table Staging.Fact_FixtureFinance
 		FirstLoadEventDateKey			int					not null,
 		ChartererKey					int					not null,
 		OwnerKey						int					not null,
-		COAKey							int					not null,
 		ProductFixtureQuantityKey		int					not null,
 		ChargeType						nvarchar(500)		null,		-- Degenerate Dimension Attributes
 		ChargeDescription				nvarchar(500)		null,
