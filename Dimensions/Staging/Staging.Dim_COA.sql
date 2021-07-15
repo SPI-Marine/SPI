@@ -11,13 +11,13 @@ Developer		Date		Change
 ----------------------------------------------------------------------------------------------------------
 Brian Boswick	08/10/2020	Added Charterer/Owner info
 Brian Boswick	07/09/2021	Changed granularity to the Trade Lane level and added new fields
+Brian Boswick	07/15/2021	Removed Trade Lane fields and split into separate Dimension
 ==========================================================================================================	
 */
 
 create table Staging.Dim_COA
 	(
-		TradeLaneAlternateKey			int					not null,
-		COAAlternateKey					int					null,
+		COAAlternateKey					int					not null,
 		COATitle						varchar(500)		null,
 		AddressCommission				decimal(20, 6)		null,
 		BrokerCommission				decimal(20, 6)		null,
@@ -51,18 +51,11 @@ create table Staging.Dim_COA
 		DemurrageTimeBar				varchar(500)		null,
 		DemOutcome1						varchar(500)		null,
 		DemurrageCOANotes				varchar(5000)		null,
-		TradelaneNumLiftingsMinEntry	int					null,
-		TradelaneNumLiftingsMaxEntry	int					null,
-		TradeLaneLiftingQtyMinEntry		int					null,
-		TradeLaneLiftingQtyMaxEntry		int					null,
-		LoadOption						varchar(500)		null,
-		FreightDetails					varchar(5000)		null,
-		LiftingRequirementOptions		varchar(5000)		null,
 		Type1HashValue					varbinary(16)		not null,
 		RecordStatus					int					not null
 		constraint [PK_Staging_Dim_COA_QBRecId] primary key clustered 
 		(
-			TradeLaneAlternateKey asc
+			COAAlternateKey asc
 		)
 			with 
 				(pad_index = off, statistics_norecompute = off, ignore_dup_key = off, allow_row_locks = on, allow_page_locks = on) 

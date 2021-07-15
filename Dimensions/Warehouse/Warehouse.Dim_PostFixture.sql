@@ -28,6 +28,7 @@ Brian Boswick	12/11/2020	Added AlternateKeys for RLS
 Brian Boswick	04/16/2021	Changed FixtureStatus fields to FixtureStatusCategory/FixtureStatusDetailed
 Brian Boswick	05/27/2021	Removed GroupName
 Brian Boswick	06/23/2021	Added COAKey
+Brian Boswick	07/15/2021	Added TradeLaneKey to replace COAKey
 ==========================================================================================================	
 */
 
@@ -38,7 +39,7 @@ create table Warehouse.Dim_PostFixture
 	(
 		PostFixtureKey					int					not null identity(1, 1),
 		PostFixtureAlternateKey			int					not null,
-		COAKey							int					not null,
+		TradeLaneKey					int					not null,
 		BrokerEmail						nvarchar(250)		null,
 		BrokerFirstName					nvarchar(250)		null,
 		BrokerLastName					nvarchar(250)		null,
