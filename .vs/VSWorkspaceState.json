@@ -2,8 +2,10 @@
   "ExpandedNodes": [
     "",
     "\\Dimensions",
-    "\\Dimensions\\Warehouse"
+    "\\Dimensions\\Staging",
+    "\\Dimensions\\Warehouse",
+    "\\ETL"
   ],
-  "SelectedNode": "\\Dimensions\\Warehouse\\Warehouse.Dim_COA.sql",
+  "SelectedNode": "\\Dimensions\\Staging\\Staging.Dim_PostFixture.sql",
   "PreviewInSolutionExplorer": false
 }

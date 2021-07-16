@@ -152,7 +152,7 @@ begin
 					left join PostFixtures pf with (nolock)
 						on p.RelatedSpiFixtureId = pf.QBRecId
 					left join Warehouse.Dim_COA coa (nolock)
-						on coa.TradeLaneAlternateKey = pf.RelatedSPICOAId
+						on coa.COAAlternateKey = pf.RelatedSPICOAId
 					left join Warehouse.Dim_Vessel v with (nolock)
 						on v.VesselAlternateKey = pf.RelatedVessel;
 	end try
